@@ -101,7 +101,6 @@ Curly::Curly()
   m_headers(std::vector<std::string>()),
   m_PostBody(""),
   m_UsePostBody(false),
-  m_ForcePost(false),
   m_certFile(""),
   m_LastResponseCode(0),
   m_LastContentType(""),
@@ -212,11 +211,6 @@ bool Curly::setPostBody(const std::string& body)
   }
   else
     return false;
-}
-
-void Curly::setPostMethod()
-{
-  m_ForcePost = true;
 }
 
 bool Curly::setCertificateFile(const std::string& certFile)
@@ -535,8 +529,8 @@ bool Curly::perform(std::string& response)
     }
   } //if files are there
 
-  // Mark request as POST request, when required.
-  if ((m_UsePostBody && m_PostFields.empty() && m_Files.empty()) || m_ForcePost)
+  //set plain post body - but only if other POST stuff is empty
+  if (m_UsePostBody && m_PostFields.empty() && m_Files.empty())
   {
     retCode = curl_easy_setopt(handle, CURLOPT_POST, 1L);
     if (retCode != CURLE_OK)
@@ -548,11 +542,6 @@ bool Curly::perform(std::string& response)
       header_list = nullptr;
       return false;
     }
-  }
-
-  //set plain post body - but only if other POST stuff is empty
-  if (m_UsePostBody && m_PostFields.empty() && m_Files.empty())
-  {
     retCode = curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, m_PostBody.size());
     if (retCode != CURLE_OK)
     {
