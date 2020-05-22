@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include "../conf/Configuration.hpp"
+#include "../matrix/Matrix.hpp"
 #include "../util/GitInfos.hpp"
 #include "../ReturnCodes.hpp"
 #include "../Version.hpp"
@@ -101,22 +102,40 @@ int main(int argc, char** argv)
     } // for i
   } // if arguments are there
 
+  // load configuration file + configured tasks
+  bvn::Configuration config;
+  if (!config.load(configurationFile))
   {
-    // load configuration file + configured tasks
-    bvn::Configuration config;
-    if (!config.load(configurationFile))
-    {
-      std::cerr << "Error: Could not load configuration!" << std::endl;
-      return bvn::rcConfigurationError;
-    }
-  } // end of scope for configuration
+    std::cerr << "Error: Could not load configuration!" << std::endl;
+    return bvn::rcConfigurationError;
+  }
 
   /* Bot currently starts an endless loop that cannot be interrupted by
      the user, yet. Future versions might use something like signal handling
      (as in SIGINT or SIGTERM) to stop the collection.
   */
   // TODO: Start bot.
-  std::cout << "This is not implemented yet." << std::endl;
+
+  bvn::Matrix mat(config);
+  if (mat.login())
+  {
+    std::cout << "Info: Sucessfully logged into server.\n";
+
+    if (mat.logout())
+    {
+      std::cout << "Info: Successfully logged out from server.\n";
+    }
+    else
+    {
+      std::cerr << "Error: Logout attempt failed.\n";
+    }
+  }
+  else
+  {
+    std::cerr << "Error: Login attempt failed. Maybe configuration data is wrong?\n";
+  }
+
+  std::cout << "More stuff is not implemented yet." << std::endl;
   std::cout << "Done." << std::endl;
   return 0;
 }

@@ -34,10 +34,20 @@
 			<Add option="-std=c++17" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Linker>
+			<Add library="curl" />
+		</Linker>
+		<Unit filename="../../third-party/nlohmann/json.hpp" />
+		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
+		<Unit filename="../../third-party/simdjson/simdjson.h" />
 		<Unit filename="../ReturnCodes.hpp" />
 		<Unit filename="../Version.hpp" />
 		<Unit filename="../conf/Configuration.cpp" />
 		<Unit filename="../conf/Configuration.hpp" />
+		<Unit filename="../matrix/Matrix.cpp" />
+		<Unit filename="../matrix/Matrix.hpp" />
+		<Unit filename="../net/Curly.cpp" />
+		<Unit filename="../net/Curly.hpp" />
 		<Unit filename="../util/Directories.cpp" />
 		<Unit filename="../util/Directories.hpp" />
 		<Unit filename="../util/GitInfos.cpp" />

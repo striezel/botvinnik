@@ -146,6 +146,26 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
                   << fileName << "!" << std::endl;
         return false;
       }
+      // Remove trailing slash.
+      if (value.size() > 0 && value.at(value.size() - 1) == '/')
+        value.erase(value.size() - 1);
+
+      if (value.empty())
+      {
+        std::cerr << "Error: Host name of Matrix home server must not be empty!" << std::endl;
+        return false;
+      }
+
+      if (value.substr(0, 7) == "http://")
+      {
+        std::clog << "Warning: Home server URL does not use HTTPS!" << std::endl;
+      }
+      else if (value.substr(0, 8) != "https://")
+      {
+        value = "https://" + value;
+        std::cout << "Info: Prepending 'https://' to home server URL, it's now "
+                  << value <<"." << std::endl;
+      }
       mHomeServer = value;
     } // if matrix.homeserver
     else if ((name == "matrix.userid") || (name == "userid"))

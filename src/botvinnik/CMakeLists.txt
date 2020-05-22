@@ -4,9 +4,10 @@ cmake_minimum_required (VERSION 2.8)
 project(botvinnik)
 
 set(botvinnik_sources
-    ../conf/Configuration.cpp
-    ../net/Curly.cpp
     ../../third-party/simdjson/simdjson.cpp
+    ../conf/Configuration.cpp
+    ../matrix/Matrix.cpp
+    ../net/Curly.cpp
     ../util/Directories.cpp
     ../util/GitInfos.cpp
     ../util/Strings.cpp

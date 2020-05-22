@@ -138,6 +138,11 @@ class Curly
     bool setPostBody(const std::string& body);
 
 
+    /** \brief Makes the request a POST request.
+     */
+    void setPostMethod();
+
+
     /** \brief sets the path to a certificate file to verify the peer with
      *
      * \param certFile  path to the file holding one or more certificates
@@ -290,6 +295,7 @@ class Curly
     std::vector<std::string> m_headers; /**< additional / custom headers (HTTP only) */
     std::string m_PostBody; /**< plain post body */
     bool m_UsePostBody; /**< whether to use the explicit post body */
+    bool m_ForcePost; /**< whether to make a POST request, even if body is empty */
     std::string m_certFile; /**< the path to the certificate file to verify the peer with */
     long m_LastResponseCode; /**< response code of the last request */
     std::string m_LastContentType; /**< string that holds the last content type */
