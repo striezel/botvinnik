@@ -8,7 +8,8 @@ use yet.
 
 ## Build status
 
-_TODO_
+* GitLab CI:
+[![GitLab pipeline status](https://gitlab.com/striezel/botvinnik/badges/master/pipeline.svg)](https://gitlab.com/striezel/botvinnik/)
 
 ## Building from source
 
@@ -42,8 +43,6 @@ the directory after the repository is completely cloned:
 That's it, you should now have the current source code on your machine.
 
 ### Build process
-
-_NOTE: Not yet implemented._
 
 The build process is relatively easy, because CMake does all the preparations.
 Starting in the root directory of the source, you can do the following steps:

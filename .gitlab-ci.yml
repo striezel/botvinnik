@@ -1,0 +1,24 @@
+image: debian:10-slim
+
+build_gcc:
+  stage: build
+  before_script:
+    - apt-get update && apt-get -y install cmake g++ libcurl4-gnutls-dev pkg-config
+    - export CC=gcc && export CXX=g++
+  script:
+    - mkdir ./build
+    - cd ./build
+    - cmake ../
+    - make -j4
+
+# There is no official clang image at Docker Hub.
+build_clang:
+  stage: build
+  before_script:
+    - apt-get update && apt-get -y install catch clang cmake libcurl4-gnutls-dev pkg-config
+    - export CC=clang && export CXX=clang++
+  script:
+    - mkdir ./build
+    - cd ./build
+    - cmake ../
+    - make -j4
