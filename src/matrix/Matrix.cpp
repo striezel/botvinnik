@@ -146,4 +146,107 @@ bool Matrix::isLoggedIn() const
   return !accessToken.empty();
 }
 
+bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
+{
+  if (!isLoggedIn())
+  {
+    std::cerr << "Error: Need to be logged in to get current rooms!" << std::endl;
+    return false;
+  }
+
+  std::string response;
+
+  Curly curl;
+  curl.setURL(conf.homeServer() + "/_matrix/client/r0/joined_rooms");
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Listing joined rooms failed!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return false;
+  }
+
+  simdjson::dom::parser parser;
+  const auto [doc, error] = parser.parse(response);
+  if (error)
+  {
+    std::cerr << "Error while trying to list rooms: Unable to parse JSON data!" << std::endl
+              << "Response is: " << response << std::endl;
+    return false;
+  }
+  const auto [joined_rooms, jsonError] = doc["joined_rooms"];
+  if (jsonError || joined_rooms.type() != simdjson::dom::element_type::ARRAY)
+  {
+    std::cerr << "Error while trying to list rooms: JSON data does not contain"
+              << " a joined_rooms element or it's not an array!" << std::endl;
+    return false;
+  }
+
+  roomIds.clear();
+  for (const auto elem : joined_rooms)
+  {
+    if (elem.type() != simdjson::dom::element_type::STRING)
+    {
+      std::cerr << "Error: Returned room id is not a string!" << std::endl;
+      return false;
+    }
+    roomIds.push_back(std::string(elem.get<std::string_view>().value()));
+  }
+
+  return true;
+}
+
+bool Matrix::roomName(const std::string& roomId, std::string& name)
+{
+  if (!isLoggedIn())
+  {
+    std::cerr << "Error: Need to be logged in to get room name!" << std::endl;
+    return false;
+  }
+
+  std::string response;
+
+  Curly curl;
+  std::string encodedRoomId = roomId;
+  {
+    // TODO: use better URL encoding
+    auto pos = encodedRoomId.find(':');
+    if (pos != std::string::npos)
+      encodedRoomId.replace(pos, 1, "%3A");
+    pos = encodedRoomId.find('!');
+    if (pos != std::string::npos)
+      encodedRoomId.replace(pos, 1, "%21");
+  }
+
+  curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/state/m.room.name/");
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Listing joined rooms failed!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return false;
+  }
+
+  simdjson::dom::parser parser;
+  const auto [doc, error] = parser.parse(response);
+  if (error)
+  {
+    std::cerr << "Error while trying get room name: Unable to parse JSON data!" << std::endl
+              << "Response is: " << response << std::endl;
+    return false;
+  }
+  const auto [jsonName, jsonError] = doc["name"];
+  if (jsonError || jsonName.type() != simdjson::dom::element_type::STRING)
+  {
+    std::cerr << "Error while trying to get room name: JSON data does not contain"
+              << " a name element or it's not a string!" << std::endl;
+    return false;
+  }
+
+  name = jsonName.get<std::string_view>().value();
+  return true;
+}
+
 } // namespace

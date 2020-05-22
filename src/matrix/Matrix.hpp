@@ -21,6 +21,8 @@
 #ifndef BVN_MATRIX_HPP
 #define BVN_MATRIX_HPP
 
+#include <string>
+#include <vector>
 #include "../conf/Configuration.hpp"
 
 namespace bvn
@@ -55,6 +57,25 @@ class Matrix
      * \return Returns whether logout was successful.
      */
     bool logout();
+
+
+    /** \brief Gets a list of the user's current rooms.
+     *
+     * \param roomIds  vector that will be used to store ids of all joined rooms.
+     * \return Returns true, if list retrieval was successful.
+     *         Returns false otherwise.
+     */
+    bool joinedRooms(std::vector<std::string>& roomIds);
+
+
+    /** \brief Gets the name of a room.
+     *
+     * \param roomId   id of the room
+     * \param name     string that will be used to store the name
+     * \return Returns true, if name retrieval was successful.
+     *         Returns false otherwise.
+     */
+    bool roomName(const std::string& roomId, std::string& name);
   private:
     /** \brief Determines whether the user is logged in to Matrix.
      *

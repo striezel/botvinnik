@@ -119,7 +119,27 @@ int main(int argc, char** argv)
   bvn::Matrix mat(config);
   if (mat.login())
   {
-    std::cout << "Info: Sucessfully logged into server.\n";
+    std::cout << "Info: Successfully logged into server.\n";
+
+    std::vector<std::string> rooms;
+    if (mat.joinedRooms(rooms))
+    {
+      std::cout << "Joined rooms (" << rooms.size() << ") are:" << std::endl;
+      for(const auto& id : rooms)
+      {
+        std::cout << "  " << id;
+        std::string name;
+        if (mat.roomName(id, name))
+        {
+          std::cout << " (name: " << name << ")";
+        }
+        std::cout << std::endl;
+      }
+    }
+    else
+    {
+      std::cerr << "Failed to get joined rooms!" << std::endl;
+    }
 
     if (mat.logout())
     {
