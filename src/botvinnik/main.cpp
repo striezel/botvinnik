@@ -141,6 +141,19 @@ int main(int argc, char** argv)
       std::cerr << "Failed to get joined rooms!" << std::endl;
     }
 
+    std::string allEvents;
+    std::string nextBatch;
+    if (mat.sync(allEvents, nextBatch))
+    {
+      std::cout << "Call to sync was successful!" << std::endl
+                << "next batch: " << nextBatch << std::endl
+                << "all events: " << allEvents << std::endl;
+    }
+    else
+    {
+      std::cerr << "Sync failed!" << std::endl;
+    }
+
     if (mat.logout())
     {
       std::cout << "Info: Successfully logged out from server.\n";

@@ -250,4 +250,52 @@ bool Matrix::roomName(const std::string& roomId, std::string& name)
   return true;
 }
 
+bool Matrix::sync(std::string& events, std::string& nextBatch, const std::string& since)
+{
+  if (!isLoggedIn())
+  {
+    std::cerr << "Error: Need to be logged in to sync events!" << std::endl;
+    return false;
+  }
+
+  std::string response;
+
+  Curly curl;
+  if (!since.empty())
+    // incremental sync
+    curl.setURL(conf.homeServer() + "/_matrix/client/r0/sync?since=" + since);
+  else
+    // initial sync
+    curl.setURL(conf.homeServer() + "/_matrix/client/r0/sync");
+
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Syncing events failed!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return false;
+  }
+
+  simdjson::dom::parser parser;
+  const auto [doc, error] = parser.parse(response);
+  if (error)
+  {
+    std::cerr << "Error while syncing events: Unable to parse JSON data!" << std::endl
+              << "Response is: " << response << std::endl;
+    return false;
+  }
+  const auto [jsonNextBatch, jsonError] = doc["next_batch"];
+  if (jsonError || jsonNextBatch.type() != simdjson::dom::element_type::STRING)
+  {
+    std::cerr << "Error while syncing events: JSON data does not contain"
+              << " a next_batch element or it's not a string!" << std::endl;
+    return false;
+  }
+
+  nextBatch = jsonNextBatch.get<std::string_view>().value();
+  events = response;
+  return true;
+}
+
 } // namespace

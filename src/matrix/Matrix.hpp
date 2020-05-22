@@ -76,6 +76,17 @@ class Matrix
      *         Returns false otherwise.
      */
     bool roomName(const std::string& roomId, std::string& name);
+
+
+    /** \brief Gets room events for the user.
+     *
+     * \param events      string that will be used to store the events as JSON (if any)
+     * \param nextBatch   string that will be used to store the "next_batch" (if any)
+     * \param since       if set, the request will only retrieve the data since that batch
+     * \return Returns true, if the request succeeded.
+     *         Returns false otherwise.
+     */
+    bool sync(std::string& events, std::string& nextBatch, const std::string& since = "");
   private:
     /** \brief Determines whether the user is logged in to Matrix.
      *
