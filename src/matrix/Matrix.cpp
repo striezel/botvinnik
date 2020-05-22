@@ -126,7 +126,8 @@ bool Matrix::logout()
   std::string response;
 
   Curly curl;
-  curl.setURL(conf.homeServer() + "/_matrix/client/r0/logout?access_token=" + accessToken);
+  curl.setURL(conf.homeServer() + "/_matrix/client/r0/logout");
+  curl.addHeader("Authorization: Bearer " + accessToken);
   curl.setPostBody("");
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
