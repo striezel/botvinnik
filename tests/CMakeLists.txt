@@ -3,3 +3,6 @@ cmake_minimum_required (VERSION 2.8)
 
 # Recurse into subdirectory for executable tests.
 add_subdirectory (botvinnik)
+
+# Recurse into subdirectory for libcurl-related tests.
+add_subdirectory (curly)

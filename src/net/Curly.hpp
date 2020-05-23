@@ -30,7 +30,11 @@ extern "C"
   /** \brief write callback for cURL functions
    */
   size_t writeCallbackString(char *ptr, size_t size, size_t nmemb, void *userdata);
-} //extern C
+
+  /** \brief read callback for cURL functions
+   */
+  size_t readCallbackString(char *buffer, size_t size, size_t nitems, void *instream);
+} // extern C
 
 class Curly
 {
@@ -136,6 +140,18 @@ class Curly
      *         Returns false, if the post body could not be added.
      */
     bool setPostBody(const std::string& body);
+
+
+    /** \brief Define the data of a HTTP PUT request directly.
+     *
+     * \param data  the content of the HTTP PUT request
+     * \remarks This will only work, if no post fields have been set via the
+     * addPostField() method and if no files were added with addFile() and
+     * no POST body has been set directly with setPostBody().
+     * \return Returns true, if the put data was added.
+     *         Returns false, if the put data could not be added.
+     */
+    bool setPutData(const std::string& data);
 
 
     /** \brief sets the path to a certificate file to verify the peer with
@@ -290,6 +306,8 @@ class Curly
     std::vector<std::string> m_headers; /**< additional / custom headers (HTTP only) */
     std::string m_PostBody; /**< plain post body */
     bool m_UsePostBody; /**< whether to use the explicit post body */
+    std::string m_PutData; /**< plain put data */
+    bool m_UsePutData;  /**< whether to use the explicit put data */
     std::string m_certFile; /**< the path to the certificate file to verify the peer with */
     long m_LastResponseCode; /**< response code of the last request */
     std::string m_LastContentType; /**< string that holds the last content type */

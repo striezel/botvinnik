@@ -154,6 +154,26 @@ int main(int argc, char** argv)
       std::cerr << "Sync failed!" << std::endl;
     }
 
+    // Send message to first available room, if any.
+    if (!rooms.empty())
+    {
+      const std::string message = "Test: I've just texted to say I like Matrix.";
+      if (mat.sendMessage(rooms.at(0), message))
+      {
+        std::cout << "Successfully sent a message to room " << rooms.at(0)
+                  << "." << std::endl;
+      }
+      else
+      {
+        std::cerr << "Error: Failed to send a text message. :(" << std::endl;
+      }
+    }
+    else
+    {
+      std::cout << "Info: There are no joined rooms, so no attempt to send a "
+                << "text message will be made." << std::endl;
+    }
+
     if (mat.logout())
     {
       std::cout << "Info: Successfully logged out from server.\n";

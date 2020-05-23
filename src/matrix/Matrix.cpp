@@ -30,7 +30,8 @@ namespace bvn
 
 Matrix::Matrix(const Configuration& _conf)
 : conf(_conf),
-  accessToken(std::string())
+  accessToken(std::string()),
+  transactionId(0)
 {
 }
 
@@ -198,6 +199,20 @@ bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
   return true;
 }
 
+std::string Matrix::encodeRoomId(const std::string& roomId)
+{
+  std::string encodedRoomId = roomId;
+  // TODO: use better URL encoding
+  auto pos = encodedRoomId.find(':');
+  if (pos != std::string::npos)
+    encodedRoomId.replace(pos, 1, "%3A");
+  pos = encodedRoomId.find('!');
+  if (pos != std::string::npos)
+    encodedRoomId.replace(pos, 1, "%21");
+
+  return encodedRoomId;
+}
+
 bool Matrix::roomName(const std::string& roomId, std::string& name)
 {
   if (!isLoggedIn())
@@ -209,17 +224,7 @@ bool Matrix::roomName(const std::string& roomId, std::string& name)
   std::string response;
 
   Curly curl;
-  std::string encodedRoomId = roomId;
-  {
-    // TODO: use better URL encoding
-    auto pos = encodedRoomId.find(':');
-    if (pos != std::string::npos)
-      encodedRoomId.replace(pos, 1, "%3A");
-    pos = encodedRoomId.find('!');
-    if (pos != std::string::npos)
-      encodedRoomId.replace(pos, 1, "%21");
-  }
-
+  const std::string encodedRoomId = encodeRoomId(roomId);
   curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/state/m.room.name/");
   curl.addHeader("Authorization: Bearer " + accessToken);
   if (!curl.perform(response) || curl.getResponseCode() != 200)
@@ -295,6 +300,45 @@ bool Matrix::sync(std::string& events, std::string& nextBatch, const std::string
 
   nextBatch = jsonNextBatch.get<std::string_view>().value();
   events = response;
+  return true;
+}
+
+bool Matrix::sendMessage(const std::string& roomId, const std::string& message)
+{
+  if (!isLoggedIn())
+  {
+    std::cerr << "Error: Need to be logged in to send messages!" << std::endl;
+    return false;
+  }
+
+  if (message.empty())
+  {
+    std::cerr << "Error: Sending empty messages is useless!" << std::endl;
+    return false;
+  }
+
+  const nlohmann::json body = {
+      { "msgtype", "m.text" },
+      { "body", message }
+  };
+
+  std::string response;
+  Curly curl;
+  // PUT /_matrix/client/r0/rooms/{roomId}/send/{eventType}/{txnId}
+  const std::string encodedRoomId(encodeRoomId(roomId));
+  const uint_least32_t txnId = transactionId.fetch_add(1);
+  curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/send/m.room.message/" + std::to_string(txnId));
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  curl.addHeader("Content-Type: application/json");
+  curl.setPutData(body.dump());
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Sending text message failed!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return false;
+  }
+
   return true;
 }
 

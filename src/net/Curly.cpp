@@ -52,7 +52,6 @@ size_t writeCallbackString(char *ptr, size_t size, size_t nmemb, void *userdata)
   return actualSize;
 }
 
-#ifdef CURLY_READ_CALLBACK_STRING
 struct StringData
 {
   std::string::size_type dataOffset;
@@ -69,7 +68,7 @@ size_t readCallbackString(char *buffer, size_t size, size_t nitems, void *instre
     std::cerr << "Error: read callback received null pointer!" << std::endl;
     return CURL_READFUNC_ABORT;
   }
-  //cast it to string data
+  // cast it to string data
   StringData * sd = reinterpret_cast<StringData*>(instream);
   if (nullptr == sd->data)
   {
@@ -88,11 +87,10 @@ size_t readCallbackString(char *buffer, size_t size, size_t nitems, void *instre
     return 0;
 
   const auto chunkSize = std::min(maxSize, totalLength - sd->dataOffset);
-  std::memcpy(buffer, &(sd->data[sd->dataOffset]), chunkSize);
+  std::memcpy(buffer, &(sd->data->c_str()[sd->dataOffset]), chunkSize);
   sd->dataOffset = sd->dataOffset + chunkSize;
   return chunkSize;
 }
-#endif // CURLY_READ_CALLBACK_STRING
 
 Curly::Curly()
 : m_URL(""),
@@ -101,6 +99,8 @@ Curly::Curly()
   m_headers(std::vector<std::string>()),
   m_PostBody(""),
   m_UsePostBody(false),
+  m_PutData(""),
+  m_UsePutData(false),
   m_certFile(""),
   m_LastResponseCode(0),
   m_LastContentType(""),
@@ -199,14 +199,30 @@ bool Curly::addHeader(const std::string& header)
 
 bool Curly::setPostBody(const std::string& body)
 {
-  //avoid conflicts with post fields and files
-  if (m_PostFields.empty() && m_Files.empty())
+  // avoid conflicts with post fields and files and PUT data
+  if (m_PostFields.empty() && m_Files.empty() && !m_UsePutData)
   {
     m_PostBody = body;
     /* Checking for non-empty post body would be good enough for most cases, but
        it would not allow empty bodies. Therefore we need an extra flag for the
        post body to allow empty post bodies, too. */
     m_UsePostBody = true;
+    return true;
+  }
+  else
+    return false;
+}
+
+bool Curly::setPutData(const std::string& data)
+{
+  // avoid conflicts with post fields and files and POST body
+  if (m_PostFields.empty() && m_Files.empty() && !m_UsePostBody)
+  {
+    m_PutData = data;
+    /* Checking for non-empty put data would be good enough for most cases, but
+       it would not allow empty data. Therefore we need an extra flag for the
+       put data to allow empty data, too. */
+    m_UsePutData = true;
     return true;
   }
   else
@@ -563,6 +579,60 @@ bool Curly::perform(std::string& response)
       return false;
     }
   } //if post body
+
+  StringData putData;
+  if (m_UsePutData)
+  {
+    retCode = curl_easy_setopt(handle, CURLOPT_UPLOAD, 1L);
+    if (retCode != CURLE_OK)
+    {
+      std::cerr << "cURL error: setting upload mode for Curly::perform failed! Error: "
+                << curl_easy_strerror(retCode) << std::endl;
+      curl_formfree(formFirst);
+      curl_slist_free_all(header_list);
+      header_list = nullptr;
+      curl_easy_cleanup(handle);
+      return false;
+    }
+    retCode = curl_easy_setopt(handle, CURLOPT_PUT, 1L);
+    if (retCode != CURLE_OK)
+    {
+      std::cerr << "cURL error: setting PUT mode for Curly::perform failed! Error: "
+                << curl_easy_strerror(retCode) << std::endl;
+      curl_formfree(formFirst);
+      curl_slist_free_all(header_list);
+      header_list = nullptr;
+      curl_easy_cleanup(handle);
+      return false;
+    }
+    retCode = curl_easy_setopt(handle, CURLOPT_READFUNCTION, readCallbackString);
+    if (retCode != CURLE_OK)
+    {
+      std::cerr << "curl_easy_setopt() of Curly::perform could not set read function! Error: "
+                << curl_easy_strerror(retCode) << std::endl;
+      curl_formfree(formFirst);
+      curl_slist_free_all(header_list);
+      header_list = nullptr;
+      curl_easy_cleanup(handle);
+      return false;
+    }
+    putData.data = &m_PutData;
+    putData.dataOffset = 0;
+    retCode = curl_easy_setopt(handle, CURLOPT_READDATA, (void *) &putData);
+    // According to the lubcurl documentation, CURLOPT_READDATA will always
+    // return CURLE_OK. However, that may change in the future, so better make
+    // sure we get no error here.
+    if (retCode != CURLE_OK)
+    {
+      std::cerr << "curl_easy_setopt() of Curly::perform could not set read data! Error: "
+                << curl_easy_strerror(retCode) << std::endl;
+      curl_formfree(formFirst);
+      curl_slist_free_all(header_list);
+      header_list = nullptr;
+      curl_easy_cleanup(handle);
+      return false;
+    }
+  } // if PUT data
 
   //set write callback
   retCode = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writeCallbackString);

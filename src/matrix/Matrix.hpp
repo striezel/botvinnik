@@ -21,6 +21,8 @@
 #ifndef BVN_MATRIX_HPP
 #define BVN_MATRIX_HPP
 
+#include <atomic>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include "../conf/Configuration.hpp"
@@ -87,6 +89,16 @@ class Matrix
      *         Returns false otherwise.
      */
     bool sync(std::string& events, std::string& nextBatch, const std::string& since = "");
+
+
+    /** \brief Sends a message to a given room.
+     *
+     * \param roomId   id of the room to send the message in
+     * \param message  the actual message text
+     * \return Returns true, if the message was sent successfully.
+     *         Returns false otherwise.
+     */
+    bool sendMessage(const std::string& roomId, const std::string& message);
   private:
     /** \brief Determines whether the user is logged in to Matrix.
      *
@@ -94,8 +106,17 @@ class Matrix
      */
     bool isLoggedIn() const;
 
+    /** \brief Encodes a room id for use in URLs.
+     *
+     * \param roomId   the id of the room
+     * \return Returns the URL-encoded room id.
+     * \remarks This method is not safe for encoding other content than room ids.
+     */
+    std::string encodeRoomId(const std::string& roomId);
+
     Configuration conf;
     std::string accessToken; /**< the access token for Matrix */
+    std::atomic<uint_least32_t> transactionId;/**< id of the transaction */
 }; // class
 
 } // namespace
