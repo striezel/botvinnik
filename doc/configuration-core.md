@@ -57,9 +57,11 @@ Completely empty lines are ignored, too.
 
 The following Matrix-related settings are recognized in the configuration file:
 
-* **matrix.homeserver** - host name of the server where the Matrix instance runs
-* **matrix.userid** - user id of the Matrix user (e. g. `@alice:example.tld`)
-* **matrix.password** - password for the Matrix user
+* **matrix.homeserver** - _(since 0.0.1)_ host name of the server where the
+  Matrix instance runs
+* **matrix.userid** - _(since 0.0.1)_ user id of the Matrix user (e. g.
+  `@alice:example.tld`)
+* **matrix.password** - _(since 0.0.1)_ password for the Matrix user
 
 # Example of a complete configuration file
 
