@@ -7,6 +7,7 @@ set(botvinnik_sources
     ../../third-party/simdjson/simdjson.cpp
     ../conf/Configuration.cpp
     ../matrix/Matrix.cpp
+    ../matrix/Message.cpp
     ../net/Curly.cpp
     ../net/url_encode.cpp
     ../util/chrono.cpp

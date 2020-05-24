@@ -40,6 +40,8 @@
 		<Unit filename="../../src/conf/Configuration.hpp" />
 		<Unit filename="../../src/matrix/Matrix.cpp" />
 		<Unit filename="../../src/matrix/Matrix.hpp" />
+		<Unit filename="../../src/matrix/Message.cpp" />
+		<Unit filename="../../src/matrix/Message.hpp" />
 		<Unit filename="../../src/matrix/Room.hpp" />
 		<Unit filename="../../src/net/Curly.cpp" />
 		<Unit filename="../../src/net/Curly.hpp" />

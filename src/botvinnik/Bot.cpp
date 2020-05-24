@@ -147,14 +147,14 @@ void Bot::start()
           if (iter == commands.end())
           {
             // There is no such command.
-            mat.sendMessage(room.id, "The bot does not recognize the command '" + prefix + command + "'.");
+            mat.sendMessage(room.id, Message("The bot does not recognize the command '" + prefix + command + "'."));
             continue;
           }
 
           // Let the plugin handle the command.
           const std::string_view message(msg.body.data() + prefix.size(), msg.body.size() - prefix.size());
-          const std::string answer = iter->second.get().handleCommand(command, message);
-          if (!answer.empty())
+          const Message answer = iter->second.get().handleCommand(command, message);
+          if (!answer.body.empty())
           {
             if (!mat.sendMessage(room.id, answer))
             {

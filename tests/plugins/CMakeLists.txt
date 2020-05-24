@@ -10,6 +10,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/Wikipedia.cpp
     ../../src/conf/Configuration.cpp
     ../../src/matrix/Matrix.cpp
+    ../../src/matrix/Message.cpp
     ../../src/net/Curly.cpp
     ../../src/net/url_encode.cpp
     ../../src/util/Directories.cpp

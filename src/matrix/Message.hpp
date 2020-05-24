@@ -18,17 +18,36 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
+#ifndef BVN_MESSAGE_HPP
+#define BVN_MESSAGE_HPP
 
 #include <string>
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.0.7, 2020-05-25";
+/** \brief Represents a text message.
+ */
+struct Message
+{
+  public:
+    /** \brief Constructs an empty message.
+     */
+    Message();
+
+
+    /** \brief Constructs a message with predefined text.
+     *
+     * \param plain   plain text (i. e. unformatted)
+     * \param formatted  formatted version of the text (i. e. HTML)
+     */
+    explicit Message(const std::string& plain, const std::string& formatted = "");
+
+
+    std::string body;   /**< textual representation of the message */
+    std::string formatted_body; /**< formatted body, e. g. HTML (optional) */
+}; // struct
 
 } // namespace
 
-#endif // BVN_VERSION_HPP
+#endif // BVN_MESSAGE_HPP

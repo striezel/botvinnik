@@ -497,7 +497,7 @@ bool Matrix::sync(std::string& events, std::string& nextBatch, std::vector<matri
   return true;
 }
 
-bool Matrix::sendMessage(const std::string& roomId, const std::string& message)
+bool Matrix::sendMessage(const std::string& roomId, const Message& message)
 {
   if (!isLoggedIn())
   {
@@ -505,16 +505,21 @@ bool Matrix::sendMessage(const std::string& roomId, const std::string& message)
     return false;
   }
 
-  if (message.empty())
+  if (message.body.empty())
   {
     std::cerr << "Error: Sending empty messages is useless!" << std::endl;
     return false;
   }
 
-  const nlohmann::json body = {
+  nlohmann::json body = {
       { "msgtype", "m.text" },
-      { "body", message }
+      { "body", message.body }
   };
+  if (!message.formatted_body.empty())
+  {
+    body["formatted_body"] = message.formatted_body;
+    body["format"] = "org.matrix.custom.html";
+  }
 
   std::string response;
   Curly curl;

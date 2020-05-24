@@ -34,7 +34,7 @@ std::vector<std::string> Help::commands() const
   return { "help" };
 }
 
-std::string Help::handleCommand(const std::string_view& command, const std::string_view& message)
+Message Help::handleCommand(const std::string_view& command, const std::string_view& message)
 {
   if (command == "help")
   {
@@ -44,17 +44,19 @@ std::string Help::handleCommand(const std::string_view& command, const std::stri
       oneLiners[item.first] = item.second.get().helpOneLine(item.first);
     }
     const std::string& prefix = theBot.mat.configuration().prefix();
-    std::string text = "The following commands are available:\n";
+    Message result("The following commands are available:\n", "The following commands are available:<br />");
     for (const auto& item : oneLiners)
     {
-      text.append(prefix).append(item.first).append(" - ")
-          .append(item.second).append("\n");
+      result.body.append(prefix).append(item.first).append(" - ")
+            .append(item.second).append("\n");
+      result.formatted_body.append("<code>").append(prefix).append(item.first).append("</code>").append(" - ")
+            .append(item.second).append("<br />");
     }
-    return text;
+    return result;
   }
   else
     // unknown command
-    return "";
+    return Message();
 }
 
 std::string Help::helpOneLine(const std::string_view& command) const

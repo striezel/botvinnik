@@ -24,6 +24,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "../../matrix/Message.hpp"
 
 namespace bvn
 {
@@ -48,11 +49,10 @@ class Plugin
      *
      * \param command   name of the command to handle
      * \param message   complete text message that triggered the command
-     * \return Returns a string that represents the message to send as reply to
-     *         the command. If the return value is empty, no message will be
-     *         sent.
+     * \return Returns a message to send as reply to the command.
+     *         If the return value is empty, no message will be sent.
      */
-    virtual std::string handleCommand(const std::string_view& command, const std::string_view& message) = 0;
+    virtual Message handleCommand(const std::string_view& command, const std::string_view& message) = 0;
 
 
     /** \brief Gets a short, one line help text for a command

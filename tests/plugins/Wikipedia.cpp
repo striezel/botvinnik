@@ -62,7 +62,9 @@ TEST_CASE("plugin Wikipedia")
     {
       // Answer to commands must not be empty.
       const std::string message = cmd + " Einstein";
-      REQUIRE_FALSE( plugin.handleCommand(cmd, message).empty() );
+      const auto answer = plugin.handleCommand(cmd, message);
+      REQUIRE_FALSE( answer.body.empty() );
+      REQUIRE_FALSE( answer.formatted_body.empty() );
     }
   }
 

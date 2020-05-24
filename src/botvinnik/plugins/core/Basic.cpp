@@ -35,24 +35,24 @@ std::vector<std::string> Basic::commands() const
   return { "stop", "version" };
 }
 
-std::string Basic::handleCommand(const std::string_view& command, const std::string_view& message)
+Message Basic::handleCommand(const std::string_view& command, const std::string_view& message)
 {
   if (command == "stop")
   {
     theBot.stop();
-    return "Stop of bot was requested. Shutdown will be initiated.";
+    return Message("Stop of bot was requested. Shutdown will be initiated.");
   }
   else if (command == "version")
   {
     GitInfos info;
-    return  "botvinnik, " + bvn::version + "\n"
+    return  Message("botvinnik, " + bvn::version + "\n"
             + "\n"
             + "Version control commit: " + info.commit() + "\n"
-            + "Version control date:   " + info.date();
+            + "Version control date:   " + info.date());
   }
   else
     // unknown command
-    return "";
+    return Message();
 }
 
 std::string Basic::helpOneLine(const std::string_view& command) const

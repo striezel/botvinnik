@@ -18,17 +18,21 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
-
-#include <string>
+#include "Message.hpp"
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.0.7, 2020-05-25";
+Message::Message()
+: body(""),
+  formatted_body("")
+{
+}
+
+Message::Message(const std::string& plain, const std::string& formatted)
+: body(plain),
+  formatted_body(formatted)
+{
+}
 
 } // namespace
-
-#endif // BVN_VERSION_HPP

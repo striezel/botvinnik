@@ -46,6 +46,8 @@
 		<Unit filename="../conf/Configuration.hpp" />
 		<Unit filename="../matrix/Matrix.cpp" />
 		<Unit filename="../matrix/Matrix.hpp" />
+		<Unit filename="../matrix/Message.cpp" />
+		<Unit filename="../matrix/Message.hpp" />
 		<Unit filename="../matrix/Room.hpp" />
 		<Unit filename="../matrix/events/RoomMessageText.hpp" />
 		<Unit filename="../matrix/events/RoomName.hpp" />

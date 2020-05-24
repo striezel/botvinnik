@@ -55,7 +55,7 @@ TEST_CASE("plugin Basic")
     for (const auto& cmd : commands)
     {
       // Answer to commands must not be empty.
-      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd).empty() );
+      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd).body.empty() );
     }
   }
 

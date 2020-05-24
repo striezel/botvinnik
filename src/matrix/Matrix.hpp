@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include "../conf/Configuration.hpp"
+#include "Message.hpp"
 #include "Room.hpp"
 
 namespace bvn
@@ -103,11 +104,11 @@ class Matrix
     /** \brief Sends a message to a given room.
      *
      * \param roomId   id of the room to send the message in
-     * \param message  the actual message text
+     * \param message  the actual message
      * \return Returns true, if the message was sent successfully.
      *         Returns false otherwise.
      */
-    bool sendMessage(const std::string& roomId, const std::string& message);
+    bool sendMessage(const std::string& roomId, const Message& message);
   private:
     /** \brief Determines whether the user is logged in to Matrix.
      *
