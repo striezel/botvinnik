@@ -1,8 +1,9 @@
 # Documentation for botvinnik Matrix bot
 
 botvinnik is (or rather: will be) a chat bot that uses the Matrix protocol for
-communication and provides some helpful stuff to the Matrix users.
-(More on that as soon as it is implemented.)
+communication and provides some helpful commands to the Matrix users.
+
+A list of all available commands can be seen [here](commands.md).
 
 # Preparations
 
@@ -27,3 +28,8 @@ permissions and file ownership for the configuration file.
 
 Full details on the core configuration (supported settings, etc.) can be found
 [here](configuration-core.md).
+
+# Bot commands
+
+An overview for all available bot commands can be found in a
+[separate documentation file](commands.md).
