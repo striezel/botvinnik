@@ -24,4 +24,4 @@ Available bot commands are:
 * `!stop` - _(since version 0.0.5)_ stops the bot. Not that currently (as of
   version 0.0.6) any user can initiate the bot shutdown. That may change with a
   future version.
-* `!version` - _(sinve version 0.0.5)_ show version information for the bot
+* `!version` - _(sinve version 0.0.5)_ shows version information for the bot
