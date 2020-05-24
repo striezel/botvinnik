@@ -35,7 +35,8 @@ Configuration::Configuration()
 :
   mHomeServer(""),
   mUserId(""),
-  mPassword("")
+  mPassword(""),
+  mPrefix("")
 {
 }
 
@@ -72,6 +73,11 @@ const std::string& Configuration::userId() const
 const std::string& Configuration::password() const
 {
   return mPassword;
+}
+
+const std::string& Configuration::prefix() const
+{
+  return mPrefix;
 }
 
 void Configuration::findConfigurationFile(std::string& realName)
@@ -188,6 +194,16 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       }
       mPassword = value;
     } // if matrix.password
+    else if ((name == "command.prefix") || (name == "prefix"))
+    {
+      if (!mPrefix.empty())
+      {
+        std::cerr << "Error: Command prefix is specified more than once in file "
+                  << fileName << "!" << std::endl;
+        return false;
+      }
+      mPrefix = value;
+    } // if command.prefix
     else
     {
       std::cerr << "Error while reading configuration file " << fileName
@@ -204,6 +220,14 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
               << " properly." << std::endl;
     return false;
   } // if a setting is missing
+
+  // Prefix may be missing. Set it to "!" in that case.
+  if (mPrefix.empty())
+  {
+    mPrefix = "!";
+    std::clog << "Info: Setting command prefix to '" << mPrefix
+              << "', because none is given in the configuration file." << std::endl;
+  }
 
   // Everything is good, so far.
   return true;

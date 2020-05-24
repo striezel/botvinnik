@@ -46,6 +46,10 @@
 		<Unit filename="../conf/Configuration.hpp" />
 		<Unit filename="../matrix/Matrix.cpp" />
 		<Unit filename="../matrix/Matrix.hpp" />
+		<Unit filename="../matrix/Room.hpp" />
+		<Unit filename="../matrix/events/RoomMessageText.hpp" />
+		<Unit filename="../matrix/events/RoomName.hpp" />
+		<Unit filename="../matrix/events/RoomTopic.hpp" />
 		<Unit filename="../net/Curly.cpp" />
 		<Unit filename="../net/Curly.hpp" />
 		<Unit filename="../util/Directories.cpp" />
@@ -54,7 +58,12 @@
 		<Unit filename="../util/GitInfos.hpp" />
 		<Unit filename="../util/Strings.cpp" />
 		<Unit filename="../util/Strings.hpp" />
+		<Unit filename="Bot.cpp" />
+		<Unit filename="Bot.hpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="plugins/Plugin.hpp" />
+		<Unit filename="plugins/core/Basic.cpp" />
+		<Unit filename="plugins/core/Basic.hpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

@@ -24,6 +24,8 @@
 #include "../util/GitInfos.hpp"
 #include "../ReturnCodes.hpp"
 #include "../Version.hpp"
+#include "Bot.hpp"
+#include "plugins/core/Basic.hpp"
 
 void showVersion()
 {
@@ -102,7 +104,7 @@ int main(int argc, char** argv)
     } // for i
   } // if arguments are there
 
-  // load configuration file + configured tasks
+  // load configuration file
   bvn::Configuration config;
   if (!config.load(configurationFile))
   {
@@ -113,82 +115,19 @@ int main(int argc, char** argv)
   /* Bot currently starts an endless loop that cannot be interrupted by
      the user, yet. Future versions might use something like signal handling
      (as in SIGINT or SIGTERM) to stop the collection.
+
+     The regular way to stop the bot is to send the "!stop" command via chat.
   */
-  // TODO: Start bot.
-
-  bvn::Matrix mat(config);
-  if (mat.login())
+  bvn::Bot bot(config);
+  bvn::Basic piBasic(bot);
+  if (!bot.registerPlugin(piBasic))
   {
-    std::cout << "Info: Successfully logged into server.\n";
-
-    std::vector<std::string> rooms;
-    if (mat.joinedRooms(rooms))
-    {
-      std::cout << "Joined rooms (" << rooms.size() << ") are:" << std::endl;
-      for(const auto& id : rooms)
-      {
-        std::cout << "  " << id;
-        std::string name;
-        if (mat.roomName(id, name))
-        {
-          std::cout << " (name: " << name << ")";
-        }
-        std::cout << std::endl;
-      }
-    }
-    else
-    {
-      std::cerr << "Failed to get joined rooms!" << std::endl;
-    }
-
-    std::string allEvents;
-    std::string nextBatch;
-    if (mat.sync(allEvents, nextBatch))
-    {
-      std::cout << "Call to sync was successful!" << std::endl
-                << "next batch: " << nextBatch << std::endl
-                << "all events: " << allEvents << std::endl;
-    }
-    else
-    {
-      std::cerr << "Sync failed!" << std::endl;
-    }
-
-    // Send message to first available room, if any.
-    if (!rooms.empty())
-    {
-      const std::string message = "Test: I've just texted to say I like Matrix.";
-      if (mat.sendMessage(rooms.at(0), message))
-      {
-        std::cout << "Successfully sent a message to room " << rooms.at(0)
-                  << "." << std::endl;
-      }
-      else
-      {
-        std::cerr << "Error: Failed to send a text message. :(" << std::endl;
-      }
-    }
-    else
-    {
-      std::cout << "Info: There are no joined rooms, so no attempt to send a "
-                << "text message will be made." << std::endl;
-    }
-
-    if (mat.logout())
-    {
-      std::cout << "Info: Successfully logged out from server.\n";
-    }
-    else
-    {
-      std::cerr << "Error: Logout attempt failed.\n";
-    }
+    // Should never happen!
+    std::cerr << "Error: Registration of basic plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
   }
-  else
-  {
-    std::cerr << "Error: Login attempt failed. Maybe configuration data is wrong?\n";
-  }
-
-  std::cout << "More stuff is not implemented yet." << std::endl;
+  bot.start();
   std::cout << "Done." << std::endl;
   return 0;
 }

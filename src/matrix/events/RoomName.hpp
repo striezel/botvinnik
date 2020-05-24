@@ -18,17 +18,40 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
+#ifndef BVN_EVENT_ROOMNAME_HPP
+#define BVN_EVENT_ROOMNAME_HPP
 
+#include <chrono>
 #include <string>
 
-namespace bvn
+namespace bvn::matrix
 {
 
-/** \brief version information */
-const std::string version = "version 0.0.5, 2020-05-24";
+/* Example:
+
+{
+    "type":"m.room.name",
+    "sender":"@alice:example.org",
+    "content":{
+        "name":"Room No. 1"
+    },
+    "state_key":"",
+    "origin_server_ts":1482134372575,
+    "unsigned":{
+        "age":84065
+    },
+    "event_id":"$vEhFIRtDVYAL5cadi3P_7MoUkOJzbno51Vt6ojaPxsA"
+}
+*/
+
+/** Represents a room name change event. */
+struct RoomName
+{
+  std::string name;   /**< name of the room */
+  std::string sender; /**< user id that sent the event */
+  std::chrono::milliseconds server_ts; /**< timestamp of event */
+}; // struct
 
 } // namespace
 
-#endif // BVN_VERSION_HPP
+#endif // BVN_EVENT_ROOMNAME_HPP

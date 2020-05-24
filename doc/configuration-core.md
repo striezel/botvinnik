@@ -62,11 +62,14 @@ The following Matrix-related settings are recognized in the configuration file:
 * **matrix.userid** - _(since 0.0.1)_ user id of the Matrix user (e. g.
   `@alice:example.tld`)
 * **matrix.password** - _(since 0.0.1)_ password for the Matrix user
+* **command.prefix** - _(since 0.0.5)_ prefix for text commands (e. g. if you
+  have a hypothetical command `foo` and the prefix is set to `!`, then the text
+  message `!foo` will trigger that command)
 
 # Example of a complete configuration file
 
 The following example is a complete core configuration file for the
-botvinnik program (as of version 0.0.1):
+botvinnik program (as of version 0.0.5):
 
     # This line is a comment and will be ignored by the program.
     #And so is this line.
@@ -75,3 +78,4 @@ botvinnik program (as of version 0.0.1):
     matrix.homeserver=https://matrix.example.tld/
     matrix.userid=@alice:matrix.example.tld
     matrix.password=secret, secret, top(!) secret
+    command.prefix=!

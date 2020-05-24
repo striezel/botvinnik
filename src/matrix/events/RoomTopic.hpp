@@ -18,17 +18,40 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
+#ifndef BVN_EVENT_ROOMTOPIC_HPP
+#define BVN_EVENT_ROOMTOPIC_HPP
 
+#include <chrono>
 #include <string>
 
-namespace bvn
+namespace bvn::matrix
 {
 
-/** \brief version information */
-const std::string version = "version 0.0.5, 2020-05-24";
+/* Example:
+
+{
+    "type":"m.room.topic",
+    "sender":"@bob:example-server.org",
+    "content":{
+        "topic":"This is the first room."
+    },
+    "state_key":"",
+    "origin_server_ts":1590034372631,
+    "unsigned":{
+        "age":225884009
+    },
+    "event_id":"$aYrV6bBz0DRy4zDawByeSz1eeHU02OM04L9Aim1OstU"
+}
+*/
+
+/** Represents a room topic change event. */
+struct RoomTopic
+{
+  std::string topic;   /**< topic of the room */
+  std::string sender; /**< user id that sent the event */
+  std::chrono::milliseconds server_ts; /**< timestamp of event */
+}; // struct
 
 } // namespace
 
-#endif // BVN_VERSION_HPP
+#endif // BVN_EVENT_ROOMTOPIC_HPP

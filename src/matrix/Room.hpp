@@ -18,17 +18,26 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
 
-#include <string>
+#ifndef BVN_ROOM_HPP
+#define BVN_ROOM_HPP
 
-namespace bvn
+#include "events/RoomMessageText.hpp"
+#include "events/RoomName.hpp"
+#include "events/RoomTopic.hpp"
+
+namespace bvn::matrix
 {
 
-/** \brief version information */
-const std::string version = "version 0.0.5, 2020-05-24";
+/** Represents a room in Matrix, or rather its events. */
+struct Room
+{
+  std::string id; /**< id of the room */
+  std::vector<RoomMessageText> texts; /**< texts in that room */
+  std::vector<RoomName> names; /**< name changes of the room */
+  std::vector<RoomTopic> topics; /**< topic changes of the room */
+}; // struct
 
 } // namespace
 
-#endif // BVN_VERSION_HPP
+#endif // BVN_ROOM_HPP

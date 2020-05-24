@@ -18,17 +18,41 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
-
-#include <string>
+#include "Basic.hpp"
+#include "../../../util/GitInfos.hpp"
+#include "../../../Version.hpp"
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.0.5, 2020-05-24";
+Basic::Basic(Bot& b)
+: theBot(b)
+{
+}
+
+std::vector<std::string> Basic::commands() const
+{
+  return { "stop", "version" };
+}
+
+std::string Basic::handleCommand(const std::string_view& command, const std::string_view& message)
+{
+  if (command == "stop")
+  {
+    theBot.stop();
+    return "Stop of bot was requested. Shutdown will be initiated.";
+  }
+  else if (command == "version")
+  {
+    GitInfos info;
+    return  "botvinnik, " + bvn::version + "\n"
+            + "\n"
+            + "Version control commit: " + info.commit() + "\n"
+            + "Version control date:   " + info.date();
+  }
+  else
+    // unknown command
+    return "";
+}
 
 } // namespace
-
-#endif // BVN_VERSION_HPP

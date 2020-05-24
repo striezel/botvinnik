@@ -11,6 +11,8 @@ set(botvinnik_sources
     ../util/Directories.cpp
     ../util/GitInfos.cpp
     ../util/Strings.cpp
+    Bot.cpp
+    plugins/core/Basic.cpp
     main.cpp)
 
 if (CMAKE_COMPILER_IS_GNUCC)

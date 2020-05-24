@@ -30,6 +30,9 @@ const int rcInvalidParameter = 1;
 /** \brief exit code for invalid configuration data */
 const int rcConfigurationError = 2;
 
+/** \brief exit code for problems with plugin registration */
+const int rcPluginRegistrationError = 3;
+
 /** \brief exit code for I/O-related errors */
 const int rcInputOutputError = 7;
 

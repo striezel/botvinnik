@@ -68,6 +68,13 @@ class Configuration
     const std::string& password() const;
 
 
+    /** \brief Gets the prefix for bot commands.
+     *
+     * \return Returns the prefix for bot commands.
+     */
+    const std::string& prefix() const;
+
+
     /** \brief Loads the configuration from a file.
      *
      * \param  fileName   file name of the configuration file
@@ -105,6 +112,7 @@ class Configuration
     std::string mHomeServer; /**< Matrix home server */
     std::string mUserId; /**< Matrix user id used for login */
     std::string mPassword; /**< password used for login */
+    std::string mPrefix; /**< prefix for commands */
 }; // class
 
 } // namespace

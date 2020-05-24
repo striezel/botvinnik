@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include "../conf/Configuration.hpp"
+#include "Room.hpp"
 
 namespace bvn
 {
@@ -45,6 +46,13 @@ class Matrix
     /** \brief Destructor.
      */
     ~Matrix();
+
+
+    /** \brief Gets the current configuration.
+     *
+     * \return Returns the configuration.
+     */
+    const Configuration& configuration() const;
 
 
     /** \brief Performs login on the Matrix server.
@@ -84,11 +92,12 @@ class Matrix
      *
      * \param events      string that will be used to store the events as JSON (if any)
      * \param nextBatch   string that will be used to store the "next_batch" (if any)
+     * \param rooms       events of Matrix rooms
      * \param since       if set, the request will only retrieve the data since that batch
      * \return Returns true, if the request succeeded.
      *         Returns false otherwise.
      */
-    bool sync(std::string& events, std::string& nextBatch, const std::string& since = "");
+    bool sync(std::string& events, std::string& nextBatch, std::vector<matrix::Room>& rooms, const std::string& since = "");
 
 
     /** \brief Sends a message to a given room.
