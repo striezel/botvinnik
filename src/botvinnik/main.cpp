@@ -27,6 +27,7 @@
 #include "Bot.hpp"
 #include "plugins/core/Basic.hpp"
 #include "plugins/core/Help.hpp"
+#include "plugins/Wikipedia.hpp"
 
 void showVersion()
 {
@@ -136,6 +137,15 @@ int main(int argc, char** argv)
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }
+  bvn::Wikipedia wiki;
+  if (!bot.registerPlugin(wiki))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of wiki plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+
   bot.start();
   std::cout << "Done." << std::endl;
   return 0;

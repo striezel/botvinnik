@@ -30,6 +30,8 @@
 		<Unit filename="../../src/botvinnik/Bot.cpp" />
 		<Unit filename="../../src/botvinnik/Bot.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Plugin.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/Wikipedia.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/Wikipedia.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Basic.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Basic.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Help.cpp" />
@@ -41,6 +43,8 @@
 		<Unit filename="../../src/matrix/Room.hpp" />
 		<Unit filename="../../src/net/Curly.cpp" />
 		<Unit filename="../../src/net/Curly.hpp" />
+		<Unit filename="../../src/net/url_encode.cpp" />
+		<Unit filename="../../src/net/url_encode.hpp" />
 		<Unit filename="../../src/util/Directories.cpp" />
 		<Unit filename="../../src/util/Directories.hpp" />
 		<Unit filename="../../src/util/GitInfos.cpp" />
@@ -52,6 +56,7 @@
 		<Unit filename="../../third-party/nlohmann/json.hpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.h" />
+		<Unit filename="Wikipedia.cpp" />
 		<Unit filename="core/Basic.cpp" />
 		<Unit filename="core/Help.cpp" />
 		<Unit filename="main.cpp" />

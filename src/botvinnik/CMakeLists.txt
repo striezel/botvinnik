@@ -8,6 +8,7 @@ set(botvinnik_sources
     ../conf/Configuration.cpp
     ../matrix/Matrix.cpp
     ../net/Curly.cpp
+    ../net/url_encode.cpp
     ../util/chrono.cpp
     ../util/Directories.cpp
     ../util/GitInfos.cpp
@@ -15,6 +16,7 @@ set(botvinnik_sources
     Bot.cpp
     plugins/core/Basic.cpp
     plugins/core/Help.cpp
+    plugins/Wikipedia.cpp
     main.cpp)
 
 if (CMAKE_COMPILER_IS_GNUCC)

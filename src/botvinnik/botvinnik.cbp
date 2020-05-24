@@ -52,6 +52,8 @@
 		<Unit filename="../matrix/events/RoomTopic.hpp" />
 		<Unit filename="../net/Curly.cpp" />
 		<Unit filename="../net/Curly.hpp" />
+		<Unit filename="../net/url_encode.cpp" />
+		<Unit filename="../net/url_encode.hpp" />
 		<Unit filename="../util/Directories.cpp" />
 		<Unit filename="../util/Directories.hpp" />
 		<Unit filename="../util/GitInfos.cpp" />
@@ -64,6 +66,8 @@
 		<Unit filename="Bot.hpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="plugins/Plugin.hpp" />
+		<Unit filename="plugins/Wikipedia.cpp" />
+		<Unit filename="plugins/Wikipedia.hpp" />
 		<Unit filename="plugins/core/Basic.cpp" />
 		<Unit filename="plugins/core/Basic.hpp" />
 		<Unit filename="plugins/core/Help.cpp" />

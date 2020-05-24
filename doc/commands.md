@@ -17,7 +17,10 @@ seconds by replying with another text message.
 The following list assumes that the command prefix is `!`. If you changed it to
 something else, the commands have to be adjusted accordingly.
 
-Available bot commands are:
+### Core commands
+
+Core commands influence how the bot works or provide information about the bot
+itself:
 
 * `!help` - _(since version 0.0.6)_ shows a help message containing all
   available commands and a short explanation for each command
@@ -25,3 +28,25 @@ Available bot commands are:
   version 0.0.6) any user can initiate the bot shutdown. That may change with a
   future version.
 * `!version` - _(sinve version 0.0.5)_ shows version information for the bot
+
+### Wikipedia commands
+
+* `!wiki` - _(since version 0.0.7)_ same as `!wikien`
+* `!wikide` - _(since version 0.0.7)_ gets extract from an article on the German
+  Wikipedia, e. g. `!wikide Albert Einstein` will show an extract from the
+  article about the scientist Albert Einstein
+* `!wikien` - _(since version 0.0.7)_ gets extract from an article on the
+  English Wikipedia, e. g. `!wikien Albert Einstein` will show an extract from
+  the article about the scientist Albert Einstein
+* `!wikies` - _(since version 0.0.7)_ gets extract from an article on the
+  Spanish Wikipedia, e. g. `!wikien Albert Einstein` will show an extract from
+  the article about the scientist Albert Einstein
+* `!wikifr` - _(since version 0.0.7)_ gets extract from an article on the French
+  Wikipedia, e. g. `!wikifr Albert Einstein` will show an extract from the
+  article about the scientist Albert Einstein
+* `!wikiit` - _(since version 0.0.7)_ gets extract from an article on the
+  Italian Wikipedia, e. g. `!wikiit Albert Einstein` will show an extract from
+  the article about the scientist Albert Einstein
+* `!wikiru` - _(since version 0.0.7)_ gets extract from an article on the
+  Russian Wikipedia, e. g. `!wikiru Albert Einstein` will show an extract from
+  the article about the scientist Albert Einstein

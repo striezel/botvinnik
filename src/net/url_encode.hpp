@@ -18,17 +18,22 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
+#ifndef NET_URL_ENCODE_HPP
+#define NET_URL_ENCODE_HPP
 
 #include <string>
+#include <string_view>
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.0.7-pre, 2020-05-24";
+/** \brief Encodes a string for use in URI / URL.
+ *
+ * \param str    the string to encode
+ * \return Returns the encoded string.
+ */
+std::string urlencode(const std::string_view& str);
 
-} // namespace
+}
 
-#endif // BVN_VERSION_HPP
+#endif // NET_URL_ENCODE_HPP

@@ -18,17 +18,40 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
-
-#include <string>
+#include "url_encode.hpp"
+#include <curl/curl.h>
+#include <stdexcept>
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.0.7-pre, 2020-05-24";
+std::string urlencode(const std::string_view& str)
+{
+  if (str.empty())
+    return "";
 
-} // namespace
+  // The easiest way to encode a string is to fire up a curl_easy instance and
+  // let it do the work. It may not be the fastest way, though, because a new
+  // curl handle is created and destroyed every time.
 
-#endif // BVN_VERSION_HPP
+  CURL* curl = curl_easy_init();
+  if (curl == nullptr)
+  {
+    // Something just went wrong with curl.
+    curl_easy_cleanup(curl);
+    throw std::runtime_error("Failed to initialize curl library handle!");
+  }
+
+  char* escaped = curl_easy_escape(curl, str.data(), str.size());
+  if (escaped == nullptr)
+  {
+    curl_easy_cleanup(curl);
+    throw std::runtime_error("Could not escape string with curl!");
+  }
+
+  const std::string result(escaped);
+  curl_free(escaped);
+  return result;
+}
+
+}

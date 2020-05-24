@@ -1,6 +1,6 @@
 /*
  -------------------------------------------------------------------------------
-    This file is part of the botvinnik Matrix bot.
+    This file is part of the test suite for botvinnik.
     Copyright (C) 2020  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
@@ -18,17 +18,30 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
+#include <catch.hpp>
+#include <unordered_map>
+#include "../../src/net/url_encode.hpp"
 
-#include <string>
-
-namespace bvn
+TEST_CASE("urlencoding")
 {
+  using namespace bvn;
 
-/** \brief version information */
-const std::string version = "version 0.0.7-pre, 2020-05-24";
+  const std::unordered_map<std::string, std::string> cases = {
+      { "", ""},
+      { "foo", "foo"},
+      { "FoObAr", "FoObAr"},
+      { "@alice:example.tld", "%40alice%3Aexample.tld"},
+      { "!room:example.tld", "%21room%3Aexample.tld"},
+      { "some space", "some%20space"},
+      { "Crème brûlée", "Cr%C3%A8me%20br%C3%BBl%C3%A9e" }
+  };
 
-} // namespace
-
-#endif // BVN_VERSION_HPP
+  SECTION("escaped string must match expectation")
+  {
+    for (const auto& item : cases)
+    {
+      const auto escaped = urlencode(item.first);
+      REQUIRE( escaped == item.second );
+    }
+  }
+}

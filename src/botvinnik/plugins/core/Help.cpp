@@ -20,8 +20,6 @@
 
 #include "Help.hpp"
 #include <map>
-#include "../../../util/GitInfos.hpp"
-#include "../../../Version.hpp"
 
 namespace bvn
 {
