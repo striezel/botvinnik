@@ -18,52 +18,52 @@
  -------------------------------------------------------------------------------
 */
 
-#include "Basic.hpp"
+#include "Help.hpp"
+#include <map>
 #include "../../../util/GitInfos.hpp"
 #include "../../../Version.hpp"
 
 namespace bvn
 {
 
-Basic::Basic(Bot& b)
+Help::Help(Bot& b)
 : theBot(b)
 {
 }
 
-std::vector<std::string> Basic::commands() const
+std::vector<std::string> Help::commands() const
 {
-  return { "stop", "version" };
+  return { "help" };
 }
 
-std::string Basic::handleCommand(const std::string_view& command, const std::string_view& message)
+std::string Help::handleCommand(const std::string_view& command, const std::string_view& message)
 {
-  if (command == "stop")
+  if (command == "help")
   {
-    theBot.stop();
-    return "Stop of bot was requested. Shutdown will be initiated.";
-  }
-  else if (command == "version")
-  {
-    GitInfos info;
-    return  "botvinnik, " + bvn::version + "\n"
-            + "\n"
-            + "Version control commit: " + info.commit() + "\n"
-            + "Version control date:   " + info.date();
+    std::map<std::string, std::string> oneLiners;
+    for (const auto& item : theBot.commands)
+    {
+      oneLiners[item.first] = item.second.get().helpOneLine(item.first);
+    }
+    const std::string& prefix = theBot.mat.configuration().prefix();
+    std::string text = "The following commands are available:\n";
+    for (const auto& item : oneLiners)
+    {
+      text.append(prefix).append(item.first).append(" - ")
+          .append(item.second).append("\n");
+    }
+    return text;
   }
   else
     // unknown command
     return "";
 }
 
-std::string Basic::helpOneLine(const std::string_view& command) const
+std::string Help::helpOneLine(const std::string_view& command) const
 {
-  if (command == "stop")
+  if (command == "help")
   {
-    return "stops the bot and initiates its shutdown";
-  }
-  else if (command == "version")
-  {
-    return "shows the version of the bot";
+    return "shows short help for available commands";
   }
   else
     return std::string("No help available for command '").append(command) + "'!";

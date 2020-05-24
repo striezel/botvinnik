@@ -58,12 +58,16 @@
 		<Unit filename="../util/GitInfos.hpp" />
 		<Unit filename="../util/Strings.cpp" />
 		<Unit filename="../util/Strings.hpp" />
+		<Unit filename="../util/chrono.cpp" />
+		<Unit filename="../util/chrono.hpp" />
 		<Unit filename="Bot.cpp" />
 		<Unit filename="Bot.hpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="plugins/Plugin.hpp" />
 		<Unit filename="plugins/core/Basic.cpp" />
 		<Unit filename="plugins/core/Basic.hpp" />
+		<Unit filename="plugins/core/Help.cpp" />
+		<Unit filename="plugins/core/Help.hpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

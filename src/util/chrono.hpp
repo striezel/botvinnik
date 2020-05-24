@@ -18,17 +18,34 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
+#ifndef BVN_CHRONO_HPP
+#define BVN_CHRONO_HPP
 
+#include <chrono>
 #include <string>
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.0.6, 2020-05-24";
+/** \brief Converts a time point to a human-readable date representation.
+ *
+ * \param dateTime   the time point
+ * \return Returns a string representing the time point. It is similar to SQL
+ *         dates, e. g. "2020-05-25 13:37:00" could be a return value.
+ *         If conversion fails, it just returns the milliseconds since the
+ *         epoch.
+ */
+std::string timePointToString(const std::chrono::time_point<std::chrono::system_clock>& dateTime);
+
+/** \brief Converts current system time to a human-readable date representation.
+ *
+ * \return Returns a string representing the current time. It is similar to SQL
+ *         dates, e. g. "2020-05-25 13:37:00" could be a return value.
+ *         If conversion fails, it just returns the milliseconds since the
+ *         epoch.
+ */
+std::string nowToString();
 
 } // namespace
 
-#endif // BVN_VERSION_HPP
+#endif // BVN_CHRONO_HPP

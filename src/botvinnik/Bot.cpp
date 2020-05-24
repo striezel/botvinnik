@@ -22,6 +22,7 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include "../util/chrono.hpp"
 
 namespace bvn
 {
@@ -115,10 +116,11 @@ void Bot::start()
     std::string events;
     if (!mat.sync(events, next_batch, rooms, next_batch))
     {
-      std::cerr << "Error: Sync request failed!" << std::endl;
+      std::cerr << nowToString() << " Error: Sync request failed!" << std::endl;
       mat.logout();
       return;
     }
+    std::clog << nowToString() << " Info: Sync request was successful." << std::endl;
 
     // Iterate over events of all rooms.
     for (const auto& room : rooms)
@@ -164,7 +166,10 @@ void Bot::start()
     }
 
     if (stopRequested())
+    {
+      std::clog << nowToString() << " Info: Bot stop was requested, exiting sync loop." << std::endl;
       break;
+    }
 
     // Sleep a few seconds to avoid DOS-ing the server.
     std::this_thread::sleep_for(std::chrono::seconds(5));

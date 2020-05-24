@@ -26,6 +26,7 @@
 #include "../Version.hpp"
 #include "Bot.hpp"
 #include "plugins/core/Basic.hpp"
+#include "plugins/core/Help.hpp"
 
 void showVersion()
 {
@@ -124,6 +125,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of basic plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::Help piHelp(bot);
+  if (!bot.registerPlugin(piHelp))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of help plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

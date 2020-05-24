@@ -18,30 +18,35 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_PLUGIN_HPP
-#define BVN_PLUGIN_HPP
+#ifndef BVN_PLUGIN_HELP_HPP
+#define BVN_PLUGIN_HELP_HPP
 
 #include <string>
 #include <string_view>
 #include <vector>
+#include "../Plugin.hpp"
+#include "../../Bot.hpp"
 
 namespace bvn
 {
 
-/** \brief Basic interface for plugins.
+/** \brief Plugin providing help information for all commands of the bot.
  */
-class Plugin
+class Help: public Plugin
 {
   public:
-    /** \brief Virtual destructor to ensure derived destructors are called.
+    /** \brief Constructor.
+     *
+     * \param b   the bot instance
      */
-    virtual ~Plugin() {}
+    Help(Bot& b);
+
 
     /** \brief Gets a list of commands that are provided by this plugin.
      *
      * \return Returns a vector of command names implemented by this plugin.
      */
-    virtual std::vector<std::string> commands() const = 0;
+    virtual std::vector<std::string> commands() const;
 
 
     /** \brief Reacts to a given command.
@@ -52,7 +57,7 @@ class Plugin
      *         the command. If the return value is empty, no message will be
      *         sent.
      */
-    virtual std::string handleCommand(const std::string_view& command, const std::string_view& message) = 0;
+    virtual std::string handleCommand(const std::string_view& command, const std::string_view& message);
 
 
     /** \brief Gets a short, one line help text for a command
@@ -60,9 +65,11 @@ class Plugin
      * \param command  name of the command where help is requested
      * \return Returns a short, one line help text for the command.
      */
-    virtual std::string helpOneLine(const std::string_view& command) const = 0;
+    virtual std::string helpOneLine(const std::string_view& command) const;
+  private:
+    Bot& theBot; /**< reference to the bot */
 }; // class
 
 } // namespace
 
-#endif // BVN_PLUGIN_HPP
+#endif // BVN_PLUGIN_HELP_HPP

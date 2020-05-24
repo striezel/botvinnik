@@ -6,3 +6,6 @@ add_subdirectory (botvinnik)
 
 # Recurse into subdirectory for libcurl-related tests.
 add_subdirectory (curly)
+
+# Recurse into subdirectory for plugin tests.
+add_subdirectory (plugins)

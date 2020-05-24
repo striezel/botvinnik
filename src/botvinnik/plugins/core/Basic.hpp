@@ -58,6 +58,14 @@ class Basic: public Plugin
      *         sent.
      */
     virtual std::string handleCommand(const std::string_view& command, const std::string_view& message);
+
+
+    /** \brief Gets a short, one line help text for a command
+     *
+     * \param command  name of the command where help is requested
+     * \return Returns a short, one line help text for the command.
+     */
+    virtual std::string helpOneLine(const std::string_view& command) const;
   private:
     Bot& theBot; /**< reference to the bot */
 }; // class

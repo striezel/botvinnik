@@ -30,6 +30,9 @@
 namespace bvn
 {
 
+// forward declaration
+class Help;
+
 /** \brief Basic class to handle bot behaviour.
  */
 class Bot
@@ -87,6 +90,11 @@ class Bot
      * \return Returns true, if a stop has been requested.
      */
     bool stopRequested() const;
+
+
+    // Help class needs to iterate over registered commands and plugins of the
+    // bot, i. e. it needs access to private data.
+    friend Help;
   private:
     Matrix mat; /**< handles matrix requests */
     std::unordered_map<std::string, std::reference_wrapper<Plugin> > commands; /**< registered commands */

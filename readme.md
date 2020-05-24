@@ -6,6 +6,8 @@ or less) useful additions.
 It is still in a very early stage of development and not meant for production
 use yet.
 
+See the [documentation](doc/readme.md) for more information.
+
 ## Build status
 
 * GitLab CI:
@@ -17,7 +19,9 @@ use yet.
 
 To build botvinnik from source you need a C++ compiler with support for C++17,
 CMake 2.8 or later and the cURL library (>=7.17). pkg-config is required to make
-it easier to find compiler options for the installed libraries.
+it easier to find compiler options for the installed libraries. Additionally,
+the program uses Catch (C++ Automated Test Cases in Headers) to perform some
+tests.
 
 It also helps to have Git, a distributed version control system, on your build
 system to get the latest source code directly from the Git repository.
@@ -51,6 +55,10 @@ Starting in the root directory of the source, you can do the following steps:
     cd build
     cmake ../
     make -j4
+
+If you want to run the test suite, too, then there is one more step:
+
+    ctest -V
 
 ## Usage
 

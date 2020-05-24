@@ -1,6 +1,6 @@
 /*
  -------------------------------------------------------------------------------
-    This file is part of the botvinnik Matrix bot.
+    This file is part of the test suite for botvinnik.
     Copyright (C) 2020  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
@@ -18,17 +18,5 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
-
-#include <string>
-
-namespace bvn
-{
-
-/** \brief version information */
-const std::string version = "version 0.0.6, 2020-05-24";
-
-} // namespace
-
-#endif // BVN_VERSION_HPP
+#define CATCH_CONFIG_MAIN
+#include <catch.hpp>
