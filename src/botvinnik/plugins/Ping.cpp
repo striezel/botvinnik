@@ -41,13 +41,13 @@ std::string humanReadableDuration(const std::chrono::milliseconds& diff)
   }
   if (diff <= std::chrono::seconds(60))
   {
-    return std::to_string(diff.count() / 1000) + " s, " + std::to_string(diff.count() % 1000) + " ms";
+    return std::to_string(diff.count() / 1000) + " s " + std::to_string(diff.count() % 1000) + " ms";
   }
   // Slow ping ...
   const auto minutes = diff.count() / 60000;
   const auto seconds = (diff.count() - (60000 * minutes)) / 1000;
   const auto ms = diff.count() - (60000 * minutes) - (1000 * seconds);
-  return std::to_string(minutes) + " min, " + std::to_string(seconds) + " s, " + std::to_string(ms) + " ms";
+  return std::to_string(minutes) + " min " + std::to_string(seconds) + " s " + std::to_string(ms) + " ms";
 }
 
 Message Ping::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
