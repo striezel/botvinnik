@@ -27,6 +27,7 @@
 #include "Bot.hpp"
 #include "plugins/core/Basic.hpp"
 #include "plugins/core/Help.hpp"
+#include "plugins/Fortune.hpp"
 #include "plugins/Ping.hpp"
 #include "plugins/Wikipedia.hpp"
 
@@ -151,6 +152,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of ping plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::Fortune fortune;
+  if (!bot.registerPlugin(fortune))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of fortune plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

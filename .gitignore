@@ -8,5 +8,9 @@ obj/
 # object files
 *.o
 
+# build directory
+build/
+b/
+
 # cppcheck results
 CppCheckResults.xml

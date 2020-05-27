@@ -53,6 +53,16 @@ itself:
   Russian Wikipedia, e. g. `!wikiru Albert Einstein` will show an extract from
   the article about the scientist Albert Einstein
 
+### Entertainment
+
+These commands are merely for entertainment purposes.
+
+* `!fortune` - _(since version 0.0.10)_ displays a random quote
+* `!fortunes` - _(since version 0.0.10)_ alias of the fortune command
+
+A fortune command version that uses the popular `cowsay` to display messages may
+(or may not) be added in the future.
+
 ### Connection test commands
 
 Connection tests commands are there to test connection availability.

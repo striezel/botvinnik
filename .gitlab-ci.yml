@@ -3,7 +3,7 @@ image: debian:10-slim
 build_gcc:
   stage: build
   before_script:
-    - apt-get update && apt-get -y install catch cmake g++ libcurl4-gnutls-dev pkg-config
+    - apt-get update && apt-get -y install catch cmake fortune-mod fortunes-min g++ libcurl4-gnutls-dev pkg-config
     - export CC=gcc && export CXX=g++
   script:
     - mkdir ./build
@@ -16,7 +16,7 @@ build_gcc:
 build_clang:
   stage: build
   before_script:
-    - apt-get update && apt-get -y install catch clang cmake libcurl4-gnutls-dev pkg-config
+    - apt-get update && apt-get -y install catch clang cmake fortune-mod fortunes-min libcurl4-gnutls-dev pkg-config
     - export CC=clang && export CXX=clang++
   script:
     - mkdir ./build

@@ -7,6 +7,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/Bot.cpp
     ../../src/botvinnik/plugins/core/Basic.cpp
     ../../src/botvinnik/plugins/core/Help.cpp
+    ../../src/botvinnik/plugins/Fortune.cpp
     ../../src/botvinnik/plugins/Ping.cpp
     ../../src/botvinnik/plugins/Wikipedia.cpp
     ../../src/conf/Configuration.cpp
@@ -21,8 +22,10 @@ set(plugin_tests_sources
     ../../third-party/simdjson/simdjson.cpp
     core/Basic.cpp
     core/Help.cpp
+    Fortune.cpp
     Ping.cpp
     Wikipedia.cpp
+    pluginRegistrationCombined.cpp
     main.cpp)
 
 add_definitions(-std=c++17)
