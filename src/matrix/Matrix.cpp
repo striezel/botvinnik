@@ -24,6 +24,7 @@
 #include "../../third-party/simdjson/simdjson.h"
 #include "../Version.hpp"
 #include "../net/Curly.hpp"
+#include "../util/chrono.hpp"
 
 namespace bvn
 {
@@ -256,7 +257,7 @@ bool Matrix::login()
       { "type", "m.login.password" },
       { "user", conf.userId() },
       { "password", conf.password() },
-      { "initial_device_display_name", "botvinnik, " + bvn::version }
+      { "initial_device_display_name", "botvinnik, " + bvn::version + "(started at " + nowToString() + ")" }
     };
     Curly curl;
     curl.setURL(conf.homeServer() + "/_matrix/client/r0/login");
