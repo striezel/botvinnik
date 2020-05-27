@@ -27,6 +27,7 @@
 TEST_CASE("plugin Wikipedia")
 {
   using namespace bvn;
+  using namespace std::chrono;
   Configuration conf;
   Bot bot(conf);
   Wikipedia plugin;
@@ -59,11 +60,12 @@ TEST_CASE("plugin Wikipedia")
   SECTION("command handlers must return text")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     for (const auto& cmd : commands)
     {
       // Answer to commands must not be empty.
       const std::string message = cmd + " Einstein";
-      const auto answer = plugin.handleCommand(cmd, message, mockUserId);
+      const auto answer = plugin.handleCommand(cmd, message, mockUserId, ts);
       REQUIRE_FALSE( answer.body.empty() );
       REQUIRE_FALSE( answer.formatted_body.empty() );
     }

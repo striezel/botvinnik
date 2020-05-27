@@ -20,15 +20,17 @@
 
 #include <catch.hpp>
 #include <algorithm>
-#include "../../../src/botvinnik/plugins/core/Basic.hpp"
+#include "../../src/botvinnik/Bot.hpp"
+#include "../../src/conf/Configuration.hpp"
+#include "../../src/botvinnik/plugins/Ping.hpp"
 
-TEST_CASE("plugin Basic")
+TEST_CASE("plugin Ping")
 {
   using namespace bvn;
   using namespace std::chrono;
   Configuration conf;
   Bot bot(conf);
-  Basic plugin(bot);
+  Ping plugin;
 
   const auto commands = plugin.commands();
 
@@ -36,12 +38,8 @@ TEST_CASE("plugin Basic")
   {
     REQUIRE_FALSE( commands.empty() );
 
-    // Stop command has to be there.
-    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "stop") == commands.end() );
-    // Version command would be nice to have, too.
-    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "version") == commands.end() );
-    // User identification command would be nice to have, too.
-    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "whoami") == commands.end() );
+    // ping command has to be there.
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "ping") == commands.end() );
   }
 
   SECTION("one line help")

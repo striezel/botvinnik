@@ -27,6 +27,7 @@
 #include "Bot.hpp"
 #include "plugins/core/Basic.hpp"
 #include "plugins/core/Help.hpp"
+#include "plugins/Ping.hpp"
 #include "plugins/Wikipedia.hpp"
 
 void showVersion()
@@ -142,6 +143,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of wiki plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::Ping ping;
+  if (!bot.registerPlugin(ping))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of ping plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

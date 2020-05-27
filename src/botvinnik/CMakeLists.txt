@@ -17,6 +17,7 @@ set(botvinnik_sources
     Bot.cpp
     plugins/core/Basic.cpp
     plugins/core/Help.cpp
+    plugins/Ping.cpp
     plugins/Wikipedia.cpp
     main.cpp)
 

@@ -52,3 +52,16 @@ itself:
 * `!wikiru` - _(since version 0.0.7)_ gets extract from an article on the
   Russian Wikipedia, e. g. `!wikiru Albert Einstein` will show an extract from
   the article about the scientist Albert Einstein
+
+### Connection test commands
+
+Connection tests commands are there to test connection availability.
+
+* `!ping` - _(since version 0.0.9)_ shows the time it took the message to reach
+  the bot
+
+**Note:** Please be aware that the bot user (like every other Matrix user) has
+to obey the rate limits for sending messages. Therefore, if you spam ping
+commands (or any other commands) too much, the bot will not be able to answer
+all requests, because the Matrix server will just stop accepting messages for a
+certain period of time. So please do not spam bot commands.

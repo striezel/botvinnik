@@ -54,10 +54,11 @@ class Basic: public Plugin
      * \param command   name of the command to handle
      * \param message   complete text message that triggered the command
      * \param userId    id of the user that sent the message
+     * \param server_ts timestamp when the message reached the server
      * \return Returns a message to send as reply to the command.
      *         If the return value is empty, no message will be sent.
      */
-    virtual Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId);
+    virtual Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts);
 
 
     /** \brief Gets a short, one line help text for a command

@@ -36,7 +36,7 @@ std::vector<std::string> Wikipedia::commands() const
   return { "wiki", "wikide", "wikien", "wikies", "wikifr", "wikiit", "wikiru" };
 }
 
-Message Wikipedia::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId)
+Message Wikipedia::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
 {
   if (command == "wiki" || command == "wikien")
   {

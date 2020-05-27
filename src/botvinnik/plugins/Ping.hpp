@@ -18,25 +18,22 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_PLUGIN_WIKIPEDIA_HPP
-#define BVN_PLUGIN_WIKIPEDIA_HPP
+#ifndef BVN_PLUGIN_PING_HPP
+#define BVN_PLUGIN_PING_HPP
 
-#include <string>
-#include <string_view>
-#include <vector>
 #include "Plugin.hpp"
 
 namespace bvn
 {
 
-/** \brief Plugin providing extracts from Wikipedia.
+/** \brief Replies with the time it took to reach the bot.
  */
-class Wikipedia: public Plugin
+class Ping: public Plugin
 {
   public:
     /** \brief Constructor.
      */
-    Wikipedia();
+    Ping();
 
 
     /** \brief Gets a list of commands that are provided by this plugin.
@@ -64,18 +61,8 @@ class Wikipedia: public Plugin
      * \return Returns a short, one line help text for the command.
      */
     virtual std::string helpOneLine(const std::string_view& command) const;
-  private:
-    /** \brief Gets extract of a Wikipedia article.
-     *
-     * \param lang      two-letter language code for the Wikipedia instance
-     * \param command   name of the command to handle
-     * \param message   complete text message that triggered the command
-     * \return Returns a message to send as reply to the command.
-     *         If the return value is empty, no message will be sent.
-     */
-    Message extract(const std::string& lang, const std::string_view& command, const std::string_view& message) const;
 }; // class
 
 } // namespace
 
-#endif // BVN_PLUGIN_WIKIPEDIA_HPP
+#endif // BVN_PLUGIN_PING_HPP

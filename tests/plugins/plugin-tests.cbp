@@ -29,6 +29,8 @@
 		</Linker>
 		<Unit filename="../../src/botvinnik/Bot.cpp" />
 		<Unit filename="../../src/botvinnik/Bot.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/Ping.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/Ping.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Plugin.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Wikipedia.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/Wikipedia.hpp" />
@@ -58,6 +60,7 @@
 		<Unit filename="../../third-party/nlohmann/json.hpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.h" />
+		<Unit filename="Ping.cpp" />
 		<Unit filename="Wikipedia.cpp" />
 		<Unit filename="core/Basic.cpp" />
 		<Unit filename="core/Help.cpp" />

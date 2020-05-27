@@ -67,6 +67,8 @@
 		<Unit filename="Bot.cpp" />
 		<Unit filename="Bot.hpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="plugins/Ping.cpp" />
+		<Unit filename="plugins/Ping.hpp" />
 		<Unit filename="plugins/Plugin.hpp" />
 		<Unit filename="plugins/Wikipedia.cpp" />
 		<Unit filename="plugins/Wikipedia.hpp" />
