@@ -58,11 +58,12 @@ TEST_CASE("plugin Wikipedia")
 
   SECTION("command handlers must return text")
   {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
     for (const auto& cmd : commands)
     {
       // Answer to commands must not be empty.
       const std::string message = cmd + " Einstein";
-      const auto answer = plugin.handleCommand(cmd, message);
+      const auto answer = plugin.handleCommand(cmd, message, mockUserId);
       REQUIRE_FALSE( answer.body.empty() );
       REQUIRE_FALSE( answer.formatted_body.empty() );
     }

@@ -50,10 +50,11 @@ TEST_CASE("plugin Help")
 
   SECTION("command handlers must return text")
   {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
     for (const auto& cmd : commands)
     {
       // Answer to commands must not be empty.
-      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd).body.empty() );
+      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd, mockUserId).body.empty() );
     }
   }
 

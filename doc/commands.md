@@ -28,6 +28,8 @@ itself:
   version 0.0.6) any user can initiate the bot shutdown. That may change with a
   future version.
 * `!version` - _(sinve version 0.0.5)_ shows version information for the bot
+* `!whoami` - _(since version 0.0.8)_ show the Matrix id of the user that sent
+  the request
 
 ### Wikipedia commands
 

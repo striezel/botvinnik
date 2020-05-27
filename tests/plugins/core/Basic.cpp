@@ -39,6 +39,8 @@ TEST_CASE("plugin Basic")
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "stop") == commands.end() );
     // Version command would be nice to have, too.
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "version") == commands.end() );
+    // User identification command would be nice to have, too.
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "whoami") == commands.end() );
   }
 
   SECTION("one line help")
@@ -52,10 +54,11 @@ TEST_CASE("plugin Basic")
 
   SECTION("command handlers must return text")
   {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
     for (const auto& cmd : commands)
     {
       // Answer to commands must not be empty.
-      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd).body.empty() );
+      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd, mockUserId).body.empty() );
     }
   }
 

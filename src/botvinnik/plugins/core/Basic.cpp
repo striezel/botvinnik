@@ -32,23 +32,31 @@ Basic::Basic(Bot& b)
 
 std::vector<std::string> Basic::commands() const
 {
-  return { "stop", "version" };
+  return { "stop", "version", "whoami" };
 }
 
-Message Basic::handleCommand(const std::string_view& command, const std::string_view& message)
+Message Basic::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId)
 {
   if (command == "stop")
   {
     theBot.stop();
-    return Message("Stop of bot was requested. Shutdown will be initiated.");
+    return Message(std::string("Stop of bot was requested by ").append(userId)
+                   .append(". Shutdown will be initiated."),
+                   std::string("<strong>Stop of bot was requested by ")
+                   .append(userId).append(". Shutdown will be initiated.</strong>"));
   }
   else if (command == "version")
   {
     GitInfos info;
-    return  Message("botvinnik, " + bvn::version + "\n"
+    return Message("botvinnik, " + bvn::version + "\n"
             + "\n"
             + "Version control commit: " + info.commit() + "\n"
             + "Version control date:   " + info.date());
+  }
+  else if (command == "whoami")
+  {
+    return Message(std::string("You are ").append(userId).append("."),
+                   std::string("You are <strong>").append(userId).append("</strong>."));
   }
   else
     // unknown command
@@ -64,6 +72,10 @@ std::string Basic::helpOneLine(const std::string_view& command) const
   else if (command == "version")
   {
     return "shows the version of the bot";
+  }
+  else if (command == "whoami")
+  {
+    return "shows the Matrix user id of the user who issued the command";
   }
   else
     return std::string("No help available for command '").append(command) + "'!";

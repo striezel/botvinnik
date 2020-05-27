@@ -36,7 +36,7 @@ std::vector<std::string> Wikipedia::commands() const
   return { "wiki", "wikide", "wikien", "wikies", "wikifr", "wikiit", "wikiru" };
 }
 
-Message Wikipedia::handleCommand(const std::string_view& command, const std::string_view& message)
+Message Wikipedia::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId)
 {
   if (command == "wiki" || command == "wikien")
   {
@@ -198,13 +198,13 @@ Message Wikipedia::extract(const std::string& lang, const std::string_view& comm
 
     return Message(
         // plain text
-        std::string("> ")
+        std::string("Extract from Wikipedia:\n> ")
         .append(jsonExtract.get<std::string_view>().value())
         .append("\n\nSee https://").append(lang)
         .append(".wikipedia.org/wiki/").append(escapedApiTitle)
         .append(" for the full article."),
         // formatted HTML
-        std::string("<blockquote>\n")
+        std::string("Extract from Wikipedia:<br />\n<blockquote>\n")
         .append(jsonExtract.get<std::string_view>().value())
         .append("</blockquote>\n<p>See <a href=\"https://").append(lang)
         .append(".wikipedia.org/wiki/").append(escapedApiTitle)
