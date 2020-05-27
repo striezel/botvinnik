@@ -18,11 +18,11 @@
   [MDN page](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429)) and
   a JSON containing the amount of time after which the user may try again:
 
-    {
-        "errcode": "M_LIMIT_EXCEEDED",
-        "error": "Too Many Requests",
-        "retry_after_ms":2402
-    }
+        {
+            "errcode": "M_LIMIT_EXCEEDED",
+            "error": "Too Many Requests",
+            "retry_after_ms": 2402
+        }
 
   That information could be used to send a notification about the rate limit to
   spamming users after the `retry_after_ms` period.
