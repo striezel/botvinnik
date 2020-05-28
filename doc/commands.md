@@ -35,8 +35,17 @@ itself:
 ### Wikipedia commands
 
 * `!wiki` - _(since version 0.0.7)_ same as `!wikien`
+* `!wikics` - _(since version 0.1.0)_ gets extract from an article on the Czech
+  Wikipedia, e. g. `!wikics Albert Einstein` will show an extract from the
+  article about the scientist Albert Einstein
+* `!wikicy` - _(since version 0.1.0)_ gets extract from an article on the Welsh
+  Wikipedia, e. g. `!wikicy Albert Einstein` will show an extract from the
+  article about the scientist Albert Einstein
 * `!wikide` - _(since version 0.0.7)_ gets extract from an article on the German
   Wikipedia, e. g. `!wikide Albert Einstein` will show an extract from the
+  article about the scientist Albert Einstein
+* `!wikiel` - _(since version 0.1.0)_ gets extract from an article on the Greek
+  Wikipedia, e. g. `!wikiel Albert Einstein` will show an extract from the
   article about the scientist Albert Einstein
 * `!wikien` - _(since version 0.0.7)_ gets extract from an article on the
   English Wikipedia, e. g. `!wikien Albert Einstein` will show an extract from
@@ -50,9 +59,24 @@ itself:
 * `!wikiit` - _(since version 0.0.7)_ gets extract from an article on the
   Italian Wikipedia, e. g. `!wikiit Albert Einstein` will show an extract from
   the article about the scientist Albert Einstein
+* `!wikinl` - _(since version 0.1.0)_ gets extract from an article on the Dutch
+  Wikipedia, e. g. `!wikinl Albert Einstein` will show an extract from the
+  article about the scientist Albert Einstein
+* `!wikipl` - _(since version 0.1.0)_ gets extract from an article on the Polish
+  Wikipedia, e. g. `!wikipl Albert Einstein` will show an extract from the
+  article about the scientist Albert Einstein
+* `!wikipt` - _(since version 0.1.0)_ gets extract from an article on the
+  Portuguese Wikipedia, e. g. `!wikipt Albert Einstein` will show an extract
+  from the article about the scientist Albert Einstein
 * `!wikiru` - _(since version 0.0.7)_ gets extract from an article on the
   Russian Wikipedia, e. g. `!wikiru Albert Einstein` will show an extract from
   the article about the scientist Albert Einstein
+* `!wikitr` - _(since version 0.1.0)_ gets extract from an article on the
+  Turkish Wikipedia, e. g. `!wikitr Albert Einstein` will show an extract from
+  the article about the scientist Albert Einstein
+* `!wikiuk` - _(since version 0.1.0)_ gets extract from an article on the
+  Ukrainian Wikipedia, e. g. `!wikiuk Альберт Ейнштейн` will show an extract
+  from the article about the scientist Albert Einstein
 
 ### Entertainment
 

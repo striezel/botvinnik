@@ -33,7 +33,22 @@ Wikipedia::Wikipedia()
 
 std::vector<std::string> Wikipedia::commands() const
 {
-  return { "wiki", "wikide", "wikien", "wikies", "wikifr", "wikiit", "wikiru" };
+  return { "wiki",
+           "wikics", // Czech
+           "wikicy", // Welsh
+           "wikide", // German
+           "wikiel", // Greek
+           "wikien", // English
+           "wikies", // Spanish
+           "wikifr", // French
+           "wikiit", // Italian
+           "wikinl", // Dutch
+           "wikipl", // Polish
+           "wikipt", // Portuguese
+           "wikiru", // Russian
+           "wikitr", // Turkish
+           "wikiuk", // Ukrainian
+         };
 }
 
 Message Wikipedia::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
@@ -42,25 +57,10 @@ Message Wikipedia::handleCommand(const std::string_view& command, const std::str
   {
     return extract("en", command, message);
   }
-  if (command == "wikide")
+  const auto all = commands();
+  if (std::find(all.begin(), all.end(), std::string(command)) != all.end())
   {
-    return extract("de", command, message);
-  }
-  if (command == "wikies")
-  {
-    return extract("es", command, message);
-  }
-  if (command == "wikifr")
-  {
-    return extract("fr", command, message);
-  }
-  if (command == "wikiit")
-  {
-    return extract("it", command, message);
-  }
-  if (command == "wikiru")
-  {
-    return extract("ru", command, message);
+    return extract(std::string(command.substr(4)), command, message);
   }
 
   // unknown command
@@ -69,32 +69,35 @@ Message Wikipedia::handleCommand(const std::string_view& command, const std::str
 
 std::string Wikipedia::helpOneLine(const std::string_view& command) const
 {
+  static const std::unordered_map<std::string, std::string> languages = {
+      { "wikics", "Czech" },
+      { "wikicy", "Welsh" },
+      { "wikide", "German" },
+      { "wikiel", "Greek" },
+      { "wikien", "English" },
+      { "wikies", "Spanish" },
+      { "wikifr", "French" },
+      { "wikiit", "Italian" },
+      { "wikinl", "Dutch" },
+      { "wikipl", "Polish" },
+      { "wikipt", "Portuguese" },
+      { "wikiru", "Russian" },
+      { "wikitr", "Turkish" },
+      { "wikiuk", "Ukrainian" }
+  };
   if (command == "wiki" || command == "wikien")
   {
     return "gets extract from an article on the English Wikipedia";
   }
-  if (command == "wikide")
+  const auto iter = languages.find(std::string(command));
+  if (iter != languages.end())
   {
-    return "gets extract from an article on the German Wikipedia";
-  }
-  if (command == "wikies")
-  {
-    return "gets extract from an article on the Spanish Wikipedia";
-  }
-  if (command == "wikifr")
-  {
-    return "gets extract from an article on the French Wikipedia";
-  }
-  if (command == "wikiit")
-  {
-    return "gets extract from an article on the Italian Wikipedia";
-  }
-  if (command == "wikiru")
-  {
-    return "gets extract from an article on the Russian Wikipedia";
+    return std::string("gets extract from an article on the ")
+                       .append(iter->second).append(" Wikipedia");
   }
 
-  return std::string("No help available for command '").append(command) + "'!";
+  // No help available.
+  return std::string();
 }
 
 Message Wikipedia::extract(const std::string& lang, const std::string_view& command, const std::string_view& message) const

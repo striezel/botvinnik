@@ -47,10 +47,19 @@ Message Help::handleCommand(const std::string_view& command, const std::string_v
     Message result("The following commands are available:\n", "The following commands are available:<br />");
     for (const auto& item : oneLiners)
     {
-      result.body.append(prefix).append(item.first).append(" - ")
-            .append(item.second).append("\n");
-      result.formatted_body.append("<code>").append(prefix).append(item.first).append("</code>").append(" - ")
-            .append(item.second).append("<br />");
+      if (!item.second.empty())
+      {
+        result.body.append(prefix).append(item.first).append(" - ")
+              .append(item.second).append("\n");
+        result.formatted_body.append("<code>").append(prefix).append(item.first).append("</code>").append(" - ")
+              .append(item.second).append("<br />");
+      }
+      else
+      {
+        result.body.append(prefix).append(item.first).append(" - no help available\n");
+        result.formatted_body.append("<code>").append(prefix).append(item.first).append("</code>")
+               .append(" - no help available<br />");
+      }
     }
     return result;
   }

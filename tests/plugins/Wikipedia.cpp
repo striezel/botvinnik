@@ -42,10 +42,19 @@ TEST_CASE("plugin Wikipedia")
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wiki") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikide") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikien") == commands.end() );
-    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikien") == commands.end() );
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikies") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikifr") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikiit") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikiru") == commands.end() );
+
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikics") == commands.end() );
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikicy") == commands.end() );
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikiel") == commands.end() );
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikinl") == commands.end() );
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikipl") == commands.end() );
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikipt") == commands.end() );
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikitr") == commands.end() );
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikiuk") == commands.end() );
   }
 
   SECTION("one line help")
@@ -63,9 +72,11 @@ TEST_CASE("plugin Wikipedia")
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     for (const auto& cmd : commands)
     {
-      // Answer to commands must not be empty.
-      const std::string message = cmd + " Einstein";
+      // Ukrainian Wikipedia has no redirect from Albert Einstein to the
+      // Ukrainian version, so we have to use the title here directly.
+      const std::string message = cmd + (cmd != "wikiuk" ? " Albert Einstein" : " Альберт Ейнштейн");
       const auto answer = plugin.handleCommand(cmd, message, mockUserId, ts);
+      // Answer to commands must not be empty.
       REQUIRE_FALSE( answer.body.empty() );
       REQUIRE_FALSE( answer.formatted_body.empty() );
     }
