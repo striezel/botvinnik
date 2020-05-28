@@ -17,11 +17,9 @@ FROM debian:10-slim AS runner
 LABEL maintainer="Dirk Stolle <striezel-dev@web.de>"
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y --no-install-recommends --no-install-suggests \
-    ca-certificates libcurl3-gnutls fortune-mod fortunes-min \
-# change this to fortunes-es, fortunes-fr, fortunes-it, fortunes-ru or any other
-# fortune package. See <https://packages.debian.org/en/buster/fortune-cookie-db>
-# for possible packages.
-    fortunes-de
+    ca-certificates libcurl3-gnutls fortune-mod fortunes-min
+# You may want to add more or other fortune packages here. See
+# <https://packages.debian.org/en/buster/fortune-cookie-db> for more packages.
 COPY --from=builder /opt/bvn/build/src/botvinnik/botvinnik /usr/local/bin/botvinnik
 # Create new user that will be used to run the program.
 RUN useradd --create-home bot
