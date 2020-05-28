@@ -22,11 +22,14 @@
 #define BVN_CONFIGURATION_HPP
 
 #include <map>
+#include <unordered_set>
 #include <vector>
 
 namespace bvn
 {
 
+/** \brief Contains and loads configuration settings for the bot.
+ */
 class Configuration
 {
   public:
@@ -75,6 +78,14 @@ class Configuration
     const std::string& prefix() const;
 
 
+    /** \brief Gets a set of user ids that may stop the bot.
+     *
+     * \return Returns a set of user ids for users that are allowed to stop the
+     *         bot.
+     */
+    const std::unordered_set<std::string>& stopUsers() const;
+
+
     /** \brief Loads the configuration from a file.
      *
      * \param  fileName   file name of the configuration file
@@ -102,17 +113,11 @@ class Configuration
      */
     bool loadCoreConfiguration(const std::string& fileName);
 
-
-    /** \brief Finds the first existing task directory from a preset list.
-     *
-     * \param realName  directory name, if any
-     */
-    void findTaskDirectory(std::string& realName);
-
     std::string mHomeServer; /**< Matrix home server */
     std::string mUserId; /**< Matrix user id used for login */
     std::string mPassword; /**< password used for login */
     std::string mPrefix; /**< prefix for commands */
+    std::unordered_set<std::string> mStopUsers; /**< users that may stop the bot */
 }; // class
 
 } // namespace

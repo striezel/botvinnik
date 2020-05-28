@@ -28,6 +28,18 @@
 namespace bvn
 {
 
+bool looksLikeUserId(const std::string& str)
+{
+  // User id must start with "@".
+
+  // std::string::at(0) will not throw, because string is checked for emptiness
+  // before it lands here.
+  if (str.at(0) != '@')
+    return false;
+  // User id must contain a ':'.
+  return str.find(':') != std::string::npos;
+}
+
 // use same comment character as in task files: '#'
 const char Configuration::commentCharacter = '#';
 
@@ -36,7 +48,8 @@ Configuration::Configuration()
   mHomeServer(""),
   mUserId(""),
   mPassword(""),
-  mPrefix("")
+  mPrefix(""),
+  mStopUsers(std::unordered_set<std::string>())
 {
 }
 
@@ -78,6 +91,11 @@ const std::string& Configuration::password() const
 const std::string& Configuration::prefix() const
 {
   return mPrefix;
+}
+
+const std::unordered_set<std::string>& Configuration::stopUsers() const
+{
+  return mStopUsers;
 }
 
 void Configuration::findConfigurationFile(std::string& realName)
@@ -144,6 +162,12 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
     value.erase(0, 1);
     trim(value);
 
+    if (value.empty())
+    {
+      std::cerr << "Error: Value for " << name << " must not be empty!" << std::endl;
+      return false;
+    }
+
     if ((name == "matrix.homeserver") || (name == "homeserver"))
     {
       if (!mHomeServer.empty())
@@ -182,6 +206,12 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
                   << fileName << "!" << std::endl;
         return false;
       }
+      if (!looksLikeUserId(value))
+      {
+        std::cerr << "Error: Configuration value of " << name
+                  << " does not seem to be a Matrix user id!" << std::endl;
+        return false;
+      }
       mUserId = value;
     } // if matrix.userid
     else if ((name == "matrix.password") || (name == "password"))
@@ -204,6 +234,23 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       }
       mPrefix = value;
     } // if command.prefix
+    else if ((name == "bot.stop.allowed.userid") || (name == "stop.allowed.userid"))
+    {
+      if (mStopUsers.find(value) != mStopUsers.end())
+      {
+        std::cerr << "Error: Matrix user id '" << value << "' for user that is"
+                  << " allowed to stop the bot is specified more than once in file "
+                  << fileName << "!" << std::endl;
+        return false;
+      }
+      if (!looksLikeUserId(value))
+      {
+        std::cerr << "Error: Configuration value of " << name
+                  << " does not seem to be a Matrix user id!" << std::endl;
+        return false;
+      }
+      mStopUsers.insert(value);
+    } // if bot.stop.allowed.userid
     else
     {
       std::cerr << "Error while reading configuration file " << fileName
@@ -220,6 +267,20 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
               << " properly." << std::endl;
     return false;
   } // if a setting is missing
+
+  if (mStopUsers.empty())
+  {
+    std::cerr << "Error: bot.stop.allowed.userid has not been specified in "
+              << "configuration file " << fileName << "!" << std::endl;
+    return false;
+  }
+
+  if (mStopUsers.find(mUserId) == mStopUsers.end())
+  {
+    mStopUsers.insert(mUserId);
+    std::clog << "Info: Adding user '" << mUserId << "' to list of users that"
+              << " are allowed to stop the bot." << std::endl;
+  }
 
   // Prefix may be missing. Set it to "!" in that case.
   if (mPrefix.empty())
@@ -272,6 +333,7 @@ void Configuration::clear()
   mHomeServer.clear();
   mUserId.clear();
   mPassword.clear();
+  mStopUsers.clear();
 }
 
 } // namespace

@@ -176,9 +176,16 @@ void Bot::start()
   }
 }
 
-void Bot::stop()
+bool Bot::stop(const std::string_view& userId)
 {
-  stopped = true;
+  const auto & users = mat.configuration().stopUsers();
+  if (users.find(std::string(userId)) != users.end())
+  {
+    stopped = true;
+    return true;
+  }
+
+  return false;
 }
 
 bool Bot::stopRequested() const

@@ -62,14 +62,23 @@ The following Matrix-related settings are recognized in the configuration file:
 * **matrix.userid** - _(since 0.0.1)_ user id of the Matrix user (e. g.
   `@alice:example.tld`)
 * **matrix.password** - _(since 0.0.1)_ password for the Matrix user
+
+## Bot management settings
+
 * **command.prefix** - _(since 0.0.5)_ prefix for text commands (e. g. if you
   have a hypothetical command `foo` and the prefix is set to `!`, then the text
   message `!foo` will trigger that command)
+* **bot.stop.allowed.userid** - _(since 0.0.11)_ user id of a Matrix user that
+  is allowed to stop the bot (e. g. `@alice:example.tld`). This setting may
+  occur multiple times with different user ids to allow more users to stop the
+  bot. At least one user id must be specified. Furthermore, the user id from the
+  setting **matrix.userid** will be added to this list automatically, if it has
+  not been specified as user allowed to stop the bot.
 
 # Example of a complete configuration file
 
 The following example is a complete core configuration file for the
-botvinnik program (as of version 0.0.5):
+botvinnik program (as of version 0.0.11):
 
     # This line is a comment and will be ignored by the program.
     #And so is this line.
@@ -78,4 +87,6 @@ botvinnik program (as of version 0.0.5):
     matrix.homeserver=https://matrix.example.tld/
     matrix.userid=@alice:matrix.example.tld
     matrix.password=secret, secret, top(!) secret
+    # bot management settings
     command.prefix=!
+    bot.stop.allowed.userid=@bob:matrix.example.tld

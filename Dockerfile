@@ -1,4 +1,4 @@
-# Note: This file contains three environment variables near the end. Change
+# Note: This file contains four environment variables near the end. Change
 #       these to match your settings or you will not be able to connect the bot
 #       to a Matrix homeserver.
 
@@ -31,13 +31,15 @@ WORKDIR /home/bot
 RUN botvinnik --version
 RUN mkdir -p /home/bot/.bvn
 
-# Note: Change these three vars to match your setup!
+# Note: Change these four variables to match your setup!
 ENV HOMESERVER=https://matrix.org/
 ENV BOT_USER=@alice-and-bob:charlie.tld
 ENV BOT_PASSWORD=secret
+ENV BOT_STOP_USER=@charlie:charlie.tld
 # Generate configuration file.
 RUN echo "matrix.homeserver=$HOMESERVER" > /home/bot/.bvn/bvn.conf && \
     echo "matrix.userid=$BOT_USER" >> /home/bot/.bvn/bvn.conf && \
-    echo "matrix.password=$BOT_PASSWORD" >> /home/bot/.bvn/bvn.conf
+    echo "matrix.password=$BOT_PASSWORD" >> /home/bot/.bvn/bvn.conf && \
+    echo "bot.stop.allowed.userid=$BOT_STOP_USER" >> /home/bot/.bvn/bvn.conf
 
 CMD botvinnik

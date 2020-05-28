@@ -39,11 +39,27 @@ Message Basic::handleCommand(const std::string_view& command, const std::string_
 {
   if (command == "stop")
   {
-    theBot.stop();
-    return Message(std::string("Stop of bot was requested by ").append(userId)
-                   .append(". Shutdown will be initiated."),
-                   std::string("<strong>Stop of bot was requested by ")
-                   .append(userId).append(". Shutdown will be initiated.</strong>"));
+    if (theBot.stop(userId))
+    {
+      return Message(std::string("Stop of bot was requested by ").append(userId)
+                     .append(". Shutdown will be initiated."),
+                     std::string("<strong>Stop of bot was requested by ")
+                     .append(userId).append(". Shutdown will be initiated.</strong>"));
+    }
+    else
+    {
+      // User is not allowed to stop the bot.
+      Message msg(std::string("You have no power here, ").append(userId)
+                  .append("! Only the following users are allowed to stop the bot:\n"),
+                  std::string("<strong>You have no power here, ").append(userId)
+                  .append("!</strong> Only the following users are allowed to stop the bot:<br />\n"));
+      for (const auto& item: theBot.mat.configuration().stopUsers())
+      {
+        msg.body.append("\n").append(item);
+        msg.formatted_body.append("<br />\n").append(item);
+      }
+      return msg;
+    }
   }
   else if (command == "version")
   {

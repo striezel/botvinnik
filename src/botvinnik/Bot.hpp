@@ -30,7 +30,8 @@
 namespace bvn
 {
 
-// forward declaration
+// forward declarations
+class Basic;
 class Help;
 
 /** \brief Basic class to handle bot behaviour.
@@ -79,10 +80,13 @@ class Bot
 
     /** \brief Requests the bot to stop command processing.
      *
-     * The bot will usually stop after the current requests have been processed,
-     * i. e. it may not stop immediately.
+     * \param userId  id of the Matrix user that requested to stop the bot
+     * \return Returns true, if user is allowed to stop the bot and a stop has
+     *         been initiated.
+     * \remark The bot will usually stop after the current requests have been
+     *         processed, i. e. it may not stop immediately.
      */
-    void stop();
+    bool stop(const std::string_view& userId);
 
 
     /** \brief Whether the bot has been asked to stop.
@@ -95,6 +99,9 @@ class Bot
     // Help class needs to iterate over registered commands and plugins of the
     // bot, i. e. it needs access to private data.
     friend Help;
+    // Basic plugin needs to iterate over stopUsers() of matrix before stopping
+    // or not stopping the bot.
+    friend Basic;
   private:
     Matrix mat; /**< handles matrix requests */
     std::unordered_map<std::string, std::reference_wrapper<Plugin> > commands; /**< registered commands */
