@@ -24,9 +24,10 @@ itself:
 
 * `!help` - _(since version 0.0.6)_ shows a help message containing all
   available commands and a short explanation for each command
-* `!stop` - _(since version 0.0.5)_ stops the bot. Not that currently (as of
-  version 0.0.6) any user can initiate the bot shutdown. That may change with a
-  future version.
+* `!stop` - _(since version 0.0.5)_ stops the bot. Note that only users that are
+  mentioned in the [configuration file](configuration-core.md) are allowed to
+  stop the bot.
+  _(Before version 0.0.11 any user could initiate the bot shutdown.)_
 * `!version` - _(sinve version 0.0.5)_ shows version information for the bot
 * `!whoami` - _(since version 0.0.8)_ show the Matrix id of the user that sent
   the request
