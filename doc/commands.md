@@ -84,6 +84,7 @@ These commands are merely for entertainment purposes.
 
 * `!fortune` - _(since version 0.0.10)_ displays a random quote
 * `!fortunes` - _(since version 0.0.10)_ alias of the fortune command
+* `!xkcd` - _(since 0.1.1)_ show a random comic from xkcd.com
 
 A fortune command version that uses the popular `cowsay` to display messages may
 (or may not) be added in the future.

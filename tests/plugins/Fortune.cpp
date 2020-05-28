@@ -38,7 +38,7 @@ TEST_CASE("plugin Fortune")
   {
     REQUIRE_FALSE( commands.empty() );
 
-    // ping command has to be there.
+    // fortune command has to be there.
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "fortune") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "fortunes") == commands.end() );
   }

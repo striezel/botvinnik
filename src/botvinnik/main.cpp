@@ -30,6 +30,7 @@
 #include "plugins/Fortune.hpp"
 #include "plugins/Ping.hpp"
 #include "plugins/Wikipedia.hpp"
+#include "plugins/Xkcd.hpp"
 
 void showVersion()
 {
@@ -160,6 +161,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of fortune plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::Xkcd xkcd;
+  if (!bot.registerPlugin(xkcd))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of xkcd plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

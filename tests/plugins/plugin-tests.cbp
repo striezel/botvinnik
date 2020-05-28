@@ -36,6 +36,8 @@
 		<Unit filename="../../src/botvinnik/plugins/Plugin.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Wikipedia.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/Wikipedia.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/Xkcd.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/Xkcd.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Basic.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Basic.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Help.cpp" />
@@ -65,6 +67,7 @@
 		<Unit filename="Fortune.cpp" />
 		<Unit filename="Ping.cpp" />
 		<Unit filename="Wikipedia.cpp" />
+		<Unit filename="Xkcd.cpp" />
 		<Unit filename="core/Basic.cpp" />
 		<Unit filename="core/Help.cpp" />
 		<Unit filename="main.cpp" />

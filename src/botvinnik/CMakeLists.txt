@@ -20,6 +20,7 @@ set(botvinnik_sources
     plugins/Fortune.cpp
     plugins/Ping.cpp
     plugins/Wikipedia.cpp
+    plugins/Xkcd.cpp
     main.cpp)
 
 if (CMAKE_COMPILER_IS_GNUCC)

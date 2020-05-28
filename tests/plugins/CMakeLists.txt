@@ -10,6 +10,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/Fortune.cpp
     ../../src/botvinnik/plugins/Ping.cpp
     ../../src/botvinnik/plugins/Wikipedia.cpp
+    ../../src/botvinnik/plugins/Xkcd.cpp
     ../../src/conf/Configuration.cpp
     ../../src/matrix/Matrix.cpp
     ../../src/matrix/Message.cpp
@@ -25,6 +26,7 @@ set(plugin_tests_sources
     Fortune.cpp
     Ping.cpp
     Wikipedia.cpp
+    Xkcd.cpp
     pluginRegistrationCombined.cpp
     main.cpp)
 

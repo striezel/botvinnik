@@ -74,6 +74,8 @@
 		<Unit filename="plugins/Plugin.hpp" />
 		<Unit filename="plugins/Wikipedia.cpp" />
 		<Unit filename="plugins/Wikipedia.hpp" />
+		<Unit filename="plugins/Xkcd.cpp" />
+		<Unit filename="plugins/Xkcd.hpp" />
 		<Unit filename="plugins/core/Basic.cpp" />
 		<Unit filename="plugins/core/Basic.hpp" />
 		<Unit filename="plugins/core/Help.cpp" />
