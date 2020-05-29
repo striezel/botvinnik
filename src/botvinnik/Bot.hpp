@@ -96,6 +96,13 @@ class Bot
     bool stopRequested() const;
 
 
+    /** \brief Gets reference to the matrix instance.
+     *
+     * \return Returns a reference to the matrix instance.
+     */
+    Matrix& matrix();
+
+
     // Help class needs to iterate over registered commands and plugins of the
     // bot, i. e. it needs access to private data.
     friend Help;

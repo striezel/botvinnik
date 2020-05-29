@@ -99,6 +99,23 @@ void Bot::start()
     return;
   }
 
+  const auto uploadSize = mat.getUploadLimit();
+  if (!uploadSize.has_value())
+  {
+    std::clog << "Warning: Could not get upload size limit from server." << std::endl;
+  }
+  else
+  {
+    if (uploadSize.value() == -1)
+    {
+      std::clog << "Info: Server did not disclose its upload size limit." << std::endl;
+    }
+    else
+    {
+      std::clog << "Info: Server upload size limit is " << uploadSize.value() << " bytes." << std::endl;
+    }
+  }
+
   std::string initialEvents;
   std::string next_batch;
   std::vector<matrix::Room> rooms;
@@ -191,6 +208,11 @@ bool Bot::stop(const std::string_view& userId)
 bool Bot::stopRequested() const
 {
   return stopped;
+}
+
+Matrix& Bot::matrix()
+{
+  return mat;
 }
 
 } // namespace

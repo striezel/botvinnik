@@ -109,6 +109,27 @@ class Matrix
      *         Returns false otherwise.
      */
     bool sendMessage(const std::string& roomId, const Message& message);
+
+
+    /** \brief Gets the upload size limit for the server's content repository.
+     *
+     * \return Returns the maximum upload size in bytes.
+     *         If the request failed, the returned optional will be empty.
+     *         If the server did not disclose its limit, the returned value is
+     *         negative one (-1).
+     */
+    std::optional<int64_t> getUploadLimit();
+
+
+    /** \brief Uploads string contents as file to the content repository.
+     *
+     * \param data        the file data to be uploaded as string
+     * \param contentType content type of the file (e. g.  "image/jpeg")
+     * \param fileName    name of the file (e. g. "cat.jpeg")
+     * \return Returns the Matrix Content URI (MXC URI) for the uploaded file.
+     *         Returns an empty optional, if the upload failed.
+     */
+    std::optional<std::string> uploadString(const std::string& data, const std::string& contentType = "application/octet-stream", const std::string& fileName = "file.dat");
   private:
     /** \brief Determines whether the user is logged in to Matrix.
      *

@@ -30,7 +30,7 @@ TEST_CASE("plugin Xkcd")
   using namespace std::chrono;
   Configuration conf;
   Bot bot(conf);
-  Xkcd plugin;
+  Xkcd plugin(bot.matrix());
 
   const auto commands = plugin.commands();
 

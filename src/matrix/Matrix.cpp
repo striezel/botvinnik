@@ -24,6 +24,7 @@
 #include "../../third-party/simdjson/simdjson.h"
 #include "../Version.hpp"
 #include "../net/Curly.hpp"
+#include "../net/url_encode.hpp"
 #include "../util/chrono.hpp"
 
 namespace bvn
@@ -538,6 +539,95 @@ bool Matrix::sendMessage(const std::string& roomId, const Message& message)
   }
 
   return true;
+}
+
+std::optional<int64_t> Matrix::getUploadLimit()
+{
+  if (!isLoggedIn())
+    return std::optional<int64_t>();
+
+  Curly curl;
+  curl.setURL(conf.homeServer() + "/_matrix/media/r0/config");
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  std::string response;
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Could not retrieve upload limit!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return std::optional<int64_t>();
+  }
+
+  simdjson::dom::parser parser;
+  const auto [doc, error] = parser.parse(response);
+  if (error)
+  {
+    std::cerr << "Error retrieving upload limit: Unable to parse JSON data!" << std::endl
+              << "Response is: " << response << std::endl;
+    return std::optional<int64_t>();
+  }
+  const auto [uploadLimit, jsonError] = doc["m.upload.size"];
+  if (jsonError || uploadLimit.type() != simdjson::dom::element_type::INT64)
+  {
+    std::clog << "Warning: Server did not disclose upload size!" << std::endl;
+    return std::optional<int64_t>(-1);
+  }
+
+  return uploadLimit.get<int64_t>().value();
+}
+
+std::optional<std::string> Matrix::uploadString(const std::string& data, const std::string& contentType, const std::string& fileName)
+{
+  if (!isLoggedIn())
+    return std::optional<std::string>();
+
+  std::string encodedFileName;
+  try
+  {
+    encodedFileName = urlencode(fileName);
+  }
+  catch(const std::exception& ex)
+  {
+    std::cerr << "Error: URL-encoding of file name for upload failed!"
+              << std::endl << ex.what() << std::endl;
+    return std::optional<std::string>();
+  }
+
+  Curly curl;
+  curl.setURL(conf.homeServer() + "/_matrix/media/r0/upload?filename=" + encodedFileName);
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  curl.addHeader("Content-Type: " + contentType);
+  if (!curl.setPostBody(data))
+  {
+    std::cerr << "Error: Could not set body for POST request of file upload."
+              << std::endl;
+    return std::optional<std::string>();
+  }
+  std::string response;
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Could not upload file data to content repository!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return std::optional<std::string>();
+  }
+
+  simdjson::dom::parser parser;
+  const auto [doc, error] = parser.parse(response);
+  if (error)
+  {
+    std::cerr << "Error upload file: Unable to parse JSON response!" << std::endl
+              << "Response is: " << response << std::endl;
+    return std::optional<std::string>();
+  }
+  const auto [contentUri, jsonError] = doc["content_uri"];
+  if (jsonError || contentUri.type() != simdjson::dom::element_type::STRING)
+  {
+    std::clog << "Warning: Server did not return a content URI for upload!" << std::endl;
+    return std::optional<std::string>();
+  }
+
+  return std::string(contentUri.get<std::string_view>().value());
 }
 
 } // namespace

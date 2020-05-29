@@ -42,7 +42,7 @@ TEST_CASE("plugin registration for all known plugins")
   Fortune fortune;
   Ping ping;
   Wikipedia wiki;
-  Xkcd xkcd;
+  Xkcd xkcd(bot.matrix());
 
   SECTION("plugin registration")
   {

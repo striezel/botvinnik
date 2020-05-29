@@ -164,7 +164,7 @@ int main(int argc, char** argv)
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }
-  bvn::Xkcd xkcd;
+  bvn::Xkcd xkcd(bot.matrix());
   if (!bot.registerPlugin(xkcd))
   {
     // Should never happen!
