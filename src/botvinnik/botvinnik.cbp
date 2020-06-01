@@ -67,6 +67,8 @@
 		<Unit filename="Bot.cpp" />
 		<Unit filename="Bot.hpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="plugins/Debian.cpp" />
+		<Unit filename="plugins/Debian.hpp" />
 		<Unit filename="plugins/Fortune.cpp" />
 		<Unit filename="plugins/Fortune.hpp" />
 		<Unit filename="plugins/Ping.cpp" />

@@ -27,6 +27,7 @@
 #include "Bot.hpp"
 #include "plugins/core/Basic.hpp"
 #include "plugins/core/Help.hpp"
+#include "plugins/Debian.hpp"
 #include "plugins/Fortune.hpp"
 #include "plugins/Ping.hpp"
 #include "plugins/Wikipedia.hpp"
@@ -169,6 +170,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of xkcd plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::Debian deb;
+  if (!bot.registerPlugin(deb))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of Debian plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

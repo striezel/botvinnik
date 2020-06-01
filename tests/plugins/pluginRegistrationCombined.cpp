@@ -24,6 +24,7 @@
 #include "../../src/conf/Configuration.hpp"
 #include "../../src/botvinnik/plugins/core/Basic.hpp"
 #include "../../src/botvinnik/plugins/core/Help.hpp"
+#include "../../src/botvinnik/plugins/Debian.hpp"
 #include "../../src/botvinnik/plugins/Fortune.hpp"
 #include "../../src/botvinnik/plugins/Ping.hpp"
 #include "../../src/botvinnik/plugins/Wikipedia.hpp"
@@ -39,6 +40,7 @@ TEST_CASE("plugin registration for all known plugins")
   Basic basic(bot);
   Help help(bot);
   // other plugins
+  Debian deb;
   Fortune fortune;
   Ping ping;
   Wikipedia wiki;
@@ -49,6 +51,7 @@ TEST_CASE("plugin registration for all known plugins")
     // Plugin registration must be successful.
     REQUIRE( bot.registerPlugin(basic) );
     REQUIRE( bot.registerPlugin(help) );
+    REQUIRE( bot.registerPlugin(deb) );
     REQUIRE( bot.registerPlugin(fortune) );
     REQUIRE( bot.registerPlugin(ping) );
     REQUIRE( bot.registerPlugin(wiki) );

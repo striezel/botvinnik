@@ -89,6 +89,22 @@ These commands are merely for entertainment purposes.
 A fortune command version that uses the popular `cowsay` to display messages may
 (or may not) be added in the future.
 
+### Debian package search
+
+The following commands search for available [Debian](https://www.debian.org/)
+packages:
+
+* `!deb` - _(since version 0.1.3)_ alias for `!deb10`
+* `!deb10` - _(since version 0.1.3)_ searches for packages for Debian 10
+  ("buster"), e.g. `!deb10 grep` will find Debian 10 packages where "grep" is
+  part of the name
+* `!deb9` - _(since version 0.1.3)_ searches for packages for Debian 9
+  ("stretch"), e.g. `!deb9 grep` will find Debian 9 packages where "grep" is
+  part of the name
+* `!deb8` - _(since version 0.1.3)_ searches for packages for Debian 8
+  ("jessie"), e.g. `!deb8 grep` will find Debian 8 packages where "grep" is
+  part of the name
+
 ### Connection test commands
 
 Connection tests commands are there to test connection availability.
