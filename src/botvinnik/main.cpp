@@ -27,6 +27,7 @@
 #include "Bot.hpp"
 #include "plugins/core/Basic.hpp"
 #include "plugins/core/Help.hpp"
+#include "plugins/Corona.hpp"
 #include "plugins/Debian.hpp"
 #include "plugins/Fortune.hpp"
 #include "plugins/Ping.hpp"
@@ -178,6 +179,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of Debian plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::Corona covid;
+  if (!bot.registerPlugin(covid))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

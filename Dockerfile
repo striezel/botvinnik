@@ -6,7 +6,7 @@
 FROM debian:10-slim AS builder
 LABEL maintainer="Dirk Stolle <striezel-dev@web.de>"
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y catch cmake g++ git libcurl4-gnutls-dev pkg-config
+RUN apt-get install -y catch cmake g++ git libcurl4-gnutls-dev libsqlite3-dev pkg-config
 RUN mkdir -p /opt/bvn
 COPY ./ /opt/bvn
 WORKDIR /opt/bvn
@@ -17,7 +17,7 @@ FROM debian:10-slim AS runner
 LABEL maintainer="Dirk Stolle <striezel-dev@web.de>"
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y --no-install-recommends --no-install-suggests \
-    ca-certificates libcurl3-gnutls fortune-mod fortunes-min
+    ca-certificates libcurl3-gnutls libsqlite3-0 fortune-mod fortunes-min
 # You may want to add more or other fortune packages here. See
 # <https://packages.debian.org/en/buster/fortune-cookie-db> for more packages.
 COPY --from=builder /opt/bvn/build/src/botvinnik/botvinnik /usr/local/bin/botvinnik

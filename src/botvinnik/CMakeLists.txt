@@ -13,10 +13,12 @@ set(botvinnik_sources
     ../util/chrono.cpp
     ../util/Directories.cpp
     ../util/GitInfos.cpp
+    ../util/sqlite3.cpp
     ../util/Strings.cpp
     Bot.cpp
     plugins/core/Basic.cpp
     plugins/core/Help.cpp
+    plugins/Corona.cpp
     plugins/Debian.cpp
     plugins/Fortune.cpp
     plugins/Ping.cpp

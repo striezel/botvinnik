@@ -18,21 +18,21 @@ See the [documentation](doc/readme.md) for more information.
 ### Prerequisites
 
 To build botvinnik from source you need a C++ compiler with support for C++17,
-CMake 2.8 or later and the cURL library (>=7.17). pkg-config is required to make
-it easier to find compiler options for the installed libraries. Additionally,
-the program uses Catch (C++ Automated Test Cases in Headers) to perform some
-tests.
+CMake 2.8 or later, the cURL library (>=7.17) and the SQLite 3 library.
+pkg-config is required to make it easier to find compiler options for the
+installed libraries. Additionally, the program uses Catch (C++ Automated Test
+Cases in Headers) to perform some tests.
 
 It also helps to have Git, a distributed version control system, on your build
 system to get the latest source code directly from the Git repository.
 
 All of that can usually be installed be typing
 
-    apt-get install catch cmake g++ git libcurl4-gnutls-dev pkg-config
+    apt-get install catch cmake g++ git libcurl4-gnutls-dev libsqlite3-dev pkg-config
 
 or
 
-    yum install catch cmake gcc-c++ git libcurl-devel pkgconfig
+    yum install catch cmake gcc-c++ git libcurl-devel libsqlite3-devel pkgconfig
 
 into a root terminal.
 

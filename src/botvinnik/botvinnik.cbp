@@ -36,6 +36,7 @@
 		</Compiler>
 		<Linker>
 			<Add library="curl" />
+			<Add library="sqlite3" />
 		</Linker>
 		<Unit filename="../../third-party/nlohmann/json.hpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
@@ -64,9 +65,13 @@
 		<Unit filename="../util/Strings.hpp" />
 		<Unit filename="../util/chrono.cpp" />
 		<Unit filename="../util/chrono.hpp" />
+		<Unit filename="../util/sqlite3.cpp" />
+		<Unit filename="../util/sqlite3.hpp" />
 		<Unit filename="Bot.cpp" />
 		<Unit filename="Bot.hpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="plugins/Corona.cpp" />
+		<Unit filename="plugins/Corona.hpp" />
 		<Unit filename="plugins/Debian.cpp" />
 		<Unit filename="plugins/Debian.hpp" />
 		<Unit filename="plugins/Fortune.cpp" />

@@ -22,42 +22,49 @@
 #include <algorithm>
 #include "../../src/botvinnik/Bot.hpp"
 #include "../../src/conf/Configuration.hpp"
-#include "../../src/botvinnik/plugins/core/Basic.hpp"
-#include "../../src/botvinnik/plugins/core/Help.hpp"
 #include "../../src/botvinnik/plugins/Corona.hpp"
-#include "../../src/botvinnik/plugins/Debian.hpp"
-#include "../../src/botvinnik/plugins/Fortune.hpp"
-#include "../../src/botvinnik/plugins/Ping.hpp"
-#include "../../src/botvinnik/plugins/Wikipedia.hpp"
-#include "../../src/botvinnik/plugins/Xkcd.hpp"
 
-TEST_CASE("plugin registration for all known plugins")
+TEST_CASE("plugin Corona")
 {
   using namespace bvn;
   using namespace std::chrono;
   Configuration conf;
   Bot bot(conf);
-  // core plugins
-  Basic basic(bot);
-  Help help(bot);
-  // other plugins
-  Corona cov;
-  Debian deb;
-  Fortune fortune;
-  Ping ping;
-  Wikipedia wiki;
-  Xkcd xkcd(bot.matrix());
+  Corona plugin;
+
+  const auto commands = plugin.commands();
+
+  SECTION("commands must exist")
+  {
+    REQUIRE_FALSE( commands.empty() );
+
+    // corona command has to be there.
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "corona") == commands.end() );
+  }
+
+  SECTION("one line help")
+  {
+    for (const auto& cmd : commands)
+    {
+      // Help text must not be empty.
+      REQUIRE_FALSE( plugin.helpOneLine(cmd).empty() );
+    }
+  } // one line help section
+
+  SECTION("command handlers must return text")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    for (const auto& cmd : commands)
+    {
+      // Answer to commands must not be empty.
+      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd, mockUserId, ts).body.empty() );
+    }
+  }
 
   SECTION("plugin registration")
   {
     // Plugin registration must be successful.
-    REQUIRE( bot.registerPlugin(basic) );
-    REQUIRE( bot.registerPlugin(help) );
-    REQUIRE( bot.registerPlugin(cov) );
-    REQUIRE( bot.registerPlugin(deb) );
-    REQUIRE( bot.registerPlugin(fortune) );
-    REQUIRE( bot.registerPlugin(ping) );
-    REQUIRE( bot.registerPlugin(wiki) );
-    REQUIRE( bot.registerPlugin(xkcd) );
+    REQUIRE( bot.registerPlugin(plugin) );
   }
 }

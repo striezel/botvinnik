@@ -7,6 +7,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/Bot.cpp
     ../../src/botvinnik/plugins/core/Basic.cpp
     ../../src/botvinnik/plugins/core/Help.cpp
+    ../../src/botvinnik/plugins/Corona.cpp
     ../../src/botvinnik/plugins/Debian.cpp
     ../../src/botvinnik/plugins/Fortune.cpp
     ../../src/botvinnik/plugins/Ping.cpp
@@ -21,9 +22,11 @@ set(plugin_tests_sources
     ../../src/util/GitInfos.cpp
     ../../src/util/Strings.cpp
     ../../src/util/chrono.cpp
+    ../../src/util/sqlite3.cpp
     ../../third-party/simdjson/simdjson.cpp
     core/Basic.cpp
     core/Help.cpp
+    Corona.cpp
     Debian.cpp
     Fortune.cpp
     Ping.cpp

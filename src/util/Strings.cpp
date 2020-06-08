@@ -25,6 +25,28 @@
 namespace bvn
 {
 
+std::vector<std::string> split(std::string line, const char separator)
+{
+  std::vector<std::string> result;
+  if (line.empty())
+  {
+    result.push_back(line);
+    return result;
+  }
+  std::string::size_type pos = line.find(separator);
+  while (pos != std::string::npos)
+  {
+    result.push_back(line.substr(0, pos));
+    line = line.substr(pos + 1);
+    pos = line.find(separator);
+  } // while
+  if (!line.empty())
+  {
+    result.push_back(line);
+  }
+  return result;
+}
+
 std::string toLowerString(std::string str)
 {
   // Assume ASCII or compatible charset, where distance of the codepoint of

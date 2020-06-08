@@ -26,9 +26,12 @@
 		</Compiler>
 		<Linker>
 			<Add library="curl" />
+			<Add library="sqlite3" />
 		</Linker>
 		<Unit filename="../../src/botvinnik/Bot.cpp" />
 		<Unit filename="../../src/botvinnik/Bot.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/Corona.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/Corona.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Debian.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/Debian.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Fortune.cpp" />
@@ -63,9 +66,12 @@
 		<Unit filename="../../src/util/Strings.hpp" />
 		<Unit filename="../../src/util/chrono.cpp" />
 		<Unit filename="../../src/util/chrono.hpp" />
+		<Unit filename="../../src/util/sqlite3.cpp" />
+		<Unit filename="../../src/util/sqlite3.hpp" />
 		<Unit filename="../../third-party/nlohmann/json.hpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.h" />
+		<Unit filename="Corona.cpp" />
 		<Unit filename="Debian.cpp" />
 		<Unit filename="Fortune.cpp" />
 		<Unit filename="Ping.cpp" />

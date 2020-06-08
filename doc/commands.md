@@ -117,3 +117,7 @@ to obey the rate limits for sending messages. Therefore, if you spam ping
 commands (or any other commands) too much, the bot will not be able to answer
 all requests, because the Matrix server will just stop accepting messages for a
 certain period of time. So please do not spam bot commands.
+
+### Other commands
+
+* `!corona` - _(since version 0.1.4)_ gets current COVID-19 case numbers

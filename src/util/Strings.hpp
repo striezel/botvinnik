@@ -22,9 +22,18 @@
 #define BVN_STRINGS_HPP
 
 #include <string>
+#include <vector>
 
 namespace bvn
 {
+
+/** \brief Splits a string into several strings, using the given separator.
+ *
+ * \param line    the string that shall be split
+ * \param separator   character that works as separator for parts / substrings
+ * \return Returns a vector of strings, containing the split strings.
+ */
+std::vector<std::string> split(std::string line, const char separator = ' ');
 
 /** \brief Returns the lower case version of the given string.
  *
