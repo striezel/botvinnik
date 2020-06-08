@@ -49,6 +49,24 @@ typedef std::function<bool(sqlite3_stmt*)> callback;
 database open(const std::string& fileName);
 
 
+/** \brief Executes an SQL statement.
+ *
+ * \param db    open database connection
+ * \param sql   SQ statement to execute
+ * \return Returns true, if execution of the statement was successful.
+ *         Returns false otherwise.
+ */
+bool exec(database& db, const std::string& sql);
+
+/** \brief Escapes a string and surrounds it with quotes for use in an SQL statement.
+ *
+ * \param str  the string to escape
+ * \return Returns the properly escaped and quoted string.
+ *         If escaping and quoting fails, then an exception is thrown.
+ */
+std::string quote(const std::string& str);
+
+
 /** \brief Creates a prepared statement.
  *
  * \param db   open database connection
@@ -58,8 +76,24 @@ database open(const std::string& fileName);
  */
 statement prepare(database& db, const std::string& sqlStmt);
 
+
+/** \brief Binds a string parameter to a prepared statement.
+ *
+ * \param stmt   the prepared statement
+ * \param index  index of the parameter to bind (first parameter has index 1)
+ * \param value  the value of the parameter
+ * \return Returns whether the binding was successful.
+ */
 bool bind(statement& stmt, const int index, const std::string& value);
 
+
+/** \brief Binds an integer parameter to a prepared statement.
+ *
+ * \param stmt   the prepared statement
+ * \param index  index of the parameter to bind (first parameter has index 1)
+ * \param value  the value of the parameter
+ * \return Returns whether the binding was successful.
+ */
 bool bind(statement& stmt, const int index, const int64_t value);
 
 }

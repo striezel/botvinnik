@@ -39,6 +39,34 @@ database open(const std::string& fileName)
   return { dbPtr, sqlite3_close };
 }
 
+bool exec(database& db, const std::string& sql)
+{
+  char * errorMessage = nullptr;
+  if (sqlite3_exec(db.get(), sql.c_str(), nullptr, nullptr, &errorMessage) != SQLITE_OK)
+  {
+    std::cerr << "Error: Could execute SQL statement in sqlite3 database!" << std::endl
+              << errorMessage << std::endl;
+    sqlite3_free(errorMessage);
+    return false;
+  }
+
+  return true;
+}
+
+std::string quote(const std::string& str)
+{
+  std::string result(str);
+  std::string::size_type pos = 0;
+  std::string::size_type found = std::string::npos;
+  while ((found = result.find('\'', pos)) != std::string::npos)
+  {
+    result.replace(found, 1, "''");
+    pos += 2;
+  }
+
+  return std::string("'").append(result).append("'");
+}
+
 statement prepare(database& db, const std::string& sqlStmt)
 {
   sqlite3_stmt * stmt = nullptr;

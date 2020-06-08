@@ -22,6 +22,7 @@
 #include <climits>
 #include <filesystem>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <sstream>
 #include <sqlite3.h>
@@ -50,14 +51,14 @@ int64_t getInt64(const std::string& value)
     if (pos != value.size())
     {
       std::cerr << "Error: '"<< value << "' is not a valid signed 64-bit integer!";
-      return -1;
+      return std::numeric_limits<int64_t>::min();
     }
     return i;
   }
   catch (const std::exception& ex)
   {
     std::cerr << "Error: Could not convert value '" << value << "' to int64_t!" << std::endl;
-    return -1;
+    return std::numeric_limits<int64_t>::min();
   }
 }
 
@@ -139,35 +140,10 @@ int64_t getCountryId(sql::database& db, const std::string& geoId, const std::str
       std::cerr << "Error: Could not prepare insert statement for geoId!" << std::endl;
       return -1;
     }
-    /* if (!sql::bind(insert, 1, name) || !sql::bind(insert, 2, pop) || !sql::bind(insert, 3, geoId)
+    if (!sql::bind(insert, 1, name) || !sql::bind(insert, 2, pop) || !sql::bind(insert, 3, geoId)
         || !sql::bind(insert, 4, countryCode) || !sql::bind(insert, 5, continent))
     {
       std::cerr << "Error: Could not bind values to prepared statement!" << std::endl;
-      return -1;
-    } */
-    if (!sql::bind(insert, 1, name))
-    {
-      std::cerr << "Error: Could not bind name value to prepared statement!" << std::endl;
-      return -1;
-    }
-    if (!sql::bind(insert, 2, pop))
-    {
-      std::cerr << "Error: Could not bind population value to prepared statement!" << std::endl;
-      return -1;
-    }
-    if (!sql::bind(insert, 3, geoId))
-    {
-      std::cerr << "Error: Could not bind geoId value to prepared statement!" << std::endl;
-      return -1;
-    }
-    if (!sql::bind(insert, 4, countryCode))
-    {
-      std::cerr << "Error: Could not bind country code value to prepared statement!" << std::endl;
-      return -1;
-    }
-    if (!sql::bind(insert, 5, continent))
-    {
-      std::cerr << "Error: Could not bind continent value to prepared statement!" << std::endl;
       return -1;
     }
     const auto ret = sqlite3_step(insert.get());
@@ -302,12 +278,21 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     }
     std::string country = std::string(message.substr(command.size()));
     trim(country);
+    Message result;
     if (country.empty())
-      country = "DE";
+    {
+      country = "Germany";
+      result.body = "No country was specified - assuming " + country + ".\n";
+      result.formatted_body = "<em>No country was specified - assuming " + country + ".</em><br />\n";
+    }
+
     const int64_t countryId = getCountryId(db, country);
     if (countryId == -1)
     {
-      return Message("Could not find COVID-19 case numbers for " + country + "!");
+      return Message("Could not find COVID-19 case numbers for '" + country
+                   + "'. Use a two letter country code (ISO 3166) or the English name of the country.",
+                   "Could not find COVID-19 case numbers for '" + country
+                   + "'. Use a two letter country code (see <a href=\"https://en.wikipedia.org/wiki/ISO_3166\">ISO 3166</a>) or the English name of the country.");
     }
 
     const CovidNumbers data = getCountryData(db, countryId);
@@ -316,14 +301,23 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
       return Message("Could not get case numbers from database!");
     }
 
-    Message result;
+    result.body.append("Corona cases in " + country + ":\n");
+    result.formatted_body.append("Corona cases in " + country + ":<br />\n<ul>\n");
     for (const CovidNumbersElem& elem : data.days)
     {
       result.body.append("\n* ").append(elem.date).append(": ").append(std::to_string(elem.cases))
-                 .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)\n");
+                 .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)");
+      result.formatted_body.append("\n  <li>").append(elem.date).append(": ").append(std::to_string(elem.cases))
+                 .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)</li>\n");
     }
-    result.body.append("Total cases: " + std::to_string(data.totalCases))
-                .append(", total deaths: " + std::to_string(data.totalDeaths));
+    result.body.append("\nTotal cases: " + std::to_string(data.totalCases))
+                .append(", total deaths: " + std::to_string(data.totalDeaths))
+                .append("\n\nData source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
+                .append("provided by European Centre for Disease Prevention and Control");
+    result.formatted_body.append("</ul><br>\n<b>Total cases: " + std::to_string(data.totalCases))
+                .append(", total deaths: " + std::to_string(data.totalDeaths) + "</b><br />\n<br />\n")
+                .append("Data source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
+                .append("provided by European Centre for Disease Prevention and Control");
     return result;
   }
 
@@ -359,7 +353,7 @@ std::optional<std::string> Corona::createDatabase()
 
 std::optional<std::string> Corona::buildDatabase(const std::string& csv)
 {
-  std::clog << "Info: Building new database..." << std::endl;
+  std::clog << "Info: Building new database from CSV..." << std::endl;
   std::istringstream stream(csv);
   std::string line;
 
@@ -398,13 +392,11 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
   int64_t countryId = -1;
 
   unsigned long int lineCount = 0;
+  std::string batch;
+  unsigned int batchCount = 0;
   while (std::getline(stream, line))
   {
     ++lineCount;
-    if (lineCount % 1000 == 0)
-    {
-      std::clog << "Info: Processed " << lineCount << " lines." << std::endl;
-    }
     if (line.empty())
       continue;
 
@@ -438,7 +430,9 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       const auto& population = getInt64(parts.at(9));
       const auto& continent = parts.at(10);
 
-      countryId = getCountryId(db, currentGeoId, name, population, countryCode, continent);
+      countryId = getCountryId(db, currentGeoId, name,
+                               population != std::numeric_limits<int64_t>::min() ? population : -1,
+                               countryCode, continent);
       if (countryId == -1)
       {
         std::cerr << "Error: Could not find id for geographic code '" << currentGeoId << "'!" << std::endl;
@@ -452,37 +446,52 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     const auto& yearStr = parts.at(3);
     const int64_t cases = getInt64(parts.at(4));
     const int64_t deaths = getInt64(parts.at(5));
-    if (cases == -1 || deaths == -1)
+    if (cases == std::numeric_limits<int64_t>::min() || deaths == std::numeric_limits<int64_t>::min())
     {
       std::cerr << "Error: Got invalid case numbers in the following line:\n" << line << std::endl;
       return std::optional<std::string>();
     }
     const std::string date = yearStr + "-" + std::string(monthStr.size() == 1, '0') + monthStr + "-" + std::string(dayStr.size() == 1, '0') + dayStr;
 
-    auto insertStmt = sql::prepare(db, "INSERT INTO covid19 (countryId, date, cases, deaths) VALUES (@cid, @date, @cases, @deaths);");
-    if (!insertStmt)
+    if (batch.empty())
     {
-      std::cerr << "Error: Could not prepare insert statement for sqlite3 database!" << std::endl;
-      return std::optional<std::string>();
-    }
-    if (!sql::bind(insertStmt, 1, countryId))
-    {
-      std::cerr << "Error: Could not bind countryId to prepared statement!" << std::endl;
-      return std::optional<std::string>();
-    }
-    if (!sql::bind(insertStmt, 2, date) || !sql::bind(insertStmt, 3, cases) || !sql::bind(insertStmt, 4, deaths))
-    {
-      std::cerr << "Error: Could not bind values to insert statement!" << std::endl;
-      return std::optional<std::string>();
+      batch = "INSERT INTO covid19 (countryId, date, cases, deaths) VALUES ";
+      batchCount = 0;
     }
 
-    const int rcInsert = sqlite3_step(insertStmt.get());
-    if ((rcInsert != SQLITE_OK) && (rcInsert != SQLITE_DONE))
+    batch.append("(")
+         .append(std::to_string(countryId)).append(", ")
+         .append(sql::quote(date)).append(", ")
+         .append(std::to_string(cases)).append(", ")
+         .append(std::to_string(deaths))
+         .append("),");
+    ++batchCount;
+
+    // Perform one insert for every 200 data sets.
+    if (batchCount >= 250 && !batch.empty())
     {
-      std::cerr << "Error: Could not insert case number for line '" << line
-                << "' into database!" << std::endl;
+      batch.at(batch.size() - 1) = ';';
+      if (!sql::exec(db, batch))
+      {
+        std::cerr << "Error: Could not batch-insert case numbers into database!" << std::endl;
+        return std::optional<std::string>();
+      }
+
+      batch.clear();
+      batchCount = 0;
+    } // if batch
+  }
+
+  if (batchCount > 0 && !batch.empty())
+  {
+    batch.at(batch.size() - 1) = ';';
+    if (!sql::exec(db, batch))
+    {
+      std::cerr << "Error: Could not batch-insert case numbers into database!" << std::endl;
       return std::optional<std::string>();
     }
+    batch.clear();
+    batchCount = 0;
   }
 
   return dbFileName;
