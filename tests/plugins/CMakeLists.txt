@@ -53,6 +53,15 @@ else ()
   message ( FATAL_ERROR "cURL was not found!" )
 endif (CURL_FOUND)
 
+# find sqlite3 library
+find_package (SQLite3)
+if (SQLite3_FOUND)
+  include_directories(${SQLite3_INCLUDE_DIRS})
+  target_link_libraries (plugin_tests ${SQLite3_LIBRARIES})
+else ()
+  message ( FATAL_ERROR "SQLite3 was not found!" )
+endif (SQLite3_FOUND)
+
 if (NOT MSVC)
   # link static library for std::filesystem on GNU C++ compiler
   target_link_libraries(plugin_tests stdc++fs)
