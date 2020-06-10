@@ -1,0 +1,29 @@
+language: cpp
+compiler:
+  - clang
+  - gcc
+sudo: false
+dist: bionic
+os:
+  - linux
+services:
+  - mysql
+before_install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-8" CC="gcc-8"; fi
+script:
+  - mkdir ./build
+  - cd ./build
+  - cmake ..
+  - make -j4
+  - ctest -V
+addons:
+  apt:
+    packages:
+    - catch
+    - fortune-mod
+    - fortunes-min
+    - g++-8
+    - libcurl4-gnutls-dev
+    - libsqlite3-dev
+notifications:
+  email: false
