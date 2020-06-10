@@ -54,6 +54,11 @@ else ()
 endif (CURL_FOUND)
 
 # find sqlite3 library
+if (CMAKE_VERSION VERSION_LESS "3.14.0")
+  # Find module for sqlite3 was added in CMake 3.14.0, so any earlier version
+  # needs an extra configuration file to find it.
+  set(SQLite3_DIR "../../cmake/" )
+endif ()
 find_package (SQLite3)
 if (SQLite3_FOUND)
   include_directories(${SQLite3_INCLUDE_DIRS})
