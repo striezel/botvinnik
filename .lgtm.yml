@@ -1,0 +1,13 @@
+extraction:
+  cpp:
+     prepare:
+        packages:
+          - catch
+          - cmake
+          - git
+          - libcurl4-gnutls-dev
+          - libsqlite3-dev
+          - pkg-config
+     configure:
+        command:
+        - cmake .
