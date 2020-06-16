@@ -28,18 +28,41 @@
 namespace bvn
 {
 
+/** Corona numbers for a single day in a single country. */
 struct CovidNumbersElem
 {
-  int64_t cases;
-  int64_t deaths;
-  std::string date;
+  int64_t cases;     /**< number of infections */
+  int64_t deaths;    /**< number of deaths */
+  std::string date;  /**< date for the above numbers */
 };
 
+/** Corona numbers for several days, plus total numbers. */
 struct CovidNumbers
 {
-  int64_t totalCases;
-  int64_t totalDeaths;
-  std::vector<CovidNumbersElem> days;
+  int64_t totalCases;             /**< total number of infections since start */
+  int64_t totalDeaths;            /**< total number of deaths since start */
+  std::vector<CovidNumbersElem> days;  /**< daily numbers */
+
+  /** \brief Gets the percentage of deaths, rounded to two decimals, as string.
+   *
+   * \return Returns the percentage of deaths.
+   */
+  std::string percentage() const;
+};
+
+struct Country
+{
+  /** \brief Constructor.
+   *
+   * \param id     numeric countryId from database
+   * \param _name  name of the country
+   * \param _geoId geoId from the database / ISO-3166 two letter code
+   */
+  Country(const int64_t id = -1, const std::string& _name = "", const std::string& _geoId = "");
+
+  int64_t countryId;
+  std::string name;
+  std::string geoId;
 };
 
 /** \brief Show current case numbers for corona virus.

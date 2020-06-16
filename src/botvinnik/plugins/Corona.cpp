@@ -20,6 +20,7 @@
 
 #include "Corona.hpp"
 #include <climits>
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <limits>
@@ -33,6 +34,25 @@
 
 namespace bvn
 {
+
+std::string CovidNumbers::percentage() const
+{
+  if (totalCases <= 0 || totalDeaths < 0)
+    return std::string();
+
+  const double p = std::round(static_cast<double>(totalDeaths) * 10000.0 / static_cast<double>(totalCases)) / 100.0;
+  // String streams give nicer output format than std::to_string().
+  std::ostringstream stream;
+  stream << p << " %";
+  return stream.str();
+}
+
+Country::Country(const int64_t id, const std::string& _name, const std::string& _geoId)
+: countryId(id),
+  name(_name),
+  geoId(_geoId)
+{
+}
 
 int64_t getInt64(const std::string& value)
 {
@@ -169,16 +189,25 @@ int64_t getCountryId(sql::database& db, const std::string& geoId, const std::str
   return -1;
 }
 
-int64_t getCountryId(sql::database& db, const std::string& country)
+Country getCountryId(sql::database& db, const std::string& country)
 {
-  sql::statement stmt = sql::prepare(db, "SELECT countryId FROM country WHERE geoId=@country OR name=@country LIMIT 1;");
+  sql::statement stmt = sql::prepare(db, "SELECT countryId, name, geoId FROM country WHERE geoId=@country OR name=@country LIMIT 1;");
   if (!stmt)
-    return -1;
+    return { -1, "", "" };
   if (!sql::bind(stmt, 1, country))
-    return -1;
+    return { -1, "", "" };
   const auto rc = sqlite3_step(stmt.get());
   if (rc == SQLITE_ROW)
-    return sqlite3_column_int64(stmt.get(), 0);
+  {
+    Country result(sqlite3_column_int64(stmt.get(), 0));
+    const char * name = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 1));
+    if (name != nullptr)
+      result.name = name;
+    const char * geo = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2));
+    if (geo != nullptr)
+      result.geoId = geo;
+    return result;
+  }
 
   // Something went wrong, maybe country was not found.
   return -1;
@@ -276,33 +305,33 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
       std::clog << "Failed to open database " << dbLocation.value().first << std::endl;
       return Message("Could not open database containing COVID-19 case numbers!");
     }
-    std::string country = std::string(message.substr(command.size()));
-    trim(country);
+    std::string name = std::string(message.substr(command.size()));
+    trim(name);
     Message result;
-    if (country.empty())
+    if (name.empty())
     {
-      country = "Germany";
-      result.body = "No country was specified - assuming " + country + ".\n";
-      result.formatted_body = "<em>No country was specified - assuming " + country + ".</em><br />\n";
+      name = "Germany";
+      result.body = "No country was specified - assuming " + name + ".\n";
+      result.formatted_body = "<em>No country was specified - assuming " + name + ".</em><br />\n";
     }
 
-    const int64_t countryId = getCountryId(db, country);
-    if (countryId == -1)
+    const Country country = getCountryId(db, name);
+    if (country.countryId == -1)
     {
-      return Message("Could not find COVID-19 case numbers for '" + country
+      return Message("Could not find COVID-19 case numbers for '" + name
                    + "'. Use a two letter country code (ISO 3166) or the English name of the country.",
-                   "Could not find COVID-19 case numbers for '" + country
+                   "Could not find COVID-19 case numbers for '" + name
                    + "'. Use a two letter country code (see <a href=\"https://en.wikipedia.org/wiki/ISO_3166\">ISO 3166</a>) or the English name of the country.");
     }
 
-    const CovidNumbers data = getCountryData(db, countryId);
+    const CovidNumbers data = getCountryData(db, country.countryId);
     if (data.totalCases == -1)
     {
       return Message("Could not get case numbers from database!");
     }
 
-    result.body.append("Corona cases in " + country + ":\n");
-    result.formatted_body.append("Corona cases in " + country + ":<br />\n<ul>\n");
+    result.body.append("Corona cases in " + country.name + " (" + country.geoId + "):\n");
+    result.formatted_body.append("Corona cases in " + country.name + " (" + country.geoId + "):<br />\n<ul>\n");
     for (const CovidNumbersElem& elem : data.days)
     {
       result.body.append("\n* ").append(elem.date).append(": ").append(std::to_string(elem.cases))
@@ -310,13 +339,18 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
       result.formatted_body.append("\n  <li>").append(elem.date).append(": ").append(std::to_string(elem.cases))
                  .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)</li>\n");
     }
+    const auto percentage = data.percentage();
     result.body.append("\nTotal cases: " + std::to_string(data.totalCases))
-                .append(", total deaths: " + std::to_string(data.totalDeaths))
-                .append("\n\nData source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
+                .append(", total deaths: " + std::to_string(data.totalDeaths));
+    if (!percentage.empty())
+      result.body.append(" (" + percentage + ")");
+    result.body.append("\n\nData source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
                 .append("provided by European Centre for Disease Prevention and Control");
     result.formatted_body.append("</ul><br>\n<b>Total cases: " + std::to_string(data.totalCases))
-                .append(", total deaths: " + std::to_string(data.totalDeaths) + "</b><br />\n<br />\n")
-                .append("Data source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
+                .append(", total deaths: " + std::to_string(data.totalDeaths));
+    if (!percentage.empty())
+      result.formatted_body.append(" (" + percentage + ")");
+    result.formatted_body.append("</b><br />\n<br />\nData source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
                 .append("provided by European Centre for Disease Prevention and Control");
     return result;
   }
@@ -492,6 +526,13 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     }
     batch.clear();
     batchCount = 0;
+  }
+
+  // Replace underscores in names - those should be spaces.
+  if (!sql::exec(db, "UPDATE country SET name = REPLACE(name, '_', ' ');"))
+  {
+    // Failure is not critical, only unpleasant.
+    std::cerr << "Warning: Failed to replace underscores in country names with spaces!" << std::endl;
   }
 
   return dbFileName;

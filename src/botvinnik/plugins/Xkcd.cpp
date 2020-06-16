@@ -121,7 +121,7 @@ std::optional<XkcdData> getXkcdData(unsigned int num)
 }
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2312),
+: mLatestNum(2320),
   theMatrix(mat)
 {
   const auto latest = getXkcdData(0);
