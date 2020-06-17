@@ -105,6 +105,25 @@ packages:
   ("jessie"), e.g. `!deb8 grep` will find Debian 8 packages where "grep" is
   part of the name
 
+### Numeric conversion commands
+
+The following commands can convert between binary, decimal and hexadecimal
+numbers. For example, `!bin2dec 1101` will convert the binary number 1101 to
+its decimal representation.
+
+* `!bin2dec` - _(since version 0.1.5)_ converts a binary number to a decimal
+  number
+* `!bin2hex` - _(since version 0.1.5)_ converts a binary number to a hexadecimal
+  number
+* `!dec2bin` - _(since version 0.1.5)_ converts a decimal number to a binary
+  number
+* `!dec2hex` - _(since version 0.1.5)_ converts a decimal number to a
+  hexadecimal number
+* `!hex2bin` - _(since version 0.1.5)_ converts a hexadecimal number to a binary
+  number
+* `!hex2dec` - _(since version 0.1.5)_ converts a hexadecimal number to a
+  decimal number
+
 ### Connection test commands
 
 Connection tests commands are there to test connection availability.

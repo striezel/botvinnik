@@ -30,6 +30,8 @@
 		</Linker>
 		<Unit filename="../../src/botvinnik/Bot.cpp" />
 		<Unit filename="../../src/botvinnik/Bot.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/Conversion.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/Conversion.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Corona.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/Corona.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Debian.cpp" />
@@ -71,6 +73,7 @@
 		<Unit filename="../../third-party/nlohmann/json.hpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.h" />
+		<Unit filename="Conversion.cpp" />
 		<Unit filename="Corona.cpp" />
 		<Unit filename="Debian.cpp" />
 		<Unit filename="Fortune.cpp" />

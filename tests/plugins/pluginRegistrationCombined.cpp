@@ -24,6 +24,7 @@
 #include "../../src/conf/Configuration.hpp"
 #include "../../src/botvinnik/plugins/core/Basic.hpp"
 #include "../../src/botvinnik/plugins/core/Help.hpp"
+#include "../../src/botvinnik/plugins/Conversion.hpp"
 #include "../../src/botvinnik/plugins/Corona.hpp"
 #include "../../src/botvinnik/plugins/Debian.hpp"
 #include "../../src/botvinnik/plugins/Fortune.hpp"
@@ -41,6 +42,7 @@ TEST_CASE("plugin registration for all known plugins")
   Basic basic(bot);
   Help help(bot);
   // other plugins
+  Conversion convert;
   Corona cov;
   Debian deb;
   Fortune fortune;
@@ -53,6 +55,7 @@ TEST_CASE("plugin registration for all known plugins")
     // Plugin registration must be successful.
     REQUIRE( bot.registerPlugin(basic) );
     REQUIRE( bot.registerPlugin(help) );
+    REQUIRE( bot.registerPlugin(convert) );
     REQUIRE( bot.registerPlugin(cov) );
     REQUIRE( bot.registerPlugin(deb) );
     REQUIRE( bot.registerPlugin(fortune) );

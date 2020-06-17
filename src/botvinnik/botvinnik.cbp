@@ -70,6 +70,9 @@
 		<Unit filename="Bot.cpp" />
 		<Unit filename="Bot.hpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="plugins/Conversion.cpp" />
+		<Unit filename="plugins/Conversion.hpp" />
+		<Unit filename="plugins/ConvertBases.hpp" />
 		<Unit filename="plugins/Corona.cpp" />
 		<Unit filename="plugins/Corona.hpp" />
 		<Unit filename="plugins/Debian.cpp" />

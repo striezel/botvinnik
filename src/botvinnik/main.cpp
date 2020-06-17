@@ -27,6 +27,7 @@
 #include "Bot.hpp"
 #include "plugins/core/Basic.hpp"
 #include "plugins/core/Help.hpp"
+#include "plugins/Conversion.hpp"
 #include "plugins/Corona.hpp"
 #include "plugins/Debian.hpp"
 #include "plugins/Fortune.hpp"
@@ -187,6 +188,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::Conversion conv;
+  if (!bot.registerPlugin(conv))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of conversion plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

@@ -7,6 +7,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/Bot.cpp
     ../../src/botvinnik/plugins/core/Basic.cpp
     ../../src/botvinnik/plugins/core/Help.cpp
+    ../../src/botvinnik/plugins/Conversion.cpp
     ../../src/botvinnik/plugins/Corona.cpp
     ../../src/botvinnik/plugins/Debian.cpp
     ../../src/botvinnik/plugins/Fortune.cpp
@@ -26,6 +27,7 @@ set(plugin_tests_sources
     ../../third-party/simdjson/simdjson.cpp
     core/Basic.cpp
     core/Help.cpp
+    Conversion.cpp
     Corona.cpp
     Debian.cpp
     Fortune.cpp

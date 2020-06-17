@@ -18,6 +18,7 @@ set(botvinnik_sources
     Bot.cpp
     plugins/core/Basic.cpp
     plugins/core/Help.cpp
+    plugins/Conversion.cpp
     plugins/Corona.cpp
     plugins/Debian.cpp
     plugins/Fortune.cpp
