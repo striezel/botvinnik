@@ -20,6 +20,7 @@
 
 #include <catch.hpp>
 #include <algorithm>
+#include <regex>
 #include "../../src/botvinnik/Bot.hpp"
 #include "../../src/conf/Configuration.hpp"
 #include "../../src/botvinnik/plugins/Corona.hpp"
@@ -59,6 +60,39 @@ TEST_CASE("plugin Corona")
     {
       // Answer to commands must not be empty.
       REQUIRE_FALSE( plugin.handleCommand(cmd, cmd, mockUserId, ts).body.empty() );
+    }
+
+    SECTION("check output for a specific country")
+    {
+      const Message msg = plugin.handleCommand("corona", "corona Germany", mockUserId, ts);
+      REQUIRE_FALSE( msg.body.empty() );
+      REQUIRE_FALSE( msg.formatted_body.empty() );
+      // must contain country name and country code
+      REQUIRE( msg.body.find("Germany") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("Germany") != std::string::npos );
+      REQUIRE( msg.body.find("DE") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("DE") != std::string::npos );
+      // Basic data about infection numbers should be present.
+      REQUIRE( msg.body.find("infection") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("infection") != std::string::npos );
+      REQUIRE( msg.body.find("total") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("total") != std::string::npos );
+      REQUIRE( msg.body.find("cases") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("cases") != std::string::npos );
+      REQUIRE( msg.body.find("deaths") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("deaths") != std::string::npos );
+      // Several dates should be in the message.
+      const std::regex expr("20[0-9]{2}\\-[0-9]{2}\\-[0-9]{2}");
+      std::smatch matches;
+      std::regex_search(msg.body, matches, expr, std::regex_constants::match_any);
+      // Matches must have been found.
+      REQUIRE_FALSE( matches.empty() );
+      REQUIRE_FALSE( matches.size() > 3 );
+
+      std::regex_search(msg.formatted_body, matches, expr, std::regex_constants::match_any);
+      // Matches must have been found.
+      REQUIRE_FALSE( matches.empty() );
+      REQUIRE_FALSE( matches.size() > 3 );
     }
   }
 

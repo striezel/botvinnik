@@ -25,6 +25,7 @@
 #include <iostream>
 #include <limits>
 #include <random>
+#include <regex>
 #include <sstream>
 #include <sqlite3.h>
 #include "../../net/Curly.hpp"
@@ -284,6 +285,22 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
       {
         const auto delim = filesystem::pathDelimiter;
         dbFileName = home + delim + ".bvn" + delim + std::string("corona.db");
+        const std::string directory = home + delim + ".bvn";
+        try
+        {
+          // Attempt to create directory and set permissions.
+          std::filesystem::create_directories(directory);
+          std::filesystem::permissions(directory,
+              std::filesystem::perms::owner_all |
+              std::filesystem::perms::group_read |
+              std::filesystem::perms::others_read);
+        }
+        catch (const std::exception& ex)
+        {
+          std::cerr << "Error: Could not create directory " << directory
+                    << " and set permissions for it!\nException message: "
+                    << ex.what() << std::endl;
+        }
       }
       try
       {
@@ -336,7 +353,7 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     {
       result.body.append("\n* ").append(elem.date).append(": ").append(std::to_string(elem.cases))
                  .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)");
-      result.formatted_body.append("\n  <li>").append(elem.date).append(": ").append(std::to_string(elem.cases))
+      result.formatted_body.append("  <li>").append(elem.date).append(": ").append(std::to_string(elem.cases))
                  .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)</li>\n");
     }
     const auto percentage = data.percentage();
@@ -400,14 +417,21 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
   {
     line.erase(line.length() - 1);
   }
+  if (line.length() > 3)
+  {
+    // Remove UTF-8 byte order mark. It just confuses the following checks.
+    if (line.substr(0, 3) == "\xEF\xBB\xBF")
+      line.erase(0, 3);
+  }
 
-  if (line != "dateRep,day,month,year,cases,deaths,countriesAndTerritories,geoId,countryterritoryCode,popData2018,continentExp")
+  const std::regex header("dateRep,day,month,year,cases,deaths,countriesAndTerritories,geoId,countryterritoryCode,popData2[0-9]{3},continentExp");
+  std::smatch match;
+  if (!std::regex_match(line, match, header))
   {
     std::cerr << "Error: Header line of CSV data does not match the expected format!" << std::endl
               << "Header line is '" << line << "'." << std::endl;
     return std::optional<std::string>();
   }
-
   const std::string dbFileName = getTempFileName();
 
   sql::database db = sql::open(dbFileName);
@@ -478,8 +502,8 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     const auto& dayStr = parts.at(1);
     const auto& monthStr = parts.at(2);
     const auto& yearStr = parts.at(3);
-    const int64_t cases = getInt64(parts.at(4));
-    const int64_t deaths = getInt64(parts.at(5));
+    const int64_t cases = !parts.at(4).empty() ? getInt64(parts.at(4)) : 0;
+    const int64_t deaths = !parts.at(5).empty() ? getInt64(parts.at(5)) : 0;
     if (cases == std::numeric_limits<int64_t>::min() || deaths == std::numeric_limits<int64_t>::min())
     {
       std::cerr << "Error: Got invalid case numbers in the following line:\n" << line << std::endl;
