@@ -130,6 +130,16 @@ class Matrix
      *         Returns an empty optional, if the upload failed.
      */
     std::optional<std::string> uploadString(const std::string& data, const std::string& contentType = "application/octet-stream", const std::string& fileName = "file.dat");
+
+
+    /** \brief Uploads a web image to the matrix content repository.
+       *
+       * \param imgUrl   web URL of the image
+       * \return Returns an optional containing the Matrix Content URI for the
+       *         uploaded image.
+       *         Returns an empty optional, if the operation failed.
+       */
+    std::optional<std::string> uploadImage(const std::string& imgUrl);
   private:
     /** \brief Determines whether the user is logged in to Matrix.
      *

@@ -87,6 +87,16 @@ std::string floatToString(const float f);
  */
 bool stringToFloat(const std::string& str, float& value);
 
+
+/** \brief Checks whether a string ends with a given suffix.
+ *
+ * \param str     the string to check
+ * \param suffix  the suffix the string may end with
+ * \return Returns true, if str ends with suffix.
+ *         Returns false otherwise.
+ */
+bool endsWith(const std::string& str, const std::string& suffix);
+
 } // namespace
 
 #endif // BVN_STRINGS_HPP

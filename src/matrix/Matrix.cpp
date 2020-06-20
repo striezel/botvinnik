@@ -26,6 +26,7 @@
 #include "../net/Curly.hpp"
 #include "../net/url_encode.hpp"
 #include "../util/chrono.hpp"
+#include "../util/Strings.hpp"
 
 namespace bvn
 {
@@ -628,6 +629,43 @@ std::optional<std::string> Matrix::uploadString(const std::string& data, const s
   }
 
   return std::string(contentUri.get<std::string_view>().value());
+}
+
+std::optional<std::string> Matrix::uploadImage(const std::string& imgUrl)
+{
+  std::string imageData;
+  {
+    Curly curl;
+    curl.setURL(imgUrl);
+    std::clog << "Info: Downloading image " << imgUrl << "..." << std::endl;
+    if (!curl.perform(imageData) || curl.getResponseCode() != 200)
+    {
+      std::cerr << "Error: Could get image from " + imgUrl + "!" << std::endl
+                << "HTTP status code: " << curl.getResponseCode() << std::endl
+                << "Response: " << imageData << std::endl;
+      return std::optional<std::string>();
+    }
+  }
+
+  std::string contentType("application/octet-stream");
+  if (endsWith(imgUrl, ".png"))
+    contentType = "image/png";
+  else if (endsWith(imgUrl, ".jpg") || endsWith(imgUrl, ".jpeg"))
+    contentType = "image/jpeg";
+  else if (endsWith(imgUrl, ".gif"))
+    contentType = "image/gif";
+
+  std::string fileName;
+  const std::string::size_type pos = imgUrl.rfind('/');
+  if ((pos != std::string::npos) && (imgUrl.size() > pos + 1))
+    fileName = imgUrl.substr(pos + 1);
+  else
+    fileName = "image.data";
+
+  std::clog << "Info: Uploading image " << imgUrl << " ("
+            << static_cast<long int>(imageData.size())
+            << " bytes) to Matrix ..." << std::endl;
+  return uploadString(imageData, contentType, fileName);
 }
 
 } // namespace

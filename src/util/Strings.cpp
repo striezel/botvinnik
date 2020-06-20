@@ -251,4 +251,13 @@ bool stringToFloat(const std::string& str, float& value)
   return true;
 }
 
+bool endsWith(const std::string& str, const std::string& suffix)
+{
+  const std::string::size_type strLen = str.size();
+  const std::string::size_type suffixLen = suffix.size();
+  if (strLen < suffixLen)
+    return false;
+  return (str.substr(strLen - suffixLen).compare(suffix) == 0);
+}
+
 } // namespace

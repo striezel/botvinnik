@@ -79,15 +79,6 @@ class Xkcd: public Plugin
      */
     virtual std::string helpOneLine(const std::string_view& command) const;
   private:
-      /** \brief Uploads a web image to the matrix content repository.
-       *
-       * \param imgUrl   URL of the image
-       * \return Returns an optional containing the Matrix Content URI for the
-       *         uploaded image.
-       *         Returns an empty optional, if the operation failed.
-       */
-    std::optional<std::string> uploadImage(const std::string& imgUrl);
-
     unsigned int mLatestNum; /**< latest known comic number */
     Matrix& theMatrix; /**< reference to the Matrix instance */
 }; // class

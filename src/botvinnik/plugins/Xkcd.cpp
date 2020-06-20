@@ -36,15 +36,6 @@ XkcdData::XkcdData()
 {
 }
 
-bool endsWith(const std::string& str, const std::string& suffix)
-{
-  const std::string::size_type strLen = str.size();
-  const std::string::size_type suffixLen = suffix.size();
-  if (strLen < suffixLen)
-    return false;
-  return (str.substr(strLen - suffixLen).compare(suffix) == 0);
-}
-
 std::optional<XkcdData> getXkcdData(unsigned int num)
 {
   std::string response;
@@ -154,7 +145,7 @@ Message Xkcd::handleCommand(const std::string_view& command, const std::string_v
     }
     const XkcdData& data = info.value();
 
-    const auto mxcUri = uploadImage(data.img);
+    const auto mxcUri = theMatrix.uploadImage(data.img);
 
     Message xkcd;
     // Create normal body - varies, when transcript is there.
@@ -201,43 +192,6 @@ std::string Xkcd::helpOneLine(const std::string_view& command) const
   }
 
   return std::string();
-}
-
-std::optional<std::string> Xkcd::uploadImage(const std::string& imgUrl)
-{
-  std::string imageData;
-  {
-    Curly curl;
-    curl.setURL(imgUrl);
-    std::clog << "Info: Downloading image " << imgUrl << "..." << std::endl;
-    if (!curl.perform(imageData) || curl.getResponseCode() != 200)
-    {
-      std::cerr << "Error: Could get image from " + imgUrl + "!" << std::endl
-                << "HTTP status code: " << curl.getResponseCode() << std::endl
-                << "Response: " << imageData << std::endl;
-      return std::optional<std::string>();
-    }
-  }
-
-  std::string contentType("application/octet-stream");
-  if (endsWith(imgUrl, ".png"))
-    contentType = "image/png";
-  else if (endsWith(imgUrl, ".jpg") || endsWith(imgUrl, ".jpeg"))
-    contentType = "image/jpeg";
-  else if (endsWith(imgUrl, ".gif"))
-    contentType = "image/gif";
-
-  std::string fileName;
-  const std::string::size_type pos = imgUrl.rfind('/');
-  if ((pos != std::string::npos) && (imgUrl.size() > pos + 1))
-    fileName = imgUrl.substr(pos + 1);
-  else
-    fileName = "image.data";
-
-  std::clog << "Info: Uploading image " << imgUrl << " ("
-            << static_cast<long int>(imageData.size())
-            << " bytes) to Matrix ..." << std::endl;
-  return theMatrix.uploadString(imageData, contentType, fileName);
 }
 
 } // namespace
