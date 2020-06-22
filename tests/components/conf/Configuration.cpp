@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2022  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ TEST_CASE("Configuration")
     REQUIRE( conf.syncDelay() == std::chrono::milliseconds::zero() );
     REQUIRE( conf.translationServer().empty() );
     REQUIRE( conf.translationApiKey().empty() );
+    REQUIRE( conf.gifApiKey().empty() );
   }
 
   SECTION("comment character must be a printable non-space character")
@@ -123,6 +124,8 @@ TEST_CASE("Configuration")
       # translation server settings
       libretranslate.server=https://libretranslate.com
       libretranslate.apikey=abcdef1234567890
+      # Giphy settings
+      giphy.apikey=AbcdefghijklmnopQrStUvWxYz123456
       )conf";
       REQUIRE( writeConfiguration(path, content) );
       FileGuard guard{path};
@@ -141,6 +144,7 @@ TEST_CASE("Configuration")
       REQUIRE( conf.syncDelay() == std::chrono::milliseconds(5000) );
       REQUIRE( conf.translationServer() == "https://libretranslate.com" );
       REQUIRE( conf.translationApiKey() == "abcdef1234567890" );
+      REQUIRE( conf.gifApiKey() == "AbcdefghijklmnopQrStUvWxYz123456" );
     }
 
     SECTION("invalid: multiple homeserver values")
@@ -229,6 +233,7 @@ TEST_CASE("Configuration")
       bot.sync.allowed_failures=10
       bot.sync.delay_milliseconds=2345
       # no translation server settings
+      # no Giphy settings
       )conf";
       REQUIRE( writeConfiguration(path, content) );
       FileGuard guard{path};
@@ -247,6 +252,7 @@ TEST_CASE("Configuration")
       REQUIRE( conf.syncDelay() == std::chrono::milliseconds(2345) );
       REQUIRE( conf.translationServer().empty() );
       REQUIRE( conf.translationApiKey().empty() );
+      REQUIRE( conf.gifApiKey().empty() );
     }
 
     SECTION("homeserver URL without protocol gets HTTPS protocol")
@@ -263,6 +269,7 @@ TEST_CASE("Configuration")
       bot.sync.allowed_failures=5
       bot.sync.delay_milliseconds=12345
       # no translation server settings
+      # no gif server settings
       )conf";
       REQUIRE( writeConfiguration(path, content) );
       FileGuard guard{path};
@@ -281,6 +288,7 @@ TEST_CASE("Configuration")
       REQUIRE( conf.syncDelay() == std::chrono::milliseconds(12345) );
       REQUIRE( conf.translationServer().empty() );
       REQUIRE( conf.translationApiKey().empty() );
+      REQUIRE( conf.gifApiKey().empty() );
     }
 
     SECTION("invalid: multiple user id values")
@@ -717,6 +725,7 @@ TEST_CASE("Configuration")
       REQUIRE( conf.syncDelay() == std::chrono::milliseconds(4000) );
       REQUIRE( conf.translationServer().empty() );
       REQUIRE( conf.translationApiKey().empty() );
+      REQUIRE( conf.gifApiKey().empty() );
     }
 
     SECTION("invalid: same stop user id is listed twice")
@@ -1119,6 +1128,33 @@ TEST_CASE("Configuration")
       libretranslate.server=https://libretranslate.com
       libretranslate.apikey=abcdef1234567890
       libretranslate.apikey=abcdef1234567890
+      )conf";
+      REQUIRE( writeConfiguration(path, content) );
+      FileGuard guard{path};
+
+      Configuration conf;
+      REQUIRE_FALSE( conf.load(path.string()) );
+    }
+
+    SECTION("invalid: multiple Giphy API keys")
+    {
+      const std::filesystem::path path{"multiple-gif-server-keys.conf"};
+      const std::string content = R"conf(
+      # Matrix server login settings
+      matrix.homeserver=https://matrix.example.tld/
+      matrix.userid=@alice:matrix.example.tld
+      matrix.password=secret, secret, top(!) secret
+      # bot management settings
+      command.prefix=!
+      bot.stop.allowed.userid=@bob:matrix.example.tld
+      bot.sync.allowed_failures=12
+      bot.sync.delay_milliseconds=5000
+      # translation server settings
+      libretranslate.server=https://libretranslate.com
+      libretranslate.apikey=abcdef1234567890
+      # gif server settings
+      giphy.apikey=abcdef1234567890
+      giphy.apikey=abcdef1234567890
       )conf";
       REQUIRE( writeConfiguration(path, content) );
       FileGuard guard{path};

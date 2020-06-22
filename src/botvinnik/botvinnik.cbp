@@ -43,6 +43,7 @@
 			<Add library="sqlite3" />
 		</Linker>
 		<Unit filename="../../third-party/nlohmann/json.hpp" />
+		<Unit filename="../../third-party/nonstd/expected.hpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.h" />
 		<Unit filename="../ReturnCodes.hpp" />
@@ -92,6 +93,8 @@
 		<Unit filename="plugins/Debian.hpp" />
 		<Unit filename="plugins/Fortune.cpp" />
 		<Unit filename="plugins/Fortune.hpp" />
+		<Unit filename="plugins/Giphy.cpp" />
+		<Unit filename="plugins/Giphy.hpp" />
 		<Unit filename="plugins/LibreTranslate.cpp" />
 		<Unit filename="plugins/LibreTranslate.hpp" />
 		<Unit filename="plugins/Ping.cpp" />

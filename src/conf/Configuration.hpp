@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -150,6 +150,14 @@ class Configuration
     const std::string& translationApiKey() const;
 
 
+    /** \brief Gets the API key for Giphy requests.
+     *
+     * \return Returns the API key for Giphy.
+     * \remarks This may be empty, if no key was set.
+     */
+    const std::string& gifApiKey() const;
+
+
     /** \brief Loads the configuration from a file.
      *
      * \param  fileName   file name of the configuration file
@@ -189,6 +197,7 @@ class Configuration
     // plugin-related settings
     std::string mLibreTranslateServer; /**< URL of the LibreTranslate server */
     std::string mLibreTranslateApiKey; /**< API key for the LibreTranslate server */
+    std::string mGiphyApiKey;          /**< API key for Giphy */
 }; // class
 
 } // namespace

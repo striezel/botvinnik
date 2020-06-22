@@ -95,6 +95,8 @@ These commands are merely for entertainment purposes.
 
 * `!fortune` - _(since version 0.0.10)_ displays a random quote
 * `!fortunes` - _(since version 0.0.10)_ alias of the fortune command
+* `!giphy` - _(since version 0.6.3)_ show a random GIF file matching a given
+  keyword. For example, `!giphy cat` will show a random GIF of a cat.
 * `!xkcd` - _(since 0.1.1)_ show a random comic from xkcd.com. If you want to
   get a particular comic, use its number after the command. For example,
   `!xkcd 1` will show the very first comic of xkcd.

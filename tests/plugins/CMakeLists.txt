@@ -17,6 +17,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/DeactivatablePlugin.cpp
     ../../src/botvinnik/plugins/Debian.cpp
     ../../src/botvinnik/plugins/Fortune.cpp
+    ../../src/botvinnik/plugins/Giphy.cpp
     ../../src/botvinnik/plugins/LibreTranslate.cpp
     ../../src/botvinnik/plugins/Ping.cpp
     ../../src/botvinnik/plugins/Wikipedia.cpp
@@ -47,6 +48,7 @@ set(plugin_tests_sources
     Corona.cpp
     Debian.cpp
     Fortune.cpp
+    Giphy.cpp
     LibreTranslate.cpp
     Ping.cpp
     Wikipedia.cpp

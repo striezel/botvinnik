@@ -32,6 +32,7 @@ set(botvinnik_sources
     plugins/DeactivatablePlugin.cpp
     plugins/Debian.cpp
     plugins/Fortune.cpp
+    plugins/Giphy.cpp
     plugins/LibreTranslate.cpp
     plugins/Ping.cpp
     plugins/Wikipedia.cpp

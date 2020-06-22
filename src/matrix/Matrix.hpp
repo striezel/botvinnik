@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -149,6 +149,18 @@ class Matrix
      *         Returns false otherwise.
      */
     bool sendMessage(const std::string& roomId, const Message& message);
+
+
+    /** \brief Sends a image to a given room.
+     *
+     * \param roomId   id of the room to send the image in
+     * \param mxcUri   URI of the image
+     * \param mimeType MIME type of the image, if known (e. g. "image/jpeg");
+                       leave empty for unknown type
+     * \return Returns true, if the image was sent successfully.
+     *         Returns false otherwise.
+     */
+    bool sendImage(const std::string& roomId, const std::string& mxcUri, const std::string mimeType = "");
 
 
     /** \brief Gets the upload size limit for the server's content repository.

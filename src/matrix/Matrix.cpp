@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -508,6 +508,60 @@ bool Matrix::sendMessage(const std::string& roomId, const Message& message)
   return true;
 }
 
+bool Matrix::sendImage(const std::string& roomId, const std::string& mxcUri, const std::string mimeType)
+{
+  if (!isLoggedIn())
+  {
+    std::cerr << "Error: Need to be logged in to send images!" << std::endl;
+    return false;
+  }
+
+  if (mxcUri.empty())
+  {
+    std::cerr << "Error: Sending empty MXC URIs is useless!" << std::endl;
+    return false;
+  }
+
+  if (mxcUri.find("mxc://") != 0)
+  {
+    std::cerr << "Error: Given image URL is not an MXC URI!" << std::endl;
+    return false;
+  }
+
+  nlohmann::json message = {
+      { "msgtype", "m.image" },
+      { "body", "[This is an image.]" },
+      { "url", mxcUri }
+  };
+
+  if (!mimeType.empty())
+  {
+    message["info"]["mimetype"] = mimeType;
+  }
+
+  std::string response;
+  Curly curl;
+  // PUT /_matrix/client/r0/rooms/{roomId}/send/{eventType}/{txnId}
+  const std::string encodedRoomId(encodeRoomId(roomId));
+  const uint_least32_t txnId = transactionId.fetch_add(1);
+  curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/send/m.room.message/" + std::to_string(txnId));
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  curl.addHeader("Content-Type: application/json");
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
+  curl.setPutData(message.dump());
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Sending image message failed!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return false;
+  }
+
+  return true;
+}
+
 std::optional<int64_t> Matrix::getUploadLimit()
 {
   if (!isLoggedIn())
@@ -640,6 +694,22 @@ std::optional<std::string> Matrix::uploadString(const std::string& data, const s
   return std::string(contentUri.get<std::string_view>().value());
 }
 
+std::string extract_file_name_from_url(const std::string& url)
+{
+  std::string fileName;
+  std::string::size_type pos = url.rfind('/');
+  if ((pos != std::string::npos) && (url.size() > pos + 1))
+    fileName = url.substr(pos + 1);
+  else
+    fileName = "image.data";
+
+  pos = fileName.rfind('?');
+  if ((pos != std::string::npos) && (pos > 3))
+    fileName.erase(pos);
+
+  return fileName;
+}
+
 std::optional<std::string> Matrix::uploadImage(const std::string& imgUrl)
 {
   std::string imageData;
@@ -664,15 +734,10 @@ std::optional<std::string> Matrix::uploadImage(const std::string& imgUrl)
     contentType = "image/png";
   else if (endsWith(imgUrl, ".jpg") || endsWith(imgUrl, ".jpeg"))
     contentType = "image/jpeg";
-  else if (endsWith(imgUrl, ".gif"))
+  else if (endsWith(imgUrl, ".gif") || (imgUrl.find(".gif") != std::string::npos))
     contentType = "image/gif";
 
-  std::string fileName;
-  const std::string::size_type pos = imgUrl.rfind('/');
-  if ((pos != std::string::npos) && (imgUrl.size() > pos + 1))
-    fileName = imgUrl.substr(pos + 1);
-  else
-    fileName = "image.data";
+  const std::string fileName = extract_file_name_from_url(imgUrl);
 
   std::clog << "Info: Uploading image " << imgUrl << " ("
             << static_cast<long int>(imageData.size())

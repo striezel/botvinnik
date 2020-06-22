@@ -135,10 +135,20 @@ an API key, while other servers work without one.
 A list of some possible LibreTranslate servers is available at
 <https://github.com/LibreTranslate/LibreTranslate#mirrors>.
 
+## Giphy settings
+
+To use the Giphy plugin, the bot needs a valid API key for Giphy. Without it,
+the plugin will not work.
+
+* **giphy.apikey** - _(since 0.6.3, optional)_ API key for Giphy. If this
+  setting is omitted, then it is assumed to be empty. If this is empty, then no
+  requests to the Giphy API will be performed. The plugin will show a message
+  about a missing API key instead when it's command `!giphy` is invoked.
+
 # Example of a complete configuration file
 
 The following example is a complete core configuration file for the
-botvinnik program (as of version 0.5.0):
+botvinnik program (as of version 0.6.3):
 
     # This line is a comment and will be ignored by the program.
     #And so is this line.
@@ -157,3 +167,5 @@ botvinnik program (as of version 0.5.0):
     # translation server settings
     libretranslate.server=https://libretranslate.com
     libretranslate.apikey=abcdef1234567890
+    # Giphy API key
+    giphy.apikey=AbCdEfGhIjKlMnOpQrStUvWxYz123456

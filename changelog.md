@@ -6,6 +6,10 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2023-07-??)
 
+* __[new feature]__
+  A new command to display random GIFs - `!giphy` - is added. For example, the
+  command `!giphy cat` will show a random GIF of a cat.
+
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.2.0 to version 3.2.2.

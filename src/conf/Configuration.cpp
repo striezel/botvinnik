@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -64,7 +64,8 @@ Configuration::Configuration()
   mAllowedFailsIn64(-1),
   mSyncDelay(std::chrono::milliseconds::zero()),
   mLibreTranslateServer(""),
-  mLibreTranslateApiKey("")
+  mLibreTranslateApiKey(""),
+  mGiphyApiKey("")
 {
 }
 
@@ -141,6 +142,11 @@ const std::string& Configuration::translationServer() const
 const std::string& Configuration::translationApiKey() const
 {
   return mLibreTranslateApiKey;
+}
+
+const std::string& Configuration::gifApiKey() const
+{
+  return mGiphyApiKey;
 }
 
 void Configuration::findConfigurationFile(std::string& realName)
@@ -384,6 +390,16 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       }
       mLibreTranslateApiKey = value;
     } // if libretranslate.apikey
+    else if (name == "giphy.apikey")
+    {
+      if (!mGiphyApiKey.empty())
+      {
+        std::cerr << "Error: API key for Giphy is specified more than once in file "
+                  << fileName << "!" << std::endl;
+        return false;
+      }
+      mGiphyApiKey = value;
+    } // if giphy.apikey
     else
     {
       std::cerr << "Error while reading configuration file " << fileName
@@ -483,6 +499,7 @@ void Configuration::clear()
   mSyncDelay = std::chrono::milliseconds::zero();
   mLibreTranslateServer.clear();
   mLibreTranslateApiKey.clear();
+  mGiphyApiKey.clear();
 }
 
 } // namespace
