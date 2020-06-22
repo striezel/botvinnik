@@ -27,13 +27,13 @@
 #include "Bot.hpp"
 #include "plugins/core/Basic.hpp"
 #include "plugins/core/Help.hpp"
-#include "plugins/Conversion.hpp"
-#include "plugins/Corona.hpp"
+#include "plugins/convert/Conversion.hpp"
+#include "plugins/corona/Corona.hpp"
 #include "plugins/Debian.hpp"
 #include "plugins/Fortune.hpp"
 #include "plugins/Ping.hpp"
 #include "plugins/Wikipedia.hpp"
-#include "plugins/Xkcd.hpp"
+#include "plugins/xkcd/Xkcd.hpp"
 
 void showVersion()
 {

@@ -18,39 +18,22 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_PLUGIN_XKCD_HPP
-#define BVN_PLUGIN_XKCD_HPP
+#ifndef BVN_PLUGIN_CONVERSION_HPP
+#define BVN_PLUGIN_CONVERSION_HPP
 
-#include "Plugin.hpp"
-#include "../../matrix/Matrix.hpp"
+#include "../Plugin.hpp"
 
 namespace bvn
 {
 
-/** \brief Basic data for xkcd.com comic.
+/** \brief Converts hexadecimal numbers.
  */
-struct XkcdData
-{
-  XkcdData();
-
-  unsigned int num;  /**< number of comic */
-  std::string title; /**< comic title */
-  std::string img;   /**< URL for the image */
-  std::string transcript; /**< transcribed text of comic (optional) */
-  std::string alt;  /**< alt text of image */
-}; // struct
-
-
-/** \brief Replies with a random comic from xkcd.com.
- */
-class Xkcd: public Plugin
+class Conversion: public Plugin
 {
   public:
     /** \brief Constructor.
-     *
-     * \param mat  logged in matrix instance
      */
-    Xkcd(Matrix& mat);
+    Conversion();
 
 
     /** \brief Gets a list of commands that are provided by this plugin.
@@ -79,10 +62,9 @@ class Xkcd: public Plugin
      */
     virtual std::string helpOneLine(const std::string_view& command) const;
   private:
-    unsigned int mLatestNum; /**< latest known comic number */
-    Matrix& theMatrix; /**< reference to the Matrix instance */
+    Message convert(const std::string_view& command, const std::string_view& message, const unsigned int origBase, const unsigned int newBase);
 }; // class
 
 } // namespace
 
-#endif // BVN_PLUGIN_XKCD_HPP
+#endif // BVN_PLUGIN_CONVERSION_HPP

@@ -22,7 +22,7 @@
 #include <algorithm>
 #include "../../src/botvinnik/Bot.hpp"
 #include "../../src/conf/Configuration.hpp"
-#include "../../src/botvinnik/plugins/Conversion.hpp"
+#include "../../src/botvinnik/plugins/convert/Conversion.hpp"
 
 TEST_CASE("plugin Conversion")
 {

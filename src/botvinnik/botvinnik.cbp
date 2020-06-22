@@ -70,11 +70,6 @@
 		<Unit filename="Bot.cpp" />
 		<Unit filename="Bot.hpp" />
 		<Unit filename="main.cpp" />
-		<Unit filename="plugins/Conversion.cpp" />
-		<Unit filename="plugins/Conversion.hpp" />
-		<Unit filename="plugins/ConvertBases.hpp" />
-		<Unit filename="plugins/Corona.cpp" />
-		<Unit filename="plugins/Corona.hpp" />
 		<Unit filename="plugins/Debian.cpp" />
 		<Unit filename="plugins/Debian.hpp" />
 		<Unit filename="plugins/Fortune.cpp" />
@@ -84,12 +79,21 @@
 		<Unit filename="plugins/Plugin.hpp" />
 		<Unit filename="plugins/Wikipedia.cpp" />
 		<Unit filename="plugins/Wikipedia.hpp" />
-		<Unit filename="plugins/Xkcd.cpp" />
-		<Unit filename="plugins/Xkcd.hpp" />
+		<Unit filename="plugins/convert/Conversion.cpp" />
+		<Unit filename="plugins/convert/Conversion.hpp" />
+		<Unit filename="plugins/convert/ConvertBases.hpp" />
 		<Unit filename="plugins/core/Basic.cpp" />
 		<Unit filename="plugins/core/Basic.hpp" />
 		<Unit filename="plugins/core/Help.cpp" />
 		<Unit filename="plugins/core/Help.hpp" />
+		<Unit filename="plugins/corona/Corona.cpp" />
+		<Unit filename="plugins/corona/Corona.hpp" />
+		<Unit filename="plugins/corona/CovidNumbers.cpp" />
+		<Unit filename="plugins/corona/CovidNumbers.hpp" />
+		<Unit filename="plugins/xkcd/Xkcd.cpp" />
+		<Unit filename="plugins/xkcd/Xkcd.hpp" />
+		<Unit filename="plugins/xkcd/XkcdData.cpp" />
+		<Unit filename="plugins/xkcd/XkcdData.hpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

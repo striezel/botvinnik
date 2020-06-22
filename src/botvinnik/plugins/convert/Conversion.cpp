@@ -20,7 +20,7 @@
 
 #include "Conversion.hpp"
 #include "ConvertBases.hpp"
-#include "../../util/Strings.hpp"
+#include "../../../util/Strings.hpp"
 
 namespace bvn
 {

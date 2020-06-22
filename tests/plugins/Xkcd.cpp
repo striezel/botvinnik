@@ -22,7 +22,7 @@
 #include <algorithm>
 #include "../../src/botvinnik/Bot.hpp"
 #include "../../src/conf/Configuration.hpp"
-#include "../../src/botvinnik/plugins/Xkcd.hpp"
+#include "../../src/botvinnik/plugins/xkcd/Xkcd.hpp"
 
 TEST_CASE("plugin Xkcd")
 {

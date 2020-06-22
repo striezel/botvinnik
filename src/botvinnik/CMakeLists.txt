@@ -18,13 +18,15 @@ set(botvinnik_sources
     Bot.cpp
     plugins/core/Basic.cpp
     plugins/core/Help.cpp
-    plugins/Conversion.cpp
-    plugins/Corona.cpp
+    plugins/convert/Conversion.cpp
+    plugins/corona/Corona.cpp
+    plugins/corona/CovidNumbers.cpp
     plugins/Debian.cpp
     plugins/Fortune.cpp
     plugins/Ping.cpp
     plugins/Wikipedia.cpp
-    plugins/Xkcd.cpp
+    plugins/xkcd/Xkcd.cpp
+    plugins/xkcd/XkcdData.cpp
     main.cpp)
 
 if (CMAKE_COMPILER_IS_GNUCC)

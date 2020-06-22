@@ -18,22 +18,24 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_PLUGIN_CONVERSION_HPP
-#define BVN_PLUGIN_CONVERSION_HPP
+#ifndef BVN_PLUGIN_CORONA_HPP
+#define BVN_PLUGIN_CORONA_HPP
 
-#include "Plugin.hpp"
+#include "../Plugin.hpp"
+#include <chrono>
+#include <optional>
 
 namespace bvn
 {
 
-/** \brief Converts hexadecimal numbers.
+/** \brief Show current case numbers for corona virus.
  */
-class Conversion: public Plugin
+class Corona: public Plugin
 {
   public:
     /** \brief Constructor.
      */
-    Conversion();
+    Corona();
 
 
     /** \brief Gets a list of commands that are provided by this plugin.
@@ -61,10 +63,20 @@ class Conversion: public Plugin
      * \return Returns a short, one line help text for the command.
      */
     virtual std::string helpOneLine(const std::string_view& command) const;
+
+
+    /** \brief Creates a sqlite database with corona virus case numbers.
+     *
+     * \return Returns an optional containing the path of the created database.
+     *         Returns an empty optional, if an error occurred.
+     */
+    static std::optional<std::string> createDatabase();
   private:
-    Message convert(const std::string_view& command, const std::string_view& message, const unsigned int origBase, const unsigned int newBase);
+    std::optional<std::pair<std::string, std::chrono::steady_clock::time_point> > dbLocation;
+
+    static std::optional<std::string> buildDatabase(const std::string& csv);
 }; // class
 
 } // namespace
 
-#endif // BVN_PLUGIN_CONVERSION_HPP
+#endif // BVN_PLUGIN_CORONA_HPP

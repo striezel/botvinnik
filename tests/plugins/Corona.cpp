@@ -23,7 +23,7 @@
 #include <regex>
 #include "../../src/botvinnik/Bot.hpp"
 #include "../../src/conf/Configuration.hpp"
-#include "../../src/botvinnik/plugins/Corona.hpp"
+#include "../../src/botvinnik/plugins/corona/Corona.hpp"
 
 TEST_CASE("plugin Corona")
 {

@@ -24,13 +24,13 @@
 #include "../../src/conf/Configuration.hpp"
 #include "../../src/botvinnik/plugins/core/Basic.hpp"
 #include "../../src/botvinnik/plugins/core/Help.hpp"
-#include "../../src/botvinnik/plugins/Conversion.hpp"
-#include "../../src/botvinnik/plugins/Corona.hpp"
+#include "../../src/botvinnik/plugins/convert/Conversion.hpp"
+#include "../../src/botvinnik/plugins/corona/Corona.hpp"
 #include "../../src/botvinnik/plugins/Debian.hpp"
 #include "../../src/botvinnik/plugins/Fortune.hpp"
 #include "../../src/botvinnik/plugins/Ping.hpp"
 #include "../../src/botvinnik/plugins/Wikipedia.hpp"
-#include "../../src/botvinnik/plugins/Xkcd.hpp"
+#include "../../src/botvinnik/plugins/xkcd/Xkcd.hpp"
 
 TEST_CASE("plugin registration for all known plugins")
 {

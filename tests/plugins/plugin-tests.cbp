@@ -30,10 +30,6 @@
 		</Linker>
 		<Unit filename="../../src/botvinnik/Bot.cpp" />
 		<Unit filename="../../src/botvinnik/Bot.hpp" />
-		<Unit filename="../../src/botvinnik/plugins/Conversion.cpp" />
-		<Unit filename="../../src/botvinnik/plugins/Conversion.hpp" />
-		<Unit filename="../../src/botvinnik/plugins/Corona.cpp" />
-		<Unit filename="../../src/botvinnik/plugins/Corona.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Debian.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/Debian.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Fortune.cpp" />
@@ -43,12 +39,21 @@
 		<Unit filename="../../src/botvinnik/plugins/Plugin.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Wikipedia.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/Wikipedia.hpp" />
-		<Unit filename="../../src/botvinnik/plugins/Xkcd.cpp" />
-		<Unit filename="../../src/botvinnik/plugins/Xkcd.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/convert/Conversion.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/convert/Conversion.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/convert/ConvertBases.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Basic.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Basic.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Help.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Help.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/Corona.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/Corona.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdData.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdData.hpp" />
 		<Unit filename="../../src/conf/Configuration.cpp" />
 		<Unit filename="../../src/conf/Configuration.hpp" />
 		<Unit filename="../../src/matrix/Matrix.cpp" />

@@ -7,13 +7,15 @@ set(plugin_tests_sources
     ../../src/botvinnik/Bot.cpp
     ../../src/botvinnik/plugins/core/Basic.cpp
     ../../src/botvinnik/plugins/core/Help.cpp
-    ../../src/botvinnik/plugins/Conversion.cpp
-    ../../src/botvinnik/plugins/Corona.cpp
+    ../../src/botvinnik/plugins/convert/Conversion.cpp
+    ../../src/botvinnik/plugins/corona/Corona.cpp
+    ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
     ../../src/botvinnik/plugins/Debian.cpp
     ../../src/botvinnik/plugins/Fortune.cpp
     ../../src/botvinnik/plugins/Ping.cpp
     ../../src/botvinnik/plugins/Wikipedia.cpp
-    ../../src/botvinnik/plugins/Xkcd.cpp
+    ../../src/botvinnik/plugins/xkcd/Xkcd.cpp
+    ../../src/botvinnik/plugins/xkcd/XkcdData.cpp
     ../../src/conf/Configuration.cpp
     ../../src/matrix/Matrix.cpp
     ../../src/matrix/Message.cpp

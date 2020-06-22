@@ -20,7 +20,6 @@
 
 #include "Corona.hpp"
 #include <climits>
-#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <limits>
@@ -28,32 +27,14 @@
 #include <regex>
 #include <sstream>
 #include <sqlite3.h>
-#include "../../net/Curly.hpp"
-#include "../../util/Directories.hpp"
-#include "../../util/sqlite3.hpp"
-#include "../../util/Strings.hpp"
+#include "../../../net/Curly.hpp"
+#include "../../../util/Directories.hpp"
+#include "../../../util/sqlite3.hpp"
+#include "../../../util/Strings.hpp"
+#include "CovidNumbers.hpp"
 
 namespace bvn
 {
-
-std::string CovidNumbers::percentage() const
-{
-  if (totalCases <= 0 || totalDeaths < 0)
-    return std::string();
-
-  const double p = std::round(static_cast<double>(totalDeaths) * 10000.0 / static_cast<double>(totalCases)) / 100.0;
-  // String streams give nicer output format than std::to_string().
-  std::ostringstream stream;
-  stream << p << " %";
-  return stream.str();
-}
-
-Country::Country(const int64_t id, const std::string& _name, const std::string& _geoId)
-: countryId(id),
-  name(_name),
-  geoId(_geoId)
-{
-}
 
 int64_t getInt64(const std::string& value)
 {
@@ -219,15 +200,15 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
   auto stmt = sql::prepare(db, "SELECT SUM(cases), SUM(deaths) FROM covid19 WHERE countryId = @cid;");
   if (!stmt)
   {
-    return {-1, -1 , {}};
+    return CovidNumbers();
   }
   if (!sql::bind(stmt, 1, countryId))
   {
-    return {-1, -1 , {}};
+    return CovidNumbers();
   }
   int rc = sqlite3_step(stmt.get());
   if (rc != SQLITE_ROW)
-    return {-1, -1 , {}};
+    return CovidNumbers();
   CovidNumbers result;
   result.totalCases = sqlite3_column_int64(stmt.get(), 0);
   result.totalDeaths = sqlite3_column_int64(stmt.get(), 1);
@@ -235,11 +216,11 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
   stmt = sql::prepare(db, "SELECT date, cases, deaths FROM covid19 WHERE countryId = @cid ORDER BY date DESC LIMIT 7;");
   if (!stmt)
   {
-    return {-1, -1 , {}};
+    return CovidNumbers();
   }
   if (!sql::bind(stmt, 1, countryId))
   {
-    return {-1, -1 , {}};
+    return CovidNumbers();
   }
   while ((rc = sqlite3_step(stmt.get())) == SQLITE_ROW)
   {
@@ -250,7 +231,7 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
     result.days.emplace_back(elem);
   }
   if ((rc != SQLITE_OK) && (rc != SQLITE_DONE))
-    return {-1, -1 , {}};
+    return CovidNumbers();
 
   return result;
 }
