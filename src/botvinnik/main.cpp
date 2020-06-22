@@ -32,6 +32,7 @@
 #include "plugins/corona/Corona.hpp"
 #include "plugins/Debian.hpp"
 #include "plugins/Fortune.hpp"
+#include "plugins/Giphy.hpp"
 #include "plugins/Ping.hpp"
 #include "plugins/Wikipedia.hpp"
 #include "plugins/xkcd/Xkcd.hpp"
@@ -205,6 +206,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of conversion plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::Giphy gif;
+  if (!bot.registerPlugin(gif))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of giphy plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

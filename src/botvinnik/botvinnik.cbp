@@ -76,6 +76,8 @@
 		<Unit filename="plugins/Debian.hpp" />
 		<Unit filename="plugins/Fortune.cpp" />
 		<Unit filename="plugins/Fortune.hpp" />
+		<Unit filename="plugins/Giphy.cpp" />
+		<Unit filename="plugins/Giphy.hpp" />
 		<Unit filename="plugins/Ping.cpp" />
 		<Unit filename="plugins/Ping.hpp" />
 		<Unit filename="plugins/Plugin.hpp" />

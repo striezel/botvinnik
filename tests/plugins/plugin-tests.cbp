@@ -34,6 +34,8 @@
 		<Unit filename="../../src/botvinnik/plugins/Debian.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Fortune.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/Fortune.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/Giphy.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/Giphy.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Ping.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/Ping.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Plugin.hpp" />
@@ -86,6 +88,7 @@
 		<Unit filename="Corona.cpp" />
 		<Unit filename="Debian.cpp" />
 		<Unit filename="Fortune.cpp" />
+		<Unit filename="Giphy.cpp" />
 		<Unit filename="Ping.cpp" />
 		<Unit filename="Wikipedia.cpp" />
 		<Unit filename="Xkcd.cpp" />

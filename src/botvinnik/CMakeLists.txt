@@ -25,6 +25,7 @@ set(botvinnik_sources
     plugins/corona/CovidNumbers.cpp
     plugins/Debian.cpp
     plugins/Fortune.cpp
+    plugins/Giphy.cpp
     plugins/Ping.cpp
     plugins/Wikipedia.cpp
     plugins/xkcd/Xkcd.cpp

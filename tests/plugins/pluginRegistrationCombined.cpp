@@ -29,6 +29,7 @@
 #include "../../src/botvinnik/plugins/corona/Corona.hpp"
 #include "../../src/botvinnik/plugins/Debian.hpp"
 #include "../../src/botvinnik/plugins/Fortune.hpp"
+#include "../../src/botvinnik/plugins/Giphy.hpp"
 #include "../../src/botvinnik/plugins/Ping.hpp"
 #include "../../src/botvinnik/plugins/Wikipedia.hpp"
 #include "../../src/botvinnik/plugins/xkcd/Xkcd.hpp"
@@ -48,6 +49,7 @@ TEST_CASE("plugin registration for all known plugins")
   Corona cov;
   Debian deb;
   Fortune fortune;
+  Giphy giphy("key", bot.matrix());
   Ping ping;
   Wikipedia wiki;
   Xkcd xkcd(bot.matrix());
@@ -62,6 +64,7 @@ TEST_CASE("plugin registration for all known plugins")
     REQUIRE( bot.registerPlugin(cov) );
     REQUIRE( bot.registerPlugin(deb) );
     REQUIRE( bot.registerPlugin(fortune) );
+    REQUIRE( bot.registerPlugin(giphy) );
     REQUIRE( bot.registerPlugin(ping) );
     REQUIRE( bot.registerPlugin(wiki) );
     REQUIRE( bot.registerPlugin(xkcd) );

@@ -13,6 +13,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
     ../../src/botvinnik/plugins/Debian.cpp
     ../../src/botvinnik/plugins/Fortune.cpp
+    ../../src/botvinnik/plugins/Giphy.cpp
     ../../src/botvinnik/plugins/Ping.cpp
     ../../src/botvinnik/plugins/Wikipedia.cpp
     ../../src/botvinnik/plugins/xkcd/Xkcd.cpp
@@ -36,6 +37,7 @@ set(plugin_tests_sources
     Corona.cpp
     Debian.cpp
     Fortune.cpp
+    Giphy.cpp
     Ping.cpp
     Wikipedia.cpp
     Xkcd.cpp
