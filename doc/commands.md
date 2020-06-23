@@ -33,7 +33,7 @@ itself:
 * `!leave` - _(since version 0.1.7)_ makes the bot leave a Matrix room, e. g.
   the command `!leave !id_of_room:example.com` would make the bot leave the
   room with the id `!id_of_room:example.com`.
-  Only users that are allowed to stop the bot can do make the bot leave rooms.
+  Only users that are allowed to stop the bot can make the bot leave rooms.
 * `!version` - _(sinve version 0.0.5)_ shows version information for the bot
 * `!whoami` - _(since version 0.0.8)_ show the Matrix id of the user that sent
   the request
