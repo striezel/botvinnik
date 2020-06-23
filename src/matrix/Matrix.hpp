@@ -89,16 +89,35 @@ class Matrix
     bool roomName(const std::string& roomId, std::string& name);
 
 
+    /** \brief Joins the room with the given room id.
+     *
+     * \param roomId    id of the room to join
+     * \return Returns true, if the room was joined.
+     *         Returns false otherwise.
+     */
+    bool joinRoom(const std::string& roomId);
+
+
+    /** \brief Leaves the room with the given room id.
+     *
+     * \param roomId    id of the room to leave
+     * \return Returns true, if the room was left.
+     *         Returns false otherwise.
+     */
+    bool leaveRoom(const std::string& roomId);
+
+
     /** \brief Gets room events for the user.
      *
      * \param events      string that will be used to store the events as JSON (if any)
      * \param nextBatch   string that will be used to store the "next_batch" (if any)
      * \param rooms       events of Matrix rooms
+     * \param invites     vector to store ids of room where user has been invited to join
      * \param since       if set, the request will only retrieve the data since that batch
      * \return Returns true, if the request succeeded.
      *         Returns false otherwise.
      */
-    bool sync(std::string& events, std::string& nextBatch, std::vector<matrix::Room>& rooms, const std::string& since = "");
+    bool sync(std::string& events, std::string& nextBatch, std::vector<matrix::Room>& rooms, std::vector<std::string>& invites, const std::string& since = "");
 
 
     /** \brief Sends a message to a given room.

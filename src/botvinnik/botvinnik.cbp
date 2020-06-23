@@ -53,6 +53,8 @@
 		<Unit filename="../matrix/events/RoomMessageText.hpp" />
 		<Unit filename="../matrix/events/RoomName.hpp" />
 		<Unit filename="../matrix/events/RoomTopic.hpp" />
+		<Unit filename="../matrix/json/Sync.cpp" />
+		<Unit filename="../matrix/json/Sync.hpp" />
 		<Unit filename="../net/Curly.cpp" />
 		<Unit filename="../net/Curly.hpp" />
 		<Unit filename="../net/url_encode.cpp" />
@@ -86,6 +88,8 @@
 		<Unit filename="plugins/core/Basic.hpp" />
 		<Unit filename="plugins/core/Help.cpp" />
 		<Unit filename="plugins/core/Help.hpp" />
+		<Unit filename="plugins/core/Rooms.cpp" />
+		<Unit filename="plugins/core/Rooms.hpp" />
 		<Unit filename="plugins/corona/Corona.cpp" />
 		<Unit filename="plugins/corona/Corona.hpp" />
 		<Unit filename="plugins/corona/CovidNumbers.cpp" />

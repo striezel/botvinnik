@@ -18,8 +18,8 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_PLUGIN_BASIC_HPP
-#define BVN_PLUGIN_BASIC_HPP
+#ifndef BVN_PLUGIN_ROOMS_HPP
+#define BVN_PLUGIN_ROOMS_HPP
 
 #include <string>
 #include <string_view>
@@ -30,16 +30,16 @@
 namespace bvn
 {
 
-/** \brief Plugin providing some basic commands for the bot.
+/** \brief Plugin providing some information about the bot's active rooms.
  */
-class Basic: public Plugin
+class Rooms: public Plugin
 {
   public:
     /** \brief Constructor.
      *
      * \param b   the bot instance
      */
-    Basic(Bot& b);
+    Rooms(Bot& b);
 
 
     /** \brief Gets a list of commands that are provided by this plugin.
@@ -73,4 +73,4 @@ class Basic: public Plugin
 
 } // namespace
 
-#endif // BVN_PLUGIN_BASIC_HPP
+#endif // BVN_PLUGIN_ROOMS_HPP

@@ -98,6 +98,11 @@ const std::unordered_set<std::string>& Configuration::stopUsers() const
   return mStopUsers;
 }
 
+const bool Configuration::isAdminUser(const std::string& userId) const
+{
+  return mStopUsers.find(userId) != mStopUsers.end();
+}
+
 void Configuration::findConfigurationFile(std::string& realName)
 {
   namespace fs = std::filesystem;

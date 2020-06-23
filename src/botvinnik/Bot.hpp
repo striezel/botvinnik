@@ -33,6 +33,7 @@ namespace bvn
 // forward declarations
 class Basic;
 class Help;
+class Rooms;
 
 /** \brief Basic class to handle bot behaviour.
  */
@@ -109,6 +110,9 @@ class Bot
     // Basic plugin needs to iterate over stopUsers() of matrix before stopping
     // or not stopping the bot.
     friend Basic;
+    // Rooms plugin needs to iterate over stopUsers() of matrix before changing
+    // or not changing rooms.
+    friend Rooms;
   private:
     Matrix mat; /**< handles matrix requests */
     std::unordered_map<std::string, std::reference_wrapper<Plugin> > commands; /**< registered commands */

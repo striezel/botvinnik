@@ -119,7 +119,8 @@ void Bot::start()
   std::string initialEvents;
   std::string next_batch;
   std::vector<matrix::Room> rooms;
-  if (!mat.sync(initialEvents, next_batch, rooms, ""))
+  std::vector<std::string> invites;
+  if (!mat.sync(initialEvents, next_batch, rooms, invites, ""))
   {
     std::cerr << "Error: Initial sync request failed!" << std::endl;
     mat.logout();
@@ -131,7 +132,7 @@ void Bot::start()
   while (!stopRequested())
   {
     std::string events;
-    if (!mat.sync(events, next_batch, rooms, next_batch))
+    if (!mat.sync(events, next_batch, rooms, invites, next_batch))
     {
       std::cerr << nowToString() << " Error: Sync request failed!" << std::endl;
       mat.logout();
@@ -175,10 +176,24 @@ void Bot::start()
           {
             if (!mat.sendMessage(room.id, answer))
             {
+              // Sending messages could fail due to rate limit or because the bot has left the room.
               std::cerr << "Error: Could not send answer for command " + command + "!" << std::endl;
             }
           }
         }
+      }
+    }
+
+    // Iterate over invites.
+    for (const auto & roomId : invites)
+    {
+      if (!mat.joinRoom(roomId))
+      {
+        std::cerr << "Error: Could not join room " << roomId << "!" << std::endl;
+      }
+      else
+      {
+        std::clog << "Info: Joined room " << roomId << "." << std::endl;
       }
     }
 
@@ -195,8 +210,7 @@ void Bot::start()
 
 bool Bot::stop(const std::string_view& userId)
 {
-  const auto & users = mat.configuration().stopUsers();
-  if (users.find(std::string(userId)) != users.end())
+  if (mat.configuration().isAdminUser(std::string(userId)))
   {
     stopped = true;
     return true;

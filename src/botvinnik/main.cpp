@@ -27,6 +27,7 @@
 #include "Bot.hpp"
 #include "plugins/core/Basic.hpp"
 #include "plugins/core/Help.hpp"
+#include "plugins/core/Rooms.hpp"
 #include "plugins/convert/Conversion.hpp"
 #include "plugins/corona/Corona.hpp"
 #include "plugins/Debian.hpp"
@@ -140,6 +141,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of help plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::Rooms piRooms(bot);
+  if (!bot.registerPlugin(piRooms))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of rooms plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

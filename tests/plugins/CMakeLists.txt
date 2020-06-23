@@ -7,6 +7,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/Bot.cpp
     ../../src/botvinnik/plugins/core/Basic.cpp
     ../../src/botvinnik/plugins/core/Help.cpp
+    ../../src/botvinnik/plugins/core/Rooms.cpp
     ../../src/botvinnik/plugins/convert/Conversion.cpp
     ../../src/botvinnik/plugins/corona/Corona.cpp
     ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
@@ -19,6 +20,7 @@ set(plugin_tests_sources
     ../../src/conf/Configuration.cpp
     ../../src/matrix/Matrix.cpp
     ../../src/matrix/Message.cpp
+    ../../src/matrix/json/Sync.cpp
     ../../src/net/Curly.cpp
     ../../src/net/url_encode.cpp
     ../../src/util/Directories.cpp
@@ -29,6 +31,7 @@ set(plugin_tests_sources
     ../../third-party/simdjson/simdjson.cpp
     core/Basic.cpp
     core/Help.cpp
+    core/Rooms.cpp
     Conversion.cpp
     Corona.cpp
     Debian.cpp

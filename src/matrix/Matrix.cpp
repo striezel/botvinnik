@@ -27,194 +27,10 @@
 #include "../net/url_encode.hpp"
 #include "../util/chrono.hpp"
 #include "../util/Strings.hpp"
+#include "json/Sync.hpp"
 
 namespace bvn
 {
-
-void parseSyncData(const simdjson::dom::element& doc, std::vector<matrix::Room>& rooms)
-{
-  rooms.clear();
-  // parse room data
-  auto [jsonRooms, error] = doc["rooms"];
-  if (error || jsonRooms.type() != simdjson::dom::element_type::OBJECT)
-  {
-    std::cerr << "Error: There is no rooms element or it's not an object!" << std::endl;
-    return;
-  }
-
-  simdjson::dom::element join;
-  jsonRooms["join"].tie(join, error);
-  if (error || join.type() != simdjson::dom::element_type::OBJECT)
-  {
-    std::cerr << "Error: There is no join element or it's not an object!" << std::endl;
-    return;
-  }
-
-  // iterate over rooms
-  simdjson::dom::object joinObject;
-  join.get<simdjson::dom::object>().tie(joinObject, error);
-  if (error)
-  {
-    std::cerr << "Error: 'join' is not an object!" << std::endl;
-    return;
-  }
-
-  for (auto & keyValue : joinObject)
-  {
-    matrix::Room room;
-    room.id = keyValue.key;
-    simdjson::dom::object roomObject;
-    keyValue.value.get<simdjson::dom::object>().tie(roomObject, error);
-    if (error)
-    {
-      std::cerr << "Error: 'join' contains at least one non-object!" << std::endl;
-      return;
-    }
-
-    simdjson::dom::element events;
-    roomObject.at("timeline/events").tie(events, error);
-    if (error)
-    {
-      std::cerr << "Error: Could not find timeline/events pointer!" << std::endl;
-      return;
-    }
-    if (events.type() != simdjson::dom::element_type::ARRAY)
-    {
-      std::cerr << "Error: events is not an array!" << std::endl;
-      return;
-    }
-
-    for (const auto& elem : events)
-    {
-      simdjson::dom::element type;
-      elem["type"].tie(type, error);
-      if (error || type.type() != simdjson::dom::element_type::STRING)
-      {
-        std::cerr << "Error: Event type is missing or not a string!" << std::endl;
-        return;
-      }
-
-      const auto typeString = type.get<std::string_view>().value();
-      if (typeString == "m.room.message")
-      {
-        simdjson::dom::element msgtype;
-        elem.at("content/msgtype").tie(msgtype, error);
-        if (error || msgtype.type() != simdjson::dom::element_type::STRING)
-        {
-          std::cerr << "Error: content-msgtype is missing or not a string!" << std::endl;
-          return;
-        }
-        // Currently only text messages are relevant.
-        if (msgtype.get<std::string_view>().value() == "m.text")
-        {
-          matrix::RoomMessageText txt;
-          simdjson::dom::element data;
-          // Body must always be present.
-          elem.at("content/body").tie(data, error);
-          if (error || data.type() != simdjson::dom::element_type::STRING)
-          {
-            std::cerr << "Error: content-body is missing or not a string!" << std::endl;
-            return;
-          }
-          txt.body = data.get<std::string_view>().value();
-          // format and formatted_body are optional.
-          elem.at("content/format").tie(data, error);
-          if (!error && data.type() == simdjson::dom::element_type::STRING)
-          {
-            txt.format = data.get<std::string_view>().value();
-          }
-          elem.at("content/formatted_body").tie(data, error);
-          if (!error && data.type() == simdjson::dom::element_type::STRING)
-          {
-            txt.formatted_body = data.get<std::string_view>().value();
-          }
-          // sender should always be there.
-          elem.at("sender").tie(data, error);
-          if (error || data.type() != simdjson::dom::element_type::STRING)
-          {
-            std::cerr << "Error: Event's sender is missing or not a string!" << std::endl;
-            return;
-          }
-          txt.sender = data.get<std::string_view>().value();
-          // Timestamp should always be there.
-          elem["origin_server_ts"].tie(data, error);
-          if (error || data.type() != simdjson::dom::element_type::INT64)
-          {
-            std::cerr << "Error: Event's timestamp is missing or not an int64!" << std::endl;
-            return;
-          }
-          txt.server_ts = std::chrono::milliseconds(data.get<int64_t>().value());
-          // Done.
-          room.texts.emplace_back(txt);
-        } // "m.text"
-      } // "m.room.message"
-      else if (typeString == "m.room.name")
-      {
-        matrix::RoomName name;
-        simdjson::dom::element data;
-        // name must always be present.
-        elem.at("content/name").tie(data, error);
-        if (error || data.type() != simdjson::dom::element_type::STRING)
-        {
-          std::cerr << "Error: content-name is missing or not a string!" << std::endl;
-          return;
-        }
-        name.name = data.get<std::string_view>().value();
-        // sender should always be there.
-        elem["sender"].tie(data, error);
-        if (error || data.type() != simdjson::dom::element_type::STRING)
-        {
-          std::cerr << "Error: Event's sender is missing or not a string!" << std::endl;
-          return;
-        }
-        name.sender = data.get<std::string_view>().value();
-        // Timestamp should always be there.
-        elem["origin_server_ts"].tie(data, error);
-        if (error || data.type() != simdjson::dom::element_type::INT64)
-        {
-          std::cerr << "Error: Event's timestamp is missing or not an int64!" << std::endl;
-          return;
-        }
-        name.server_ts = std::chrono::milliseconds(data.get<int64_t>().value());
-        // Done.
-        room.names.emplace_back(name);
-      } // "m.room.name"
-      else if (typeString == "m.room.topic")
-      {
-        matrix::RoomTopic topic;
-        simdjson::dom::element data;
-        // name must always be present.
-        elem.at("content/topic").tie(data, error);
-        if (error || data.type() != simdjson::dom::element_type::STRING)
-        {
-          std::cerr << "Error: content-topic is missing or not a string!" << std::endl;
-          return;
-        }
-        topic.topic = data.get<std::string_view>().value();
-        // sender should always be there.
-        elem["sender"].tie(data, error);
-        if (error || data.type() != simdjson::dom::element_type::STRING)
-        {
-          std::cerr << "Error: Event's sender is missing or not a string!" << std::endl;
-          return;
-        }
-        topic.sender = data.get<std::string_view>().value();
-        // Timestamp should always be there.
-        elem["origin_server_ts"].tie(data, error);
-        if (error || data.type() != simdjson::dom::element_type::INT64)
-        {
-          std::cerr << "Error: Event's timestamp is missing or not an int64!" << std::endl;
-          return;
-        }
-        topic.server_ts = std::chrono::milliseconds(data.get<int64_t>().value());
-        // Done.
-        room.topics.emplace_back(topic);
-      } // "m.room.topic"
-    } // for (events)
-
-    rooms.emplace_back(room);
-  } // for (Room)
-}
 
 Matrix::Matrix(const Configuration& _conf)
 : conf(_conf),
@@ -386,7 +202,7 @@ bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
       std::cerr << "Error: Returned room id is not a string!" << std::endl;
       return false;
     }
-    roomIds.push_back(std::string(elem.get<std::string_view>().value()));
+    roomIds.emplace_back(std::string(elem.get<std::string_view>().value()));
   }
 
   return true;
@@ -448,7 +264,89 @@ bool Matrix::roomName(const std::string& roomId, std::string& name)
   return true;
 }
 
-bool Matrix::sync(std::string& events, std::string& nextBatch, std::vector<matrix::Room>& rooms, const std::string& since)
+bool Matrix::joinRoom(const std::string& roomId)
+{
+  if (roomId.empty())
+  {
+    std::cerr << "Error: Id of the room to join must not be empty!" << std::endl;
+    return false;
+  }
+  if (!isLoggedIn())
+  {
+    std::cerr << "Error: Need to be logged in to join a room!" << std::endl;
+    return false;
+  }
+
+  std::string encodedRoomId;
+  try
+  {
+    encodedRoomId = urlencode(roomId);
+  }
+  catch(const std::exception& ex)
+  {
+    std::cerr << "Error: URL-encoding of room id failed!"
+              << std::endl << ex.what() << std::endl;
+    return false;
+  }
+
+  Curly curl;
+  curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/join");
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  curl.setPostBody("");
+  std::string response;
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Joining room '" << roomId << "' failed!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return false;
+  }
+
+  return true;
+}
+
+bool Matrix::leaveRoom(const std::string& roomId)
+{
+  if (roomId.empty())
+  {
+    std::cerr << "Error: Id of the room to leave must not be empty!" << std::endl;
+    return false;
+  }
+  if (!isLoggedIn())
+  {
+    std::cerr << "Error: Need to be logged in to leave a room!" << std::endl;
+    return false;
+  }
+
+  std::string encodedRoomId;
+  try
+  {
+    encodedRoomId = urlencode(roomId);
+  }
+  catch(const std::exception& ex)
+  {
+    std::cerr << "Error: URL-encoding of room id failed!"
+              << std::endl << ex.what() << std::endl;
+    return false;
+  }
+
+  Curly curl;
+  curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/leave");
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  curl.setPostBody("");
+  std::string response;
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Leaving room '" << roomId << "' failed!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return false;
+  }
+
+  return true;
+}
+
+bool Matrix::sync(std::string& events, std::string& nextBatch, std::vector<matrix::Room>& rooms, std::vector<std::string>& invites, const std::string& since)
 {
   if (!isLoggedIn())
   {
@@ -493,7 +391,7 @@ bool Matrix::sync(std::string& events, std::string& nextBatch, std::vector<matri
   nextBatch = jsonNextBatch.get<std::string_view>().value();
   events = response;
 
-  parseSyncData(doc, rooms);
+  Sync::parse(doc, rooms, invites);
 
   return true;
 }

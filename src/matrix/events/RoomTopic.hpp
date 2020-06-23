@@ -47,7 +47,7 @@ namespace bvn::matrix
 /** Represents a room topic change event. */
 struct RoomTopic
 {
-  std::string topic;   /**< topic of the room */
+  std::string topic;  /**< topic of the room */
   std::string sender; /**< user id that sent the event */
   std::chrono::milliseconds server_ts; /**< timestamp of event */
 }; // struct

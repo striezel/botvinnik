@@ -28,6 +28,12 @@ itself:
   mentioned in the [configuration file](configuration-core.md) are allowed to
   stop the bot.
   _(Before version 0.0.11 any user could initiate the bot shutdown.)_
+* `!rooms` - _(since version 0.1.7)_ shows a list of rooms where the bot is
+  active. Only users that are allowed to stop the bot can get a list.
+* `!leave` - _(since version 0.1.7)_ makes the bot leave a Matrix room, e. g.
+  the command `!leave !id_of_room:example.com` would make the bot leave the
+  room with the id `!id_of_room:example.com`.
+  Only users that are allowed to stop the bot can do make the bot leave rooms.
 * `!version` - _(sinve version 0.0.5)_ shows version information for the bot
 * `!whoami` - _(since version 0.0.8)_ show the Matrix id of the user that sent
   the request

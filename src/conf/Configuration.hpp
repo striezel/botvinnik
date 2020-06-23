@@ -86,6 +86,15 @@ class Configuration
     const std::unordered_set<std::string>& stopUsers() const;
 
 
+    /** \brief Checks whether a given user is allowed to manage the bot.
+     *
+     * \param userId   id of the user to check
+     * \return Returns true, if the user is allowed to manage the bot.
+     *         Returns false otherwise.
+     */
+    const bool isAdminUser(const std::string& userId) const;
+
+
     /** \brief Loads the configuration from a file.
      *
      * \param  fileName   file name of the configuration file

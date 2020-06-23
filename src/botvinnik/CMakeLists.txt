@@ -8,6 +8,7 @@ set(botvinnik_sources
     ../conf/Configuration.cpp
     ../matrix/Matrix.cpp
     ../matrix/Message.cpp
+    ../matrix/json/Sync.cpp
     ../net/Curly.cpp
     ../net/url_encode.cpp
     ../util/chrono.cpp
@@ -18,6 +19,7 @@ set(botvinnik_sources
     Bot.cpp
     plugins/core/Basic.cpp
     plugins/core/Help.cpp
+    plugins/core/Rooms.cpp
     plugins/convert/Conversion.cpp
     plugins/corona/Corona.cpp
     plugins/corona/CovidNumbers.cpp

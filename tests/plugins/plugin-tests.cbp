@@ -46,6 +46,8 @@
 		<Unit filename="../../src/botvinnik/plugins/core/Basic.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Help.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Help.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/core/Rooms.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/core/Rooms.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/Corona.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/Corona.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.cpp" />
@@ -61,6 +63,8 @@
 		<Unit filename="../../src/matrix/Message.cpp" />
 		<Unit filename="../../src/matrix/Message.hpp" />
 		<Unit filename="../../src/matrix/Room.hpp" />
+		<Unit filename="../../src/matrix/json/Sync.cpp" />
+		<Unit filename="../../src/matrix/json/Sync.hpp" />
 		<Unit filename="../../src/net/Curly.cpp" />
 		<Unit filename="../../src/net/Curly.hpp" />
 		<Unit filename="../../src/net/url_encode.cpp" />
@@ -87,6 +91,7 @@
 		<Unit filename="Xkcd.cpp" />
 		<Unit filename="core/Basic.cpp" />
 		<Unit filename="core/Help.cpp" />
+		<Unit filename="core/Rooms.cpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="pluginRegistrationCombined.cpp" />
 		<Extensions />
