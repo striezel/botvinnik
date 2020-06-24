@@ -266,55 +266,35 @@ bool Matrix::roomName(const std::string& roomId, std::string& name)
 
 bool Matrix::joinRoom(const std::string& roomId)
 {
-  if (roomId.empty())
-  {
-    std::cerr << "Error: Id of the room to join must not be empty!" << std::endl;
-    return false;
-  }
-  if (!isLoggedIn())
-  {
-    std::cerr << "Error: Need to be logged in to join a room!" << std::endl;
-    return false;
-  }
-
-  std::string encodedRoomId;
-  try
-  {
-    encodedRoomId = urlencode(roomId);
-  }
-  catch(const std::exception& ex)
-  {
-    std::cerr << "Error: URL-encoding of room id failed!"
-              << std::endl << ex.what() << std::endl;
-    return false;
-  }
-
-  Curly curl;
-  curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/join");
-  curl.addHeader("Authorization: Bearer " + accessToken);
-  curl.setPostBody("");
-  std::string response;
-  if (!curl.perform(response) || curl.getResponseCode() != 200)
-  {
-    std::cerr << "Error: Joining room '" << roomId << "' failed!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
-              << "Response: " << response << std::endl;
-    return false;
-  }
-
-  return true;
+  return roomMembershipChange(roomId, "join");
 }
 
 bool Matrix::leaveRoom(const std::string& roomId)
 {
+  return roomMembershipChange(roomId, "leave");
+}
+
+bool Matrix::forgetRoom(const std::string& roomId)
+{
+  return roomMembershipChange(roomId, "forget");
+}
+
+bool Matrix::roomMembershipChange(const std::string& roomId, const std::string& change)
+{
+  if (change != "join" && change != "leave" && change != "forget")
+  {
+    std::cerr << "Error: Room membership action must be one of  must be one of"
+              << " 'join', 'leave' or 'forget'!" << std::endl;
+    return false;
+  }
   if (roomId.empty())
   {
-    std::cerr << "Error: Id of the room to leave must not be empty!" << std::endl;
+    std::cerr << "Error: Id of the room to " << change << " must not be empty!" << std::endl;
     return false;
   }
   if (!isLoggedIn())
   {
-    std::cerr << "Error: Need to be logged in to leave a room!" << std::endl;
+    std::cerr << "Error: Need to be logged in to " << change << " a room!" << std::endl;
     return false;
   }
 
@@ -331,13 +311,13 @@ bool Matrix::leaveRoom(const std::string& roomId)
   }
 
   Curly curl;
-  curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/leave");
+  curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/" + change);
   curl.addHeader("Authorization: Bearer " + accessToken);
   curl.setPostBody("");
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Leaving room '" << roomId << "' failed!" << std::endl
+    std::cerr << "Error: Failed to " << change << " room '" << roomId << "'!" << std::endl
               << "HTTP status code: " << curl.getResponseCode() << std::endl
               << "Response: " << response << std::endl;
     return false;

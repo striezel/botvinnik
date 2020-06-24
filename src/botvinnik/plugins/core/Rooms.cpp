@@ -112,7 +112,11 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
     {
       return Message("Error: Could not leave the room '" + roomId + "'. Are you sure that is a proper Matrix room id?");
     }
-    return Message("Bot has left the room " + roomId + ".");
+    if (!theBot.mat.forgetRoom(roomId))
+    {
+      return Message("Bot has left the room '" + roomId + "'. However, the call to the /forget client-server API endpoint failed.");
+    }
+    return Message("Bot has left the room " + roomId + " and has forgotten about it.");
   }
   else
     // unknown command

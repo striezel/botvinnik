@@ -107,6 +107,17 @@ class Matrix
     bool leaveRoom(const std::string& roomId);
 
 
+    /** \brief Forgets the room with the given room id.
+     *
+     * Matrix specification states that joined rooms cannot be forgotten.
+     * Only rooms that have been left (via leaveRoom()) can be forgotten.
+     * \param roomId    id of the room to forget
+     * \return Returns true, if the room was forgotten.
+     *         Returns false otherwise.
+     */
+    bool forgetRoom(const std::string& roomId);
+
+
     /** \brief Gets room events for the user.
      *
      * \param events      string that will be used to store the events as JSON (if any)
@@ -173,6 +184,17 @@ class Matrix
      * \remarks This method is not safe for encoding other content than room ids.
      */
     std::string encodeRoomId(const std::string& roomId);
+
+    /** \brief Joins, leaves or forgets the room with the given room id.
+     *
+     * Matrix specification states that joined rooms cannot be forgotten.
+     * Only rooms that have been left (via leaveRoom()) can be forgotten.
+     * \param roomId    id of the room to join, leave or forget
+     * \param change    action to perform, must be one of "join", "leave" or "forget"
+     * \return Returns true, if the room was joined / left / forgotten.
+     *         Returns false otherwise.
+     */
+    bool roomMembershipChange(const std::string& roomId, const std::string& change);
 
     Configuration conf;
     std::string accessToken; /**< the access token for Matrix */
