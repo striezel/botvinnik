@@ -32,7 +32,7 @@ std::vector<std::string> split(std::string line, const char separator)
   while (pos != std::string::npos)
   {
     result.push_back(line.substr(0, pos));
-    line = line.substr(pos + 1);
+    line.erase(0, pos + 1);
     pos = line.find(separator);
   }
   result.push_back(line);
