@@ -405,7 +405,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       line.erase(0, 3);
   }
 
-  const std::regex header("dateRep,day,month,year,cases,deaths,countriesAndTerritories,geoId,countryterritoryCode,popData2[0-9]{3},continentExp");
+  const std::regex header("dateRep,day,month,year,cases,deaths,countriesAndTerritories,geoId,countryterritoryCode,popData2[0-9]{3},continentExp,Cumulative_number_for_14_days_of_COVID-19_cases_per_100000");
   std::smatch match;
   if (!std::regex_match(line, match, header))
   {
@@ -446,9 +446,9 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     }
 
     const auto parts = split(line, ',');
-    if (parts.size() != 11)
+    if (parts.size() != 12)
     {
-      std::cerr << "Error: A line of CSV data does not have eleven data elements, but "
+      std::cerr << "Error: A line of CSV data does not have twelve data elements, but "
                 << parts.size() << " elements instead!" << std::endl
                 << "The line is '" << line << "'. It will be skipped." << std::endl;
       continue;
