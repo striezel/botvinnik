@@ -64,4 +64,9 @@ TEST_CASE("split strings")
     REQUIRE( std::vector<std::string>({ "abc", "", "ghi" }) == split("abc,,ghi", ',') );
     REQUIRE( std::vector<std::string>({ "abc", "def", "" }) == split("abc,def,", ',') );
   }
+
+  SECTION("splitting using NUL character as separator")
+  {
+    REQUIRE( std::vector<std::string>({ "i", "j", "k" }) == split(std::string("i\0j\0k", 5), '\0') );
+  }
 }
