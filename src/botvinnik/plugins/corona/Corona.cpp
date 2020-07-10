@@ -445,14 +445,21 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       line.erase(line.length() - 1);
     }
 
-    const auto parts = split(line, ',');
+    auto parts = split(line, ',');
     if (parts.size() != 12)
     {
-      std::cerr << "Error: A line of CSV data does not have twelve data elements, but "
-                << parts.size() << " elements instead!" << std::endl
-                << "The line is '" << line << "'. It will be skipped." << std::endl;
-      continue;
-      // return std::optional<std::string>();
+      if (parts.size() == 13 && parts[6] == "\"Bonaire" && parts[7] == " Saint Eustatius and Saba\"")
+      {
+        parts[6] = "Bonaire, Saint Eustatius and Saba";
+        parts.erase(parts.begin() + 7);
+      }
+      else
+      {
+        std::cerr << "Error: A line of CSV data does not have twelve data elements, but "
+                  << parts.size() << " elements instead!" << std::endl
+                  << "The line is '" << line << "'. It will be skipped." << std::endl;
+        continue;
+      }
     }
     const std::string currentGeoId = parts.at(7);
     if (currentGeoId.empty())

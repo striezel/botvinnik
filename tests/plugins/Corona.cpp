@@ -94,6 +94,39 @@ TEST_CASE("plugin Corona")
       REQUIRE_FALSE( matches.empty() );
       REQUIRE_FALSE( matches.size() > 3 );
     }
+
+    SECTION("check output for Bonaire, Saint Eustatius and Saba")
+    {
+      const Message msg = plugin.handleCommand("corona", "corona BQ", mockUserId, ts);
+      REQUIRE_FALSE( msg.body.empty() );
+      REQUIRE_FALSE( msg.formatted_body.empty() );
+      // must contain country name and country code
+      REQUIRE( msg.body.find("Bonaire, Saint Eustatius and Saba") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("Bonaire, Saint Eustatius and Saba") != std::string::npos );
+      REQUIRE( msg.body.find("BQ") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("BQ") != std::string::npos );
+      // Basic data about infection numbers should be present.
+      REQUIRE( msg.body.find("infection") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("infection") != std::string::npos );
+      REQUIRE( msg.body.find("total") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("total") != std::string::npos );
+      REQUIRE( msg.body.find("cases") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("cases") != std::string::npos );
+      REQUIRE( msg.body.find("deaths") != std::string::npos );
+      REQUIRE( msg.formatted_body.find("deaths") != std::string::npos );
+      // Several dates should be in the message.
+      const std::regex expr("20[0-9]{2}\\-[0-9]{2}\\-[0-9]{2}");
+      std::smatch matches;
+      std::regex_search(msg.body, matches, expr, std::regex_constants::match_any);
+      // Matches must have been found.
+      REQUIRE_FALSE( matches.empty() );
+      REQUIRE_FALSE( matches.size() > 3 );
+
+      std::regex_search(msg.formatted_body, matches, expr, std::regex_constants::match_any);
+      // Matches must have been found.
+      REQUIRE_FALSE( matches.empty() );
+      REQUIRE_FALSE( matches.size() > 3 );
+    }
   }
 
   SECTION("plugin registration")
