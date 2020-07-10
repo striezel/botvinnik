@@ -74,6 +74,10 @@ If you want to run the test suite, too, then there is one more step:
                                then the program will search for the configuration
                                in some predefined locations.
 
+## History of changes
+
+A changelog is provided as [separate file](./changelog.md).
+
 ## Copyright and Licensing
 
 Copyright 2020  Dirk Stolle

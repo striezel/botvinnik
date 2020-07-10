@@ -1,6 +1,10 @@
 # Note: This file contains four environment variables near the end. Change
-#       these to match your settings or you will not be able to connect the bot
+# (#1)  these to match your settings or you will not be able to connect the bot
 #       to a Matrix homeserver.
+
+# Note: This Dockerfile uses multi-stage builds. Therefore, the required Docker
+# (#2)  version is 17.05 or (preferably) a later version on the client and
+#       server side of Docker.
 
 # build stage
 FROM debian:10-slim AS builder
