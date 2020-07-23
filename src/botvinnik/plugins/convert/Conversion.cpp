@@ -126,7 +126,12 @@ Message Conversion::convert(const std::string_view& command, const std::string_v
     return Message(std::string("'" + number + "' is not a valid number for ")
                   .append(command).append("!"));
   }
-  return Message(ConvertBases<unsigned long long, unsigned int>::get(value, newBase));
+  const auto converted = ConvertBases<unsigned long long, unsigned int>::get(value, newBase);
+  return Message(
+    number + " (base " + std::to_string(origBase) + ") = "
+           + converted + " (base " + std::to_string(newBase) + ")",
+    number + "<sub>(" + std::to_string(origBase) + ")</sub> = "
+           + converted + "<sub>(" + std::to_string(newBase) + ")</sub>");
 }
 
 } // namespace
