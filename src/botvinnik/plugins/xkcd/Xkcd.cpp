@@ -21,12 +21,13 @@
 #include "Xkcd.hpp"
 #include <random>
 #include "XkcdData.hpp"
+#include "../../../util/Strings.hpp"
 
 namespace bvn
 {
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2330),
+: mLatestNum(2336),
   theMatrix(mat)
 {
   const auto latest = XkcdData::get(0);
@@ -41,16 +42,43 @@ std::vector<std::string> Xkcd::commands() const
   return { "xkcd" };
 }
 
+unsigned int Xkcd::getRandomNumber() const
+{
+  std::random_device randDev;
+  std::mt19937 generator(randDev());
+  std::uniform_int_distribution<unsigned int> distribution(1, mLatestNum);
+  return distribution(generator);
+}
+
 Message Xkcd::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
 {
   if (command == "xkcd")
   {
-    std::random_device randDev;
-    std::mt19937 generator(randDev());
-    std::uniform_int_distribution<unsigned int> distribution(1, mLatestNum);
-    const unsigned int num = distribution(generator);
+    unsigned int num = 0;
+    if (message.size() > command.size() + 1)
+    {
+      std::string number(message.substr(command.size()));
+      trim(number);
+      unsigned long value;
+      std::size_t pos = 0;
+      try
+      {
+        value = std::stoul(number, &pos);
+        if (pos == number.size() && value > 0 && value <= mLatestNum)
+        {
+           num = value;
+        }
+      }
+      catch (const std::exception& ex)
+      {
+        // Nothing to do here.
+      }
+    }
 
-    // xkcd.info only works when server can be reached.
+    if (num == 0)
+      num = getRandomNumber();
+
+    // XkcdData::get() only works when server can be reached.
     const auto info = XkcdData::get(num);
     if (!info.has_value() || info.value().img.empty())
     {

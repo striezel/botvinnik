@@ -13,6 +13,10 @@ improvements may be omitted.)_
       ignored and not evaluated in any way.
     * Data for 'Bonaire, Saint Eustatius and Saba' (BQ) is now parsed correctly.
 * The bot will now also forget a room's history after it left the room.
+* The xkcd command does now accept a number indicating a specific comic. For
+  example `!xkcd 1` will show the very first xkcd comic. Omitting the number or
+  specifying something that is not a number will just display a random comic,
+  i. e. shows the same behaviour as before.
 
 ## Version 0.1.7 (2020-06-24)
 

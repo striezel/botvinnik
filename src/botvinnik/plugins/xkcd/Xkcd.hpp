@@ -65,6 +65,11 @@ class Xkcd: public Plugin
      */
     virtual std::string helpOneLine(const std::string_view& command) const;
   private:
+    /** \brief Gets a random number denoting a valid comic.
+     *
+     * \return Returns a random number denoting a comic.
+     */
+    unsigned int getRandomNumber() const;
     unsigned int mLatestNum; /**< latest known comic number */
     Matrix& theMatrix; /**< reference to the Matrix instance */
 }; // class

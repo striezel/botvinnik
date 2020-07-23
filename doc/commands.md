@@ -90,7 +90,9 @@ These commands are merely for entertainment purposes.
 
 * `!fortune` - _(since version 0.0.10)_ displays a random quote
 * `!fortunes` - _(since version 0.0.10)_ alias of the fortune command
-* `!xkcd` - _(since 0.1.1)_ show a random comic from xkcd.com
+* `!xkcd` - _(since 0.1.1)_ show a random comic from xkcd.com. If you want to
+  get a particular comic, use its number after the command. For example,
+  `!xkcd 1` will show the very first comic of xkcd.
 
 A fortune command version that uses the popular `cowsay` to display messages may
 (or may not) be added in the future.
