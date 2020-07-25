@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version NEXT (2020-07-??)
+## Version 0.1.8 (2020-07-25)
 
 * CSV parsing for COVID-19 data is improved:
     * The format of the CSV data has been extended with a new column, so the
