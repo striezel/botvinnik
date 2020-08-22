@@ -27,6 +27,7 @@
 #include "../net/url_encode.hpp"
 #include "../util/chrono.hpp"
 #include "../util/Strings.hpp"
+#include "json/PowerLevels.hpp"
 #include "json/Sync.hpp"
 
 namespace bvn
@@ -324,6 +325,45 @@ bool Matrix::roomMembershipChange(const std::string& roomId, const std::string& 
   }
 
   return true;
+}
+
+std::optional<matrix::PowerLevels> Matrix::powerLevels(const std::string& roomId)
+{
+  if (roomId.empty())
+  {
+    std::cerr << "Error: Room id for power level retrieval must not be empty!" << std::endl;
+    return std::optional<matrix::PowerLevels>();
+  }
+  if (!isLoggedIn())
+  {
+    std::cerr << "Error: Need to be logged in to get room power levels!" << std::endl;
+    return std::optional<matrix::PowerLevels>();
+  }
+  std::string encodedRoomId;
+  try
+  {
+    encodedRoomId = urlencode(roomId);
+  }
+  catch(const std::exception& ex)
+  {
+    std::cerr << "Error: URL-encoding of room id failed!"
+              << std::endl << ex.what() << std::endl;
+    return std::optional<matrix::PowerLevels>();
+  }
+
+  Curly curl;
+  curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/state/m.room.power_levels");
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  std::string response;
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Failed to get power levels of room '" << roomId << "'!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return std::optional<matrix::PowerLevels>();
+  }
+
+  return matrix::json::parsePowerLevels(response);
 }
 
 bool Matrix::sync(std::string& events, std::string& nextBatch, std::vector<matrix::Room>& rooms, std::vector<std::string>& invites, const std::string& since)

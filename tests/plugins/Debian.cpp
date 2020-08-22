@@ -57,12 +57,13 @@ TEST_CASE("plugin Debian")
   SECTION("command handlers must return text")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     for (const auto& cmd : commands)
     {
       const std::string mockMessage = cmd + " grep";
       // Answer to commands must not be empty.
-      REQUIRE_FALSE( plugin.handleCommand(cmd, mockMessage, mockUserId, ts).body.empty() );
+      REQUIRE_FALSE( plugin.handleCommand(cmd, mockMessage, mockUserId, mockRoomId, ts).body.empty() );
     }
   }
 

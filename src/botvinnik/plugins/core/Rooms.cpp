@@ -34,7 +34,7 @@ std::vector<std::string> Rooms::commands() const
   return { "rooms", "leave" };
 }
 
-Message Rooms::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
+Message Rooms::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
 {
   if (command == "rooms")
   {
@@ -99,7 +99,23 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
   }
   else if (command == "leave")
   {
-    if (!theBot.matrix().configuration().isAdminUser(std::string(userId)))
+    std::string leavingRoomId(message.substr(command.size()));
+    trim(leavingRoomId);
+    if (leavingRoomId.empty())
+    {
+      // If there is no room id given, attempt to leave the current room.
+      leavingRoomId = roomId;
+    }
+
+    bool allowed = theBot.matrix().configuration().isAdminUser(std::string(userId));
+    if (!allowed)
+    {
+      // Check whether user can ban or kick users. If so, bot should leave.
+      const auto power = theBot.matrix().powerLevels(leavingRoomId);
+      allowed = power.has_value() && power.value().canBanOrKick(std::string(userId));
+    }
+
+    if (!allowed)
     {
       // User is not allowed to make the bot leave rooms.
       Message msg(std::string("You have no power here, ").append(userId)
@@ -111,28 +127,23 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
         msg.body.append("\n").append(item);
         msg.formatted_body.append("<br />\n").append(item);
       }
+      msg.body.append("\n\nFurthermore, any user that can ban or kick users from the corresponding room can make the bot leave, too.");
+      msg.formatted_body.append("<br />\n<br />\nFurthermore, any user that can ban or kick users from the corresponding room can make the bot leave, too.");
       return msg;
     }
 
-    std::string roomId(message.substr(command.size()));
-    trim(roomId);
-    if (roomId.empty())
-    {
-      return Message(std::string("Hint: You have to enter the Matrix room id after the ").append(command).append(" command."));
-    }
-
     // Notify room members.
-    theBot.mat.sendMessage(roomId, Message(std::string("Leaving the room due to request by ").append(userId).append(".")));
+    theBot.mat.sendMessage(leavingRoomId, Message(std::string("Leaving the room due to request by ").append(userId).append(".")));
     // Leave the room.
-    if (!theBot.mat.leaveRoom(roomId))
+    if (!theBot.mat.leaveRoom(leavingRoomId))
     {
-      return Message("Error: Could not leave the room '" + roomId + "'. Are you sure that is a proper Matrix room id?");
+      return Message("Error: Could not leave the room '" + leavingRoomId + "'. Are you sure that is a proper Matrix room id?");
     }
-    if (!theBot.mat.forgetRoom(roomId))
+    if (!theBot.mat.forgetRoom(leavingRoomId))
     {
-      return Message("Bot has left the room '" + roomId + "'. However, the call to the /forget client-server API endpoint failed.");
+      return Message("Bot has left the room '" + leavingRoomId + "'. However, the call to the /forget client-server API endpoint failed.");
     }
-    return Message("Bot has left the room " + roomId + " and has forgotten about it.");
+    return Message("Bot has left the room " + leavingRoomId + " and has forgotten about it.");
   }
   else
     // unknown command

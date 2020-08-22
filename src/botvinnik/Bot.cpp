@@ -171,7 +171,7 @@ void Bot::start()
 
           // Let the plugin handle the command.
           const std::string_view message(msg.body.data() + prefix.size(), msg.body.size() - prefix.size());
-          const Message answer = iter->second.get().handleCommand(command, message, msg.sender, msg.server_ts);
+          const Message answer = iter->second.get().handleCommand(command, message, msg.sender, room.id, msg.server_ts);
           if (!answer.body.empty())
           {
             if (!mat.sendMessage(room.id, answer))

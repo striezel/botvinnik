@@ -260,7 +260,7 @@ Message Debian::formatResult(const Packages& packs, const std::string& suite, co
   return result;
 }
 
-Message Debian::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
+Message Debian::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
 {
   if (message.size() <= command.size() + 1)
   {

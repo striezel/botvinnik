@@ -54,7 +54,7 @@ std::vector<std::string> Fortune::commands() const
   return { "fortune", "fortunes" };
 }
 
-Message Fortune::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
+Message Fortune::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
 {
   if ((command == "fortune") || (command == "fortunes"))
   {

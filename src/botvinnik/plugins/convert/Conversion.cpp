@@ -34,7 +34,7 @@ std::vector<std::string> Conversion::commands() const
   return { "bin2dec", "bin2hex", "dec2bin", "dec2hex", "hex2bin", "hex2dec" };
 }
 
-Message Conversion::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
+Message Conversion::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
 {
   if (message.size() <= command.size() + 1)
   {

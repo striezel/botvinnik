@@ -8,6 +8,8 @@ set(botvinnik_sources
     ../conf/Configuration.cpp
     ../matrix/Matrix.cpp
     ../matrix/Message.cpp
+    ../matrix/events/PowerLevels.cpp
+    ../matrix/json/PowerLevels.cpp
     ../matrix/json/Sync.cpp
     ../net/Curly.cpp
     ../net/url_encode.cpp

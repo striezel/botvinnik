@@ -4,6 +4,16 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Next version (2020-08-??)
+
+The `!leave` command now has a second form that does not require a room id.
+When invoked without a Matrix room id, the bot is told to leave the Matrix room
+where the command was send.
+
+Furthermore, not only the users who are allowed to stop the bot can make the bot
+leave a room. The bot will also obey the request, if the requesting user has
+the power level to ban or kick users out of the corresponding Matrix room.
+
 ## Version 0.1.8 (2020-07-25)
 
 * CSV parsing for COVID-19 data is improved:
@@ -63,7 +73,7 @@ Improvements for the command to retrieve comics from xkcd.com are made.
 
 ## Version 0.1.1 (2020-05-29)
 
-A first ( experimental) version of the `!xkcd` command is added.
+A first (experimental) version of the `!xkcd` command is added.
 
 ## Version 0.1.0 (2020-05-28)
 

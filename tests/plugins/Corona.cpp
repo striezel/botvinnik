@@ -55,16 +55,17 @@ TEST_CASE("plugin Corona")
   SECTION("command handlers must return text")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     for (const auto& cmd : commands)
     {
       // Answer to commands must not be empty.
-      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd, mockUserId, ts).body.empty() );
+      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd, mockUserId, mockRoomId, ts).body.empty() );
     }
 
     SECTION("check output for a specific country")
     {
-      const Message msg = plugin.handleCommand("corona", "corona Germany", mockUserId, ts);
+      const Message msg = plugin.handleCommand("corona", "corona Germany", mockUserId, mockRoomId, ts);
       REQUIRE_FALSE( msg.body.empty() );
       REQUIRE_FALSE( msg.formatted_body.empty() );
       // must contain country name and country code
@@ -97,7 +98,7 @@ TEST_CASE("plugin Corona")
 
     SECTION("check output for Bonaire, Saint Eustatius and Saba")
     {
-      const Message msg = plugin.handleCommand("corona", "corona BQ", mockUserId, ts);
+      const Message msg = plugin.handleCommand("corona", "corona BQ", mockUserId, mockRoomId, ts);
       REQUIRE_FALSE( msg.body.empty() );
       REQUIRE_FALSE( msg.formatted_body.empty() );
       // must contain country name and country code

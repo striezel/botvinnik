@@ -28,6 +28,7 @@
 #include "../conf/Configuration.hpp"
 #include "Message.hpp"
 #include "Room.hpp"
+#include "events/PowerLevels.hpp"
 
 namespace bvn
 {
@@ -116,6 +117,15 @@ class Matrix
      *         Returns false otherwise.
      */
     bool forgetRoom(const std::string& roomId);
+
+
+    /** \brief Gets the power levels of the room with the given room id.
+     *
+     * \param roomId   id of the for which to get the power levels
+     * \return Returns an optional containing the rooms power levels.
+     *         Returns an empty optional, if the request failed.
+     */
+    std::optional<matrix::PowerLevels> powerLevels(const std::string& roomId);
 
 
     /** \brief Gets room events for the user.

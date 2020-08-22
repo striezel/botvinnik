@@ -69,13 +69,14 @@ TEST_CASE("plugin Wikipedia")
   SECTION("command handlers must return text")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     for (const auto& cmd : commands)
     {
       // Ukrainian Wikipedia has no redirect from Albert Einstein to the
       // Ukrainian version, so we have to use the title here directly.
       const std::string message = cmd + (cmd != "wikiuk" ? " Albert Einstein" : " Альберт Ейнштейн");
-      const auto answer = plugin.handleCommand(cmd, message, mockUserId, ts);
+      const auto answer = plugin.handleCommand(cmd, message, mockUserId, mockRoomId, ts);
       // Answer to commands must not be empty.
       REQUIRE_FALSE( answer.body.empty() );
       REQUIRE_FALSE( answer.formatted_body.empty() );

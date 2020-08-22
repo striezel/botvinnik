@@ -20,6 +20,8 @@ set(plugin_tests_sources
     ../../src/conf/Configuration.cpp
     ../../src/matrix/Matrix.cpp
     ../../src/matrix/Message.cpp
+    ../../src/matrix/events/PowerLevels.cpp
+    ../../src/matrix/json/PowerLevels.cpp
     ../../src/matrix/json/Sync.cpp
     ../../src/net/Curly.cpp
     ../../src/net/url_encode.cpp

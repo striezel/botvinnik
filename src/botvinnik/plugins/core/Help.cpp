@@ -34,7 +34,7 @@ std::vector<std::string> Help::commands() const
   return { "help" };
 }
 
-Message Help::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
+Message Help::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
 {
   if (command == "help")
   {

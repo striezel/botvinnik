@@ -247,7 +247,7 @@ std::vector<std::string> Corona::commands() const
   return { "corona" };
 }
 
-Message Corona::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
+Message Corona::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
 {
   if (command == "corona")
   {

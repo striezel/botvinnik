@@ -50,9 +50,13 @@
 		<Unit filename="../matrix/Message.cpp" />
 		<Unit filename="../matrix/Message.hpp" />
 		<Unit filename="../matrix/Room.hpp" />
+		<Unit filename="../matrix/events/PowerLevels.cpp" />
+		<Unit filename="../matrix/events/PowerLevels.hpp" />
 		<Unit filename="../matrix/events/RoomMessageText.hpp" />
 		<Unit filename="../matrix/events/RoomName.hpp" />
 		<Unit filename="../matrix/events/RoomTopic.hpp" />
+		<Unit filename="../matrix/json/PowerLevels.cpp" />
+		<Unit filename="../matrix/json/PowerLevels.hpp" />
 		<Unit filename="../matrix/json/Sync.cpp" />
 		<Unit filename="../matrix/json/Sync.hpp" />
 		<Unit filename="../net/Curly.cpp" />

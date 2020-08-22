@@ -35,7 +35,7 @@ std::vector<std::string> Basic::commands() const
   return { "stop", "version", "whoami" };
 }
 
-Message Basic::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
+Message Basic::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
 {
   if (command == "stop")
   {

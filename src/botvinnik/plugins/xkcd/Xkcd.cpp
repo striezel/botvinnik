@@ -27,7 +27,7 @@ namespace bvn
 {
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2336),
+: mLatestNum(2349),
   theMatrix(mat)
 {
   const auto latest = XkcdData::get(0);
@@ -50,7 +50,7 @@ unsigned int Xkcd::getRandomNumber() const
   return distribution(generator);
 }
 
-Message Xkcd::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::chrono::milliseconds& server_ts)
+Message Xkcd::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
 {
   if (command == "xkcd")
   {

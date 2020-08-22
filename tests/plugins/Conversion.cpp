@@ -59,11 +59,12 @@ TEST_CASE("plugin Conversion")
   SECTION("command handlers must return text")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     for (const auto& cmd : commands)
     {
       // Answer to commands must not be empty.
-      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd, mockUserId, ts).body.empty() );
+      REQUIRE_FALSE( plugin.handleCommand(cmd, cmd, mockUserId, mockRoomId, ts).body.empty() );
     }
   }
 
@@ -76,10 +77,11 @@ TEST_CASE("plugin Conversion")
   SECTION("conversion test bin2dec")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     const std::string_view cmd = "bin2dec";
     const std::string_view msg = "bin2dec 110";
-    const Message out = plugin.handleCommand(cmd, msg, mockUserId, ts);
+    const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
 
     REQUIRE( out.body.find("6") != std::string::npos );
   }
@@ -87,10 +89,11 @@ TEST_CASE("plugin Conversion")
   SECTION("conversion test bin2hex")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     const std::string_view cmd = "bin2hex";
     const std::string_view msg = "bin2hex 11110101";
-    const Message out = plugin.handleCommand(cmd, msg, mockUserId, ts);
+    const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
 
     REQUIRE( out.body.find("f5") != std::string::npos );
   }
@@ -98,10 +101,11 @@ TEST_CASE("plugin Conversion")
   SECTION("conversion test dec2bin")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     const std::string_view cmd = "dec2bin";
     const std::string_view msg = "dec2bin 123";
-    const Message out = plugin.handleCommand(cmd, msg, mockUserId, ts);
+    const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
 
     REQUIRE( out.body.find("1111011") != std::string::npos );
   }
@@ -109,10 +113,11 @@ TEST_CASE("plugin Conversion")
   SECTION("conversion test dec2hex")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     const std::string_view cmd = "dec2hex";
     const std::string_view msg = "dec2hex 254";
-    const Message out = plugin.handleCommand(cmd, msg, mockUserId, ts);
+    const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
 
     REQUIRE( out.body.find("fe") != std::string::npos );
   }
@@ -120,10 +125,11 @@ TEST_CASE("plugin Conversion")
   SECTION("conversion test hex2bin")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     const std::string_view cmd = "hex2bin";
     const std::string_view msg = "hex2bin f5";
-    const Message out = plugin.handleCommand(cmd, msg, mockUserId, ts);
+    const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
 
     REQUIRE( out.body.find("11110101") != std::string::npos );
   }
@@ -131,10 +137,11 @@ TEST_CASE("plugin Conversion")
   SECTION("conversion test hex2dec")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
     const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     const std::string_view cmd = "hex2dec";
     const std::string_view msg = "hex2dec fe";
-    const Message out = plugin.handleCommand(cmd, msg, mockUserId, ts);
+    const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
 
     REQUIRE( out.body.find("254") != std::string::npos );
   }
