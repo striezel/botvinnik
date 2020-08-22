@@ -34,7 +34,7 @@ itself:
   the command `!leave !id_of_room:example.com` would make the bot leave the
   room with the id `!id_of_room:example.com`. If no room id is given, i. e. the
   command is just `!leave`, then the bot is told to leave the room where the
-  command was send.
+  command was sent.
   Only users that are allowed to stop the bot or have the power levels to ban or
   kick users out of the corresponding room can make the bot leave a room.
 * `!version` - _(sinve version 0.0.5)_ shows version information for the bot

@@ -8,7 +8,7 @@ improvements may be omitted.)_
 
 The `!leave` command now has a second form that does not require a room id.
 When invoked without a Matrix room id, the bot is told to leave the Matrix room
-where the command was send.
+where the command was sent.
 
 Furthermore, not only the users who are allowed to stop the bot can make the bot
 leave a room. The bot will also obey the request, if the requesting user has
