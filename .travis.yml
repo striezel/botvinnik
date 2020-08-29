@@ -6,6 +6,9 @@ sudo: false
 dist: bionic
 os:
   - linux
+arch:
+  - amd64
+  - arm64
 before_install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-8" CC="gcc-8"; fi
 script:
