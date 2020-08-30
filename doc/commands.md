@@ -155,4 +155,5 @@ certain period of time. So please do not spam bot commands.
   (e. g. `!corona Germany`) or by its two letter code from ISO 3166 (e. g.
   `!corona DE` for Germany's data). If you want to show summarized worldwide
   case numbers, just type `!corona world` or `!corona all` to show the total
-  amount of COVID-19 cases in the world.
+  amount of COVID-19 cases in the world. Worldwide data is available _since
+  version 0.1.10_.
