@@ -153,4 +153,6 @@ certain period of time. So please do not spam bot commands.
 * `!corona` - _(since version 0.1.4)_ gets current COVID-19 case numbers. The
   country for which to get the data can be specified either by its English name
   (e. g. `!corona Germany`) or by its two letter code from ISO 3166 (e. g.
-  `!corona DE` for Germany's data)
+  `!corona DE` for Germany's data). If you want to show summarized worldwide
+  case numbers, just type `!corona world` or `!corona all` to show the total
+  amount of COVID-19 cases in the world.

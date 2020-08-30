@@ -6,8 +6,13 @@ improvements may be omitted.)_
 
 ## Next version (2020-09-??)
 
-COVID-19 data will now show the numbers of the last ten days instead of just the
-last seven days.
+* COVID-19 data will now show the numbers of the last ten days instead of just
+  the last seven days.
+* Additional to just showing the data for a single country, the COVID-19 data
+  for the whole world can now be shown by typing `!corona world` or
+  `!corona all`. Country-specific numbers can still be shown as before by giving
+  the two-letter country code or the English name of the country, e. g. by
+  typing `!corona Germany` or `!corona DE` for the numbers of Germany.
 
 ## Version 0.1.9 (2020-08-23)
 

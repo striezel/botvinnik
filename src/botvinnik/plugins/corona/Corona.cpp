@@ -236,6 +236,39 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
   return result;
 }
 
+CovidNumbers getWorldData(sql::database& db)
+{
+  auto stmt = sql::prepare(db, "SELECT SUM(cases), SUM(deaths) FROM covid19;");
+  if (!stmt)
+  {
+    return CovidNumbers();
+  }
+  int rc = sqlite3_step(stmt.get());
+  if (rc != SQLITE_ROW)
+    return CovidNumbers();
+  CovidNumbers result;
+  result.totalCases = sqlite3_column_int64(stmt.get(), 0);
+  result.totalDeaths = sqlite3_column_int64(stmt.get(), 1);
+
+  stmt = sql::prepare(db, "SELECT date, SUM(cases), SUM(deaths) FROM covid19 GROUP BY date ORDER BY date DESC LIMIT 10;");
+  if (!stmt)
+  {
+    return CovidNumbers();
+  }
+  while ((rc = sqlite3_step(stmt.get())) == SQLITE_ROW)
+  {
+    CovidNumbersElem elem;
+    elem.cases = sqlite3_column_int64(stmt.get(), 1);
+    elem.deaths = sqlite3_column_int64(stmt.get(), 2);
+    elem.date = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 0));
+    result.days.emplace_back(elem);
+  }
+  if ((rc != SQLITE_OK) && (rc != SQLITE_DONE))
+    return CovidNumbers();
+
+  return result;
+}
+
 
 Corona::Corona()
 : dbLocation(std::optional<std::pair<std::string, std::chrono::steady_clock::time_point> >())
@@ -313,16 +346,20 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
       result.formatted_body = "<em>No country was specified - assuming " + name + ".</em><br />\n";
     }
 
-    const Country country = getCountryId(db, name);
+    const bool worldwide = toLowerString(name) == "world" || toLowerString(name) == "the world"
+                           || toLowerString(name) == "all";
+    const Country country = !worldwide ? getCountryId(db, name) : Country(0, "the world", "all");
     if (country.countryId == -1)
     {
       return Message("Could not find COVID-19 case numbers for '" + name
-                   + "'. Use a two letter country code (ISO 3166) or the English name of the country.",
+                   + "'. Use a two letter country code (ISO 3166) or the English name of the country."
+                   + " If you want worldwide case numbers, use 'world' or 'all' instead.",
                    "Could not find COVID-19 case numbers for '" + name
-                   + "'. Use a two letter country code (see <a href=\"https://en.wikipedia.org/wiki/ISO_3166\">ISO 3166</a>) or the English name of the country.");
+                   + "'. Use a two letter country code (see <a href=\"https://en.wikipedia.org/wiki/ISO_3166\">ISO 3166</a>) or the English name of the country."
+                   + " If you want worldwide case numbers, use 'world' or 'all' instead.");
     }
 
-    const CovidNumbers data = getCountryData(db, country.countryId);
+    const CovidNumbers data = !worldwide ? getCountryData(db, country.countryId) : getWorldData(db);
     if (data.totalCases == -1)
     {
       return Message("Could not get case numbers from database!");
