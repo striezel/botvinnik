@@ -92,7 +92,7 @@ class Configuration
      * \return Returns true, if the user is allowed to manage the bot.
      *         Returns false otherwise.
      */
-    const bool isAdminUser(const std::string& userId) const;
+    bool isAdminUser(const std::string& userId) const;
 
 
     /** \brief Loads the configuration from a file.
