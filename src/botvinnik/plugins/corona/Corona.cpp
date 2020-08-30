@@ -213,7 +213,7 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
   result.totalCases = sqlite3_column_int64(stmt.get(), 0);
   result.totalDeaths = sqlite3_column_int64(stmt.get(), 1);
 
-  stmt = sql::prepare(db, "SELECT date, cases, deaths FROM covid19 WHERE countryId = @cid ORDER BY date DESC LIMIT 7;");
+  stmt = sql::prepare(db, "SELECT date, cases, deaths FROM covid19 WHERE countryId = @cid ORDER BY date DESC LIMIT 10;");
   if (!stmt)
   {
     return CovidNumbers();

@@ -4,6 +4,11 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Next version (2020-09-??)
+
+COVID-19 data will now show the numbers of the last ten days instead of just the
+last seven days.
+
 ## Version 0.1.9 (2020-08-23)
 
 The `!leave` command now has a second form that does not require a room id.
