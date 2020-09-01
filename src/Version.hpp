@@ -27,7 +27,7 @@ namespace bvn
 {
 
 /** \brief version information */
-const std::string version = "version 0.1.10, 2020-08-30";
+const std::string version = "version 0.1.11, 2020-09-02";
 
 } // namespace
 

@@ -99,6 +99,10 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
     return Message("Debian package name to search for must be at least two characters long!");
   }
 
+  // Debian packages always use lower case letters, so transform any upper case
+  // characters to lower case.
+  packageName = toLowerString(packageName);
+
   std::string encodedPackageName;
   try
   {
