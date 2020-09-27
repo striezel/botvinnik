@@ -192,7 +192,7 @@ int main(int argc, char** argv)
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }
-  bvn::Corona covid;
+  bvn::Corona covid(bot.matrix());
   if (!bot.registerPlugin(covid))
   {
     // Should never happen!

@@ -270,8 +270,9 @@ CovidNumbers getWorldData(sql::database& db)
 }
 
 
-Corona::Corona()
-: dbLocation(std::optional<std::pair<std::string, std::chrono::steady_clock::time_point> >())
+Corona::Corona(Matrix& matrix)
+: dbLocation(std::optional<std::pair<std::string, std::chrono::steady_clock::time_point> >()),
+  theMatrix(matrix)
 {
 }
 
@@ -287,6 +288,9 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     const auto now = std::chrono::steady_clock::now();
     if (!dbLocation.has_value() || ((now - dbLocation.value().second) > std::chrono::hours(6)))
     {
+      theMatrix.sendMessage(std::string(roomId),
+                            Message(std::string("Getting current COVID-19 data. This may take a while ...\n")
+                                + "(It may be 30 seconds, it may be two minutes, depending on network and I/O speed.)"));
       const auto db = createDatabase();
       if (!db)
       {

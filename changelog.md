@@ -4,6 +4,13 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.2.1 (2020-09-27)
+
+The command for showing the current COVID-19 data will now send an informational
+message when the data is updated, because that can take a moment and the user
+may otherwise think that the bot has crashed, because it is not responding
+within the usual timeframe.
+
 ## Version 0.2.0 (2020-09-27)
 
 An additional configuration option, `bot.sync.allowed_failures`, can now be used

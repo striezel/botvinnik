@@ -24,6 +24,7 @@
 #include "../Plugin.hpp"
 #include <chrono>
 #include <optional>
+#include "../../../matrix/Matrix.hpp"
 
 namespace bvn
 {
@@ -34,8 +35,10 @@ class Corona: public Plugin
 {
   public:
     /** \brief Constructor.
+     *
+     * \param matrix the Matrix client instance
      */
-    Corona();
+    Corona(Matrix& matrix);
 
 
     /** \brief Gets a list of commands that are provided by this plugin.
@@ -73,8 +76,16 @@ class Corona: public Plugin
      */
     static std::optional<std::string> createDatabase();
   private:
-    std::optional<std::pair<std::string, std::chrono::steady_clock::time_point> > dbLocation;
+    std::optional<std::pair<std::string, std::chrono::steady_clock::time_point> > dbLocation; /**< location and update time of the database file */
+    Matrix& theMatrix; /**< reference to the Matrix client */
 
+
+    /** \brief Builds a new SQLite database from the CSV contents.
+     *
+     * \param csv   content of the CSV file
+     * \return Returns an optional containing the path to the created SQLite database.
+     * Returns an empty optional, if database creation failed.
+     */
     static std::optional<std::string> buildDatabase(const std::string& csv);
 }; // class
 
