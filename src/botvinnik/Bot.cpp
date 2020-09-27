@@ -23,6 +23,7 @@
 #include <iostream>
 #include <thread>
 #include "../util/chrono.hpp"
+#include "FailCounter.hpp"
 
 namespace bvn
 {
@@ -128,17 +129,29 @@ void Bot::start()
   }
 
   const std::string prefix = mat.configuration().prefix();
+  FailCounter counter(mat.configuration().allowedFailures());
 
   while (!stopRequested())
   {
     std::string events;
-    if (!mat.sync(events, next_batch, rooms, invites, next_batch))
+    const bool syncSuccess = mat.sync(events, next_batch, rooms, invites, next_batch);
+    counter.next(syncSuccess);
+    if (!syncSuccess)
     {
-      std::cerr << nowToString() << " Error: Sync request failed!" << std::endl;
-      mat.logout();
-      return;
+      std::cerr << nowToString() << " Error: Sync request failed!\n";
+      std::cerr << nowToString() << " Info: " << counter.count() << " of the maximum allowed "
+                << counter.limit() << " requests failed during the last " << counter.N << " requests.\n";
+      if (counter.limitExceeded())
+      {
+        std::cerr << nowToString() << " Error: Failure limit was execeeded, quitting!\n";
+        mat.logout();
+        return;
+      }
     }
-    std::clog << nowToString() << " Info: Sync request was successful." << std::endl;
+    else
+    {
+      std::clog << nowToString() << " Info: Sync request was successful." << std::endl;
+    }
 
     // Iterate over events of all rooms.
     for (const auto& room : rooms)

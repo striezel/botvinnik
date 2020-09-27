@@ -5,6 +5,7 @@ project(plugin_tests)
 
 set(plugin_tests_sources
     ../../src/botvinnik/Bot.cpp
+    ../../src/botvinnik/FailCounter.cpp
     ../../src/botvinnik/plugins/core/Basic.cpp
     ../../src/botvinnik/plugins/core/Help.cpp
     ../../src/botvinnik/plugins/core/Rooms.cpp

@@ -75,6 +75,8 @@
 		<Unit filename="../util/sqlite3.hpp" />
 		<Unit filename="Bot.cpp" />
 		<Unit filename="Bot.hpp" />
+		<Unit filename="FailCounter.cpp" />
+		<Unit filename="FailCounter.hpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="plugins/Debian.cpp" />
 		<Unit filename="plugins/Debian.hpp" />

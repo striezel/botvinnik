@@ -24,8 +24,11 @@
 			<Add option="-std=c++17" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="../../src/botvinnik/FailCounter.cpp" />
+		<Unit filename="../../src/botvinnik/FailCounter.hpp" />
 		<Unit filename="../../src/matrix/events/PowerLevels.cpp" />
 		<Unit filename="../../src/matrix/events/PowerLevels.hpp" />
+		<Unit filename="FailCounter.cpp" />
 		<Unit filename="PowerLevels.cpp" />
 		<Unit filename="main.cpp" />
 		<Extensions>

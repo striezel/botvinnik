@@ -5,7 +5,9 @@ cmake_minimum_required (VERSION 2.8)
 project(component_tests)
 
 set(component_tests_sources
+    ../../src/botvinnik/FailCounter.cpp
     ../../src/matrix/events/PowerLevels.cpp
+    FailCounter.cpp
     PowerLevels.cpp
     main.cpp)
 

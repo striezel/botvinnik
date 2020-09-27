@@ -4,6 +4,14 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.2.0 (2020-09-27)
+
+An additional configuration option, `bot.sync.allowed_failures`, can now be used
+to specify a tolerance to short-time Matrix synchronization failures. This is
+useful when the network connection may occasionally be down for a few seconds.
+Before that, the bot would stop instantly, if the network connection failed,
+resulting in the need to do a manual restart for every short network outage.
+
 ## Version 0.1.11 (2020-09-02)
 
 Debian package search is now case-insensitive. That is, even if someone enters

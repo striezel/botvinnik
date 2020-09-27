@@ -95,6 +95,13 @@ class Configuration
     bool isAdminUser(const std::string& userId) const;
 
 
+    /** \brief Gets the number of allowed failures for Matrix sync requests.
+     *
+     * \return Returns the number of allowed failures for Matrix sync requests.
+     */
+    int allowedFailures() const;
+
+
     /** \brief Loads the configuration from a file.
      *
      * \param  fileName   file name of the configuration file
@@ -127,6 +134,7 @@ class Configuration
     std::string mPassword; /**< password used for login */
     std::string mPrefix; /**< prefix for commands */
     std::unordered_set<std::string> mStopUsers; /**< users that may stop the bot */
+    int mAllowedFailsIn32; /**< allowed sync failures in 32 attempts */
 }; // class
 
 } // namespace

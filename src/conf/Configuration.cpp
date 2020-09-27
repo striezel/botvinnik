@@ -49,7 +49,8 @@ Configuration::Configuration()
   mUserId(""),
   mPassword(""),
   mPrefix(""),
-  mStopUsers(std::unordered_set<std::string>())
+  mStopUsers(std::unordered_set<std::string>()),
+  mAllowedFailsIn32(-1)
 {
 }
 
@@ -101,6 +102,11 @@ const std::unordered_set<std::string>& Configuration::stopUsers() const
 bool Configuration::isAdminUser(const std::string& userId) const
 {
   return mStopUsers.find(userId) != mStopUsers.end();
+}
+
+int Configuration::allowedFailures() const
+{
+  return mAllowedFailsIn32;
 }
 
 void Configuration::findConfigurationFile(std::string& realName)
@@ -256,6 +262,28 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       }
       mStopUsers.insert(value);
     } // if bot.stop.allowed.userid
+    else if ((name == "bot.sync.allowed_failures") || (name == "bot.allowed_failures"))
+    {
+      if (mAllowedFailsIn32 >= 0)
+      {
+        std::cerr << "Error: Number of allowed sync failures is specified more than once in file "
+                  << fileName << "!" << std::endl;
+        return false;
+      }
+      if (!stringToInt(value, mAllowedFailsIn32))
+      {
+        std::cerr << "Error: Number of allowed sync failures in file "
+                  << fileName << " must be a non-negative integer!" << std::endl;
+        return false;
+      }
+      // If it is still below zero or above 31, the value is invalid.
+      if (mAllowedFailsIn32 < 0 || mAllowedFailsIn32 > 31)
+      {
+        std::cerr << "Error: Number of allowed sync failures in file "
+                  << fileName << " must be between 0 and 31 (inclusive)!" << std::endl;
+        return false;
+      }
+    } // if bot.sync.allowed_failures
     else
     {
       std::cerr << "Error while reading configuration file " << fileName
@@ -293,6 +321,13 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
     mPrefix = "!";
     std::clog << "Info: Setting command prefix to '" << mPrefix
               << "', because none is given in the configuration file." << std::endl;
+  }
+  // Sync fail count may be missing. Set it to 12 in that case.
+  if (mAllowedFailsIn32 < 0)
+  {
+    mAllowedFailsIn32 = 12;
+    std::clog << "Info: Setting number of allowed sync failures to " << mAllowedFailsIn32
+              << ", because none is given in the configuration file." << std::endl;
   }
 
   // Everything is good, so far.
@@ -339,6 +374,7 @@ void Configuration::clear()
   mUserId.clear();
   mPassword.clear();
   mStopUsers.clear();
+  mAllowedFailsIn32 = -1;
 }
 
 } // namespace

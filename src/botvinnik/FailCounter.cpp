@@ -18,17 +18,35 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
-
-#include <string>
+#include "FailCounter.hpp"
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.2.0, 2020-09-27";
+FailCounter::FailCounter(const uint_fast8_t limit)
+: status(0), offset(0), limit_(limit < N ? limit : N - 1)
+{
+}
+
+void FailCounter::next(const bool success)
+{
+  status.set(offset, !success);
+  offset = (offset + 1) % N;
+}
+
+unsigned int FailCounter::count() const
+{
+  return status.count();
+}
+
+unsigned int FailCounter::limit() const
+{
+  return limit_;
+}
+
+bool FailCounter::limitExceeded() const
+{
+  return status.count() > limit_;
+}
 
 } // namespace
-
-#endif // BVN_VERSION_HPP

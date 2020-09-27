@@ -30,6 +30,8 @@
 		</Linker>
 		<Unit filename="../../src/botvinnik/Bot.cpp" />
 		<Unit filename="../../src/botvinnik/Bot.hpp" />
+		<Unit filename="../../src/botvinnik/FailCounter.cpp" />
+		<Unit filename="../../src/botvinnik/FailCounter.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Debian.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/Debian.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Fortune.cpp" />

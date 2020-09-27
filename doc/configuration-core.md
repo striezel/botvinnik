@@ -74,11 +74,19 @@ The following Matrix-related settings are recognized in the configuration file:
   bot. At least one user id must be specified. Furthermore, the user id from the
   setting **matrix.userid** will be added to this list automatically, if it has
   not been specified as user allowed to stop the bot.
+* **bot.sync.allowed_failures** - _(since 0.2.0)_ the number of allowed Matrix
+  synchronization failures within the last 32 synchronization attempts before
+  the bot exits. Allowed range is from 0 (zero) to 31. This setting can be used
+  to avoid that the bot stops when the network connection may occasionally be
+  down for a few seconds. One allowed failure is approx. the equivalent of five
+  seconds network downtime. Default value is twelve.
 
+  Set this to zero, if you want to restore the behaviour used in versions before
+  0.2.0.
 # Example of a complete configuration file
 
 The following example is a complete core configuration file for the
-botvinnik program (as of version 0.0.11):
+botvinnik program (as of version 0.2.0):
 
     # This line is a comment and will be ignored by the program.
     #And so is this line.
@@ -90,3 +98,4 @@ botvinnik program (as of version 0.0.11):
     # bot management settings
     command.prefix=!
     bot.stop.allowed.userid=@bob:matrix.example.tld
+    bot.sync.allowed_failures=12

@@ -19,6 +19,7 @@ set(botvinnik_sources
     ../util/sqlite3.cpp
     ../util/Strings.cpp
     Bot.cpp
+    FailCounter.cpp
     plugins/core/Basic.cpp
     plugins/core/Help.cpp
     plugins/core/Rooms.cpp
