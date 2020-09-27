@@ -144,7 +144,7 @@ int main(int argc, char** argv)
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }
-  bvn::Rooms piRooms(bot);
+  bvn::Rooms piRooms(bot.matrix());
   if (!bot.registerPlugin(piRooms))
   {
     // Should never happen!

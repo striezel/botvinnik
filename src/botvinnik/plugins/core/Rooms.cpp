@@ -24,8 +24,8 @@
 namespace bvn
 {
 
-Rooms::Rooms(Bot& b)
-: theBot(b)
+Rooms::Rooms(Matrix& matrix)
+: theMatrix(matrix)
 {
 }
 
@@ -38,10 +38,10 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
 {
   if (command == "rooms")
   {
-    if (theBot.matrix().configuration().isAdminUser(std::string(userId)))
+    if (theMatrix.configuration().isAdminUser(std::string(userId)))
     {
       std::vector<std::string> rooms;
-      if (!theBot.matrix().joinedRooms(rooms))
+      if (!theMatrix.joinedRooms(rooms))
       {
         return Message("Error: Could not retrieve joined rooms from homeserver.");
       }
@@ -57,7 +57,7 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
         {
           std::string name;
           ++displayNameRequests;
-          if (theBot.matrix().roomName(id, name))
+          if (theMatrix.roomName(id, name))
           {
             msg.body.append(" (\"").append(name).append("\")");
           }
@@ -89,7 +89,7 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
                   .append(". Only the following users are allowed to do that:\n"),
                   std::string("<strong>You are not allowed to list active rooms of the bot, ").append(userId)
                   .append(".</strong> Only the following users are allowed to do that:<br />\n"));
-      for (const auto& item: theBot.mat.configuration().stopUsers())
+      for (const auto& item: theMatrix.configuration().stopUsers())
       {
         msg.body.append("\n").append(item);
         msg.formatted_body.append("<br />\n").append(item);
@@ -107,11 +107,11 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
       leavingRoomId = roomId;
     }
 
-    bool allowed = theBot.matrix().configuration().isAdminUser(std::string(userId));
+    bool allowed = theMatrix.configuration().isAdminUser(std::string(userId));
     if (!allowed)
     {
       // Check whether user can ban or kick users. If so, bot should leave.
-      const auto power = theBot.matrix().powerLevels(leavingRoomId);
+      const auto power = theMatrix.powerLevels(leavingRoomId);
       allowed = power.has_value() && power.value().canBanOrKick(std::string(userId));
     }
 
@@ -122,7 +122,7 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
                   .append(". Only the following users are allowed to make me leave Matrix rooms:\n"),
                   std::string("<strong>You have no power here, ").append(userId)
                   .append(".</strong> Only the following users are allowed to make me leave Matrix rooms:<br />\n"));
-      for (const auto& item: theBot.mat.configuration().stopUsers())
+      for (const auto& item: theMatrix.configuration().stopUsers())
       {
         msg.body.append("\n").append(item);
         msg.formatted_body.append("<br />\n").append(item);
@@ -133,13 +133,13 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
     }
 
     // Notify room members.
-    theBot.mat.sendMessage(leavingRoomId, Message(std::string("Leaving the room due to request by ").append(userId).append(".")));
+    theMatrix.sendMessage(leavingRoomId, Message(std::string("Leaving the room due to request by ").append(userId).append(".")));
     // Leave the room.
-    if (!theBot.mat.leaveRoom(leavingRoomId))
+    if (!theMatrix.leaveRoom(leavingRoomId))
     {
       return Message("Error: Could not leave the room '" + leavingRoomId + "'. Are you sure that is a proper Matrix room id?");
     }
-    if (!theBot.mat.forgetRoom(leavingRoomId))
+    if (!theMatrix.forgetRoom(leavingRoomId))
     {
       return Message("Bot has left the room '" + leavingRoomId + "'. However, the call to the /forget client-server API endpoint failed.");
     }

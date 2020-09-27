@@ -42,7 +42,7 @@ TEST_CASE("plugin registration for all known plugins")
   // core plugins
   Basic basic(bot);
   Help help(bot);
-  Rooms rooms(bot);
+  Rooms rooms(bot.matrix());
   // other plugins
   Conversion convert;
   Corona cov(bot.matrix());

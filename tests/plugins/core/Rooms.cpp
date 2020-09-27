@@ -20,6 +20,7 @@
 
 #include <catch.hpp>
 #include <algorithm>
+#include "../../../src/botvinnik/Bot.hpp"
 #include "../../../src/botvinnik/plugins/core/Rooms.hpp"
 
 TEST_CASE("plugin Rooms")
@@ -28,7 +29,7 @@ TEST_CASE("plugin Rooms")
   using namespace std::chrono;
   Configuration conf;
   Bot bot(conf);
-  Rooms plugin(bot);
+  Rooms plugin(bot.matrix());
 
   const auto commands = plugin.commands();
 

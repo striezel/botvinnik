@@ -25,7 +25,7 @@
 #include <string_view>
 #include <vector>
 #include "../Plugin.hpp"
-#include "../../Bot.hpp"
+#include "../../../matrix/Matrix.hpp"
 
 namespace bvn
 {
@@ -37,9 +37,9 @@ class Rooms: public Plugin
   public:
     /** \brief Constructor.
      *
-     * \param b   the bot instance
+     * \param matrix   the Matrix client instance
      */
-    Rooms(Bot& b);
+    Rooms(Matrix& matrix);
 
 
     /** \brief Gets a list of commands that are provided by this plugin.
@@ -69,7 +69,7 @@ class Rooms: public Plugin
      */
     virtual std::string helpOneLine(const std::string_view& command) const;
   private:
-    Bot& theBot; /**< reference to the bot */
+    Matrix& theMatrix; /**< reference to the Matrix client */
 }; // class
 
 } // namespace
