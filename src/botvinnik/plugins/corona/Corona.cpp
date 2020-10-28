@@ -103,12 +103,9 @@ bool createDbStructure(sql::database& db)
           deaths INTEGER
         );
         )SQL";
-  char * errorMessage = nullptr;
-  if (sqlite3_exec(db.get(), statement.c_str(), nullptr, nullptr, &errorMessage) != SQLITE_OK)
+  if (!sql::exec(db, statement))
   {
-    std::cerr << "Error: Could not create tables in sqlite3 database!" << std::endl
-              << errorMessage << std::endl;
-    sqlite3_free(errorMessage);
+    std::cerr << "Error: Could not create tables in sqlite3 database!" << std::endl;
     return false;
   }
 
@@ -290,7 +287,7 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     {
       theMatrix.sendMessage(std::string(roomId),
                             Message(std::string("Getting current COVID-19 data. This may take a while ...\n")
-                                + "(It may be 30 seconds, it may be two minutes, depending on network and I/O speed.)"));
+                                + "(It may be ten seconds, it may be two minutes, depending on network and I/O speed.)"));
       const auto db = createDatabase();
       if (!db)
       {
@@ -302,8 +299,8 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
       if (filesystem::getHome(home))
       {
         const auto delim = filesystem::pathDelimiter;
-        dbFileName = home + delim + ".bvn" + delim + std::string("corona.db");
         const std::string directory = home + delim + ".bvn";
+        dbFileName = directory + delim + std::string("corona.db");
         try
         {
           // Attempt to create directory and set permissions.

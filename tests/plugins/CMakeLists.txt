@@ -18,6 +18,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/Wikipedia.cpp
     ../../src/botvinnik/plugins/xkcd/Xkcd.cpp
     ../../src/botvinnik/plugins/xkcd/XkcdData.cpp
+    ../../src/botvinnik/plugins/xkcd/XkcdDb.cpp
     ../../src/conf/Configuration.cpp
     ../../src/matrix/Matrix.cpp
     ../../src/matrix/Message.cpp

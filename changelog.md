@@ -4,6 +4,14 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.2.2 (2020-10-28)
+
+The command `!xkcd` does now try to reuse existing uploaded media when the same
+comic has already been uploaded before, thus reducing the amount of media data
+on the side of the Matrix server. As a side effect, the bot is also faster to
+respond when using existing media content, because it does not need to be
+uploaded again.
+
 ## Version 0.2.1 (2020-09-27)
 
 The command for showing the current COVID-19 data will now send an informational

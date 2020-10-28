@@ -104,6 +104,8 @@
 		<Unit filename="plugins/xkcd/Xkcd.hpp" />
 		<Unit filename="plugins/xkcd/XkcdData.cpp" />
 		<Unit filename="plugins/xkcd/XkcdData.hpp" />
+		<Unit filename="plugins/xkcd/XkcdDb.cpp" />
+		<Unit filename="plugins/xkcd/XkcdDb.hpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

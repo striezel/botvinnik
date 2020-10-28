@@ -32,6 +32,7 @@ set(botvinnik_sources
     plugins/Wikipedia.cpp
     plugins/xkcd/Xkcd.cpp
     plugins/xkcd/XkcdData.cpp
+    plugins/xkcd/XkcdDb.cpp
     main.cpp)
 
 if (CMAKE_COMPILER_IS_GNUCC)

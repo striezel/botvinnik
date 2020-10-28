@@ -19,15 +19,17 @@
 */
 
 #include "Xkcd.hpp"
+#include <iostream>
 #include <random>
 #include "XkcdData.hpp"
+#include "XkcdDb.hpp"
 #include "../../../util/Strings.hpp"
 
 namespace bvn
 {
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2352),
+: mLatestNum(2377),
   theMatrix(mat)
 {
   const auto latest = XkcdData::get(0);
@@ -86,8 +88,34 @@ Message Xkcd::handleCommand(const std::string_view& command, const std::string_v
                      std::string("<strong>Error:</strong> Could not get comic from xkcd.com!"));
     }
     const XkcdData& data = info.value();
-
-    const auto mxcUri = theMatrix.uploadImage(data.img);
+    auto db = XkcdDb::getDatabase();
+    std::optional<std::string> mxcUri;
+    if (db.has_value())
+    {
+      mxcUri = XkcdDb::getMxcUri(db.value(), data.num);
+      if (!mxcUri.has_value())
+      {
+        // No existing media. Upload it and save it in DB.
+        mxcUri = theMatrix.uploadImage(data.img);
+        if (mxcUri.has_value())
+        {
+          if (XkcdDb::insertMxcUri(db.value(), data.num, mxcUri.value()))
+          {
+            std::clog << "Info: Inserted MXC URI for comic #" << data.num << " into database." << std::endl;
+          }
+          else
+          {
+            std::clog << "Warning: Failed to insert MXC URI for comic #" << data.num << " into database!" << std::endl;
+          }
+        }
+      }
+    }
+    else
+    {
+      // Database error occurred or DB does not exist. Fallback to old approach
+      // and upload new media every time.
+      mxcUri = theMatrix.uploadImage(data.img);
+    }
 
     Message xkcd;
     // Create normal body - varies, when transcript is there.

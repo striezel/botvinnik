@@ -58,6 +58,8 @@
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdData.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdData.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdDb.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdDb.hpp" />
 		<Unit filename="../../src/conf/Configuration.cpp" />
 		<Unit filename="../../src/conf/Configuration.hpp" />
 		<Unit filename="../../src/matrix/Matrix.cpp" />
