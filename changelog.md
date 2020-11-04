@@ -9,6 +9,9 @@ improvements may be omitted.)_
 A build error with GNU g++ 10 is fixed, so the code will now build with g++ 10,
 too.
 
+Furthermore, the library that does the JSON parsing (simdjson) has been updated
+from version 0.3.1 to version 0.4.6.
+
 ## Version 0.2.2 (2020-10-28)
 
 The command `!xkcd` does now try to reuse existing uploaded media when the same
