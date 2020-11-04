@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version NEXT (2020-11-xx)
+## Version 0.2.3 (2020-11-04)
 
 A build error with GNU g++ 10 is fixed, so the code will now build with g++ 10,
 too.
