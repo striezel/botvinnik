@@ -1,0 +1,27 @@
+name: Ubuntu 20.04 with GNU GCC 9
+
+on: push
+
+jobs:
+  build_ubuntu_20_04_gcc9:
+    runs-on: ubuntu-20.04
+    steps:
+      # Checks-out the repository under $GITHUB_WORKSPACE.
+      - uses: actions/checkout@v2
+      - name: Install Debian packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y catch cmake fortune-mod fortunes-min g++-9 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
+      - name: Build
+        run: |
+          export CXX=g++-9
+          export CC=gcc-9
+          cd $GITHUB_WORKSPACE && pwd && ls -lah
+          mkdir build
+          cd build
+          cmake ../
+          make -j4
+      - name: Tests
+        run: |
+          cd "$GITHUB_WORKSPACE"/build
+          ctest -V
