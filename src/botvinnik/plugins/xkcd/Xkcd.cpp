@@ -29,7 +29,7 @@ namespace bvn
 {
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2377),
+: mLatestNum(2381),
   theMatrix(mat)
 {
   const auto latest = XkcdData::get(0);
