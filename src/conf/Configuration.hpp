@@ -22,6 +22,7 @@
 #define BVN_CONFIGURATION_HPP
 
 #include <map>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
