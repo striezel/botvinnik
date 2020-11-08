@@ -7,8 +7,10 @@ project(json_tests)
 set(json_tests_sources
     ../../src/matrix/events/PowerLevels.cpp
     ../../src/matrix/json/PowerLevels.cpp
+    ../../src/matrix/json/Sync.cpp
     ../../third-party/simdjson/simdjson.cpp
     PowerLevels.cpp
+    Sync.cpp
     main.cpp)
 
 if (CMAKE_COMPILER_IS_GNUCC)

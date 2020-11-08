@@ -24,13 +24,20 @@
 			<Add option="-std=c++17" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="../../src/matrix/Room.hpp" />
 		<Unit filename="../../src/matrix/events/PowerLevels.cpp" />
 		<Unit filename="../../src/matrix/events/PowerLevels.hpp" />
+		<Unit filename="../../src/matrix/events/RoomMessageText.hpp" />
+		<Unit filename="../../src/matrix/events/RoomName.hpp" />
+		<Unit filename="../../src/matrix/events/RoomTopic.hpp" />
 		<Unit filename="../../src/matrix/json/PowerLevels.cpp" />
 		<Unit filename="../../src/matrix/json/PowerLevels.hpp" />
+		<Unit filename="../../src/matrix/json/Sync.cpp" />
+		<Unit filename="../../src/matrix/json/Sync.hpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.h" />
 		<Unit filename="PowerLevels.cpp" />
+		<Unit filename="Sync.cpp" />
 		<Unit filename="main.cpp" />
 		<Extensions />
 	</Project>
