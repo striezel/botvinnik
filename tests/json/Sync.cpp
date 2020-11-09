@@ -468,4 +468,154 @@ TEST_CASE("parsing sync events")
     REQUIRE( rooms[0].texts[0].sender == "@text_user_id:example.org" );
     REQUIRE( rooms[0].texts[0].server_ts == std::chrono::milliseconds(1223344554321) );
   }
+
+  SECTION("room name changes")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"foobar1234_5678_9012",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body":"This is an example text message",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>This is an example text message</b>"
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        },
+                        {
+                            "content": {
+                                "name": "New room name"
+                            },
+                            "event_id": "$aabbbbaaaabbbbaaa:example.org",
+                            "origin_server_ts": 13375678901235,
+                            "room_id": "!roomid1234:example.org",
+                            "sender": "@renamer_id:example.org",
+                            "state_key": "",
+                            "type": "m.room.name",
+                            "unsigned": {
+                                "age": 1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    const auto [doc, error] = parser.parse(json);
+    REQUIRE_FALSE( error );
+    Sync::parse(doc, rooms, invitedRoomIds);
+
+    // Only one room should be present.
+    REQUIRE( rooms.size() == 1 );
+    // Should have been invited into no rooms.
+    REQUIRE( invitedRoomIds.size() == 0 );
+    // Room should have one text message only.
+    REQUIRE( rooms[0].texts.size() == 1 );
+    // Check message content.
+    REQUIRE( rooms[0].texts[0].body == "This is an example text message" );
+    REQUIRE( rooms[0].texts[0].format == "org.matrix.custom.html" );
+    REQUIRE( rooms[0].texts[0].formatted_body == "<b>This is an example text message</b>" );
+    REQUIRE( rooms[0].texts[0].sender == "@text_user_id:example.org" );
+    REQUIRE( rooms[0].texts[0].server_ts == std::chrono::milliseconds(13375678901234) );
+    // Room should also have one name change.
+    REQUIRE( rooms[0].names.size() == 1 );
+    REQUIRE( rooms[0].topics.size() == 0 );
+    // Check name change content.
+    REQUIRE( rooms[0].names[0].name == "New room name" );
+    REQUIRE( rooms[0].names[0].sender == "@renamer_id:example.org" );
+    REQUIRE( rooms[0].names[0].server_ts == std::chrono::milliseconds(13375678901235) );
+  }
+
+  SECTION("room topic changes")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"foobar1234_5678_9012",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body":"Somebody will change the topic soon.",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>Somebody</b> will change the topic soon."
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        },
+                        {
+                            "content": {
+                                "topic": "Nice topic is 'noice'."
+                            },
+                            "event_id": "$aabbbbaaaabbbbaaa:example.org",
+                            "origin_server_ts": 13375678904444,
+                            "room_id": "!roomid1234:example.org",
+                            "sender": "@somebody_else:example.org",
+                            "state_key": "",
+                            "type": "m.room.topic",
+                            "unsigned": {
+                                "age": 1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    const auto [doc, error] = parser.parse(json);
+    REQUIRE_FALSE( error );
+    Sync::parse(doc, rooms, invitedRoomIds);
+
+    // Only one room should be present.
+    REQUIRE( rooms.size() == 1 );
+    // Should have been invited into no rooms.
+    REQUIRE( invitedRoomIds.size() == 0 );
+    // Room should have one text message only.
+    REQUIRE( rooms[0].texts.size() == 1 );
+    // Check message content.
+    REQUIRE( rooms[0].texts[0].body == "Somebody will change the topic soon." );
+    REQUIRE( rooms[0].texts[0].format == "org.matrix.custom.html" );
+    REQUIRE( rooms[0].texts[0].formatted_body == "<b>Somebody</b> will change the topic soon." );
+    REQUIRE( rooms[0].texts[0].sender == "@text_user_id:example.org" );
+    REQUIRE( rooms[0].texts[0].server_ts == std::chrono::milliseconds(13375678901234) );
+    // Room should also have one topic change.
+    REQUIRE( rooms[0].topics.size() == 1 );
+    REQUIRE( rooms[0].names.size() == 0 );
+    // Check topic content.
+    REQUIRE( rooms[0].topics[0].topic == "Nice topic is 'noice'." );
+    REQUIRE( rooms[0].topics[0].sender == "@somebody_else:example.org" );
+    REQUIRE( rooms[0].topics[0].server_ts == std::chrono::milliseconds(13375678904444) );
+  }
 }
