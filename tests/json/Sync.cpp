@@ -267,4 +267,205 @@ TEST_CASE("parsing sync events")
     REQUIRE( rooms[1].texts[1].server_ts == std::chrono::milliseconds(1223344554321) );
   }
 
+  SECTION("non-text messages in rooms are ignored")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"foobar1234_5678_9012",
+    "rooms":{
+        "join":{
+            "!roomid5678:example.com":{
+               "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body":"Another text message",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>Another</b> text message"
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts":1223344554321,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        },
+                        {
+                            "content":{
+                                "body":"thinks this is an example emote",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"thinks <b>this</b> is an example emote",
+                                "msgtype":"m.emote"
+                            },
+                            "event_id":"$bbbbbbbbbbbbbb:example.org",
+                            "origin_server_ts":1234567890,
+                            "room_id":"!roomid5678:example.org",
+                            "sender":"@emote_user_id:example.org",
+                            "type":"m.room.message",
+                            "unsigned":{
+                                "age":1234
+                            }
+                        },
+                        {
+                            "content":{
+                                "body":"This is an example notice",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"This is an <strong>example</strong> notice",
+                                "msgtype":"m.notice"
+                            },
+                            "event_id":"$cccccccccccccc:example.org",
+                            "origin_server_ts":123456789012,
+                            "room_id":"!roomid5678:example.org",
+                            "sender":"@notice_user_id:example.org",
+                            "type":"m.room.message",
+                            "unsigned":{
+                                "age":1234
+                            }
+                        },
+                        {
+                            "content":{
+                                "body":"filename.jpg",
+                                "info":{
+                                    "h":123,
+                                    "mimetype":"image/jpeg",
+                                    "size":321023,
+                                    "w":456
+                                },
+                                "msgtype":"m.image",
+                                "url":"mxc://example.org/foobarIdWasHere"
+                            },
+                            "event_id":"$ddddddddddddd:example.org",
+                            "origin_server_ts":1234567890123,
+                            "room_id":"!roomid5678:example.org",
+                            "sender":"@image_user_id:example.org",
+                            "type":"m.room.message",
+                            "unsigned":{
+                                "age":1234
+                            }
+                        },
+                        {
+                            "content":{
+                                "body":"open-standards-matter.odt",
+                                "filename":"open-standards-matter.odt",
+                                "info":{
+                                    "mimetype":"application/vnd.oasis.opendocument.text",
+                                    "size":54321
+                                },
+                                "msgtype":"m.file",
+                                "url":"mxc://example.org/aaaaaaaaabbbbbbbcccc"
+                            },
+                            "event_id":"$eeeeeeeeeeeeeeeee:example.org",
+                            "origin_server_ts":12345678901234,
+                            "room_id":"!roomid5678:example.org",
+                            "sender":"@file_user_id:example.org",
+                            "type":"m.room.message",
+                            "unsigned":{
+                                "age":1234
+                            }
+                        },
+                        {
+                            "content":{
+                                "body":"Beethoven - Ode an die Freude",
+                                "info":{
+                                    "duration":2140786,
+                                    "mimetype":"audio/ogg",
+                                    "size":1563685
+                                },
+                                "msgtype":"m.audio",
+                                "url":"mxc://example.org/freude1234567890"
+                            },
+                            "event_id":"$fffffffffffffffffff:example.org",
+                            "origin_server_ts":123456789012345,
+                            "room_id":"!roomid5678:example.org",
+                            "sender":"@dj_beathoven:example.org",
+                            "type":"m.room.message",
+                            "unsigned":{
+                                "age":1234
+                            }
+                        },
+                        {
+                            "content":{
+                                "body":"Big Ben, London, UK",
+                                "geo_uri":"geo:51.5008,0.1247",
+                                "info":{
+                                    "thumbnail_info":{
+                                        "h":300,
+                                        "mimetype":"image/jpeg",
+                                        "size":46144,
+                                        "w":300
+                                    },
+                                    "thumbnail_url":"mxc://example.org/dingdongbellsareringing"
+                                },
+                                "msgtype":"m.location"
+                            },
+                            "event_id":"$gggggggggggggggggg:example.org",
+                            "origin_server_ts":123456789012346,
+                            "room_id":"!roomid5678:example.org",
+                            "sender":"@location_sender_id:example.org",
+                            "type":"m.room.message",
+                            "unsigned":{
+                                "age":1234
+                            }
+                        },
+                        {
+                            "content":{
+                                "body":"How to E2EE",
+                                "info":{
+                                    "duration":2140786,
+                                    "h":320,
+                                    "mimetype":"video/ogg",
+                                    "size":7654321,
+                                    "thumbnail_info":{
+                                        "h":300,
+                                        "mimetype":"image/jpeg",
+                                        "size":46144,
+                                        "w":300
+                                    },
+                                    "thumbnail_url":"mxc://example.org/eeeeeeeeeeeee2ee",
+                                    "w":480
+                                },
+                                "msgtype":"m.video",
+                                "url":"mxc://example.org/ee222222eeeeee222222eeee"
+                            },
+                            "event_id":"$hhhhhhhhhhhhhhhhhh:example.org",
+                            "origin_server_ts":1432735824653,
+                            "room_id":"!roomid5678:example.org",
+                            "sender":"@video_sender_id:example.org",
+                            "type":"m.room.message",
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{ }
+    }
+    }
+    )json";
+    const auto [doc, error] = parser.parse(json);
+    REQUIRE_FALSE( error );
+    Sync::parse(doc, rooms, invitedRoomIds);
+
+    // Invited rooms should be empty (no data in invite element).
+    REQUIRE( invitedRoomIds.size() == 0 );
+    // There should only be one room.
+    REQUIRE( rooms.size() == 1 );
+    // Id of 1st room should be "!roomid5678:example.com".
+    REQUIRE( "!roomid5678:example.com" == rooms[0].id );
+    // First room should have one text message only.
+    REQUIRE( rooms[0].texts.size() == 1 );
+    // Check message content.
+    REQUIRE( rooms[0].texts[0].body == "Another text message" );
+    REQUIRE( rooms[0].texts[0].format == "org.matrix.custom.html" );
+    REQUIRE( rooms[0].texts[0].formatted_body == "<b>Another</b> text message" );
+    REQUIRE( rooms[0].texts[0].sender == "@text_user_id:example.org" );
+    REQUIRE( rooms[0].texts[0].server_ts == std::chrono::milliseconds(1223344554321) );
+  }
 }
