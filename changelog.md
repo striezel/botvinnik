@@ -9,6 +9,9 @@ improvements may be omitted.)_
 The library that does the JSON parsing (simdjson) has been updated from version
 0.4.6 to version 0.6.0.
 
+Furthermore, a note has been added to clarify how the `!ping` command works and
+why it can take up to five seconds to answer.
+
 ## Version 0.2.3 (2020-11-04)
 
 A build error with GNU g++ 10 is fixed, so the code will now build with g++ 10,

@@ -57,7 +57,10 @@ Message Ping::handleCommand(const std::string_view& command, const std::string_v
     const auto now = std::chrono::system_clock::now().time_since_epoch();
     const std::chrono::milliseconds diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - server_ts);
     const auto diffStr = humanReadableDuration(diff);
-    return Message(std::string(userId).append(": Ping took ").append(diffStr).append(" to arrive."));
+    return Message(std::string(userId).append(": Ping took ").append(diffStr).append(" to arrive.")
+                  .append("\nNote that the bot only queries new events every five seconds, so a \"ping\" of up to five seconds is not unusual."),
+                   std::string(userId).append(": Ping took ").append(diffStr).append(" to arrive.<br />\n")
+                  .append("<em>Note that the bot only queries new events every five seconds, so a \"ping\" of up to five seconds is not unusual.</em>"));
   }
 
   // unknown command
