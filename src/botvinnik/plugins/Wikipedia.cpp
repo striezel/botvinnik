@@ -141,7 +141,7 @@ Message Wikipedia::extract(const std::string& lang, const std::string_view& comm
               << "Response is: " << response << std::endl;
     return Message("The request to get information from Wikipedia failed. Wikipedia server returned invalid JSON.");
   }
-  const auto [pages, pagesError] = doc.at("query/pages");
+  const auto [pages, pagesError] = doc.at_pointer("/query/pages");
   if (pagesError || pages.type() != simdjson::dom::element_type::OBJECT)
   {
     std::cerr << "Error while trying to parse JSON response from Wikipedia! JSON data does not contain a 'query/pages' object!" << std::endl;

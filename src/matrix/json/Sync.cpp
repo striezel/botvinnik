@@ -86,7 +86,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
     }
 
     simdjson::dom::element events;
-    roomObject.at("timeline/events").tie(events, error);
+    roomObject.at_pointer("/timeline/events").tie(events, error);
     if (error)
     {
       std::cerr << "Error: Could not find timeline/events pointer!" << std::endl;
@@ -112,7 +112,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
       if (typeString == "m.room.message")
       {
         simdjson::dom::element msgtype;
-        elem.at("content/msgtype").tie(msgtype, error);
+        elem.at_pointer("/content/msgtype").tie(msgtype, error);
         if (error || msgtype.type() != simdjson::dom::element_type::STRING)
         {
           std::cerr << "Error: content-msgtype is missing or not a string!" << std::endl;
@@ -124,7 +124,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
           matrix::RoomMessageText txt;
           simdjson::dom::element data;
           // Body must always be present.
-          elem.at("content/body").tie(data, error);
+          elem.at_pointer("/content/body").tie(data, error);
           if (error || data.type() != simdjson::dom::element_type::STRING)
           {
             std::cerr << "Error: content-body is missing or not a string!" << std::endl;
@@ -132,18 +132,18 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
           }
           txt.body = data.get<std::string_view>().value();
           // format and formatted_body are optional.
-          elem.at("content/format").tie(data, error);
+          elem.at_pointer("/content/format").tie(data, error);
           if (!error && data.type() == simdjson::dom::element_type::STRING)
           {
             txt.format = data.get<std::string_view>().value();
           }
-          elem.at("content/formatted_body").tie(data, error);
+          elem.at_pointer("/content/formatted_body").tie(data, error);
           if (!error && data.type() == simdjson::dom::element_type::STRING)
           {
             txt.formatted_body = data.get<std::string_view>().value();
           }
           // sender should always be there.
-          elem.at("sender").tie(data, error);
+          elem.at_pointer("/sender").tie(data, error);
           if (error || data.type() != simdjson::dom::element_type::STRING)
           {
             std::cerr << "Error: Event's sender is missing or not a string!" << std::endl;
@@ -167,7 +167,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
         matrix::RoomName name;
         simdjson::dom::element data;
         // name must always be present.
-        elem.at("content/name").tie(data, error);
+        elem.at_pointer("/content/name").tie(data, error);
         if (error || data.type() != simdjson::dom::element_type::STRING)
         {
           std::cerr << "Error: content-name is missing or not a string!" << std::endl;
@@ -198,7 +198,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
         matrix::RoomTopic topic;
         simdjson::dom::element data;
         // name must always be present.
-        elem.at("content/topic").tie(data, error);
+        elem.at_pointer("/content/topic").tie(data, error);
         if (error || data.type() != simdjson::dom::element_type::STRING)
         {
           std::cerr << "Error: content-topic is missing or not a string!" << std::endl;

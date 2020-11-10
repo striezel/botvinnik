@@ -73,6 +73,7 @@ std::optional<XkcdData> XkcdData::get(unsigned int num)
   {
     data.title = value.get<std::string_view>().value();
   }
+  // Fall back to "normal" title, if there is no safe_title element.
   if (data.title.empty())
   {
     doc["title"].tie(value, error);

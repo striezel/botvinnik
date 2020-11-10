@@ -70,7 +70,7 @@ void Debian::getVersion(Packages::nameVersion& pack, const std::string& suite)
               << "Response is: " << response << std::endl;
     return;
   }
-  const auto [v, vError] = doc.at("versions/0/version");
+  const auto [v, vError] = doc.at_pointer("/versions/0/version");
   if (vError || v.type() != simdjson::dom::element_type::STRING)
   {
     return;
@@ -139,7 +139,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
 
   Packages packs;
   {
-    const auto [exact, exactError] = doc.at("results/exact");
+    const auto [exact, exactError] = doc.at_pointer("/results/exact");
     if (exactError)
     {
       std::cerr << "Error: JSON response from Debian does not contain 'results/exact' element!" << std::endl
@@ -159,7 +159,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
     }
   }
 
-  const auto [other, otherError] = doc.at("results/other");
+  const auto [other, otherError] = doc.at_pointer("/results/other");
   if (otherError || other.type() != simdjson::dom::element_type::ARRAY)
   {
     std::cerr << "Error: JSON response from Debian does not contain 'results/other' element!" << std::endl
