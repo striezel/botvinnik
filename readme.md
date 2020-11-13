@@ -10,6 +10,9 @@ See the [documentation](doc/readme.md) for more information.
 
 ## Build status
 
+* GitHub workflows:
+  * [![GitHub CI Clang status](https://github.com/striezel/botvinnik/workflows/GitHub%20CI%20with%20Clang%208,%209,%2010/badge.svg)](https://github.com/striezel/botvinnik/actions)
+  * [![GitHub CI GCC status](https://github.com/striezel/botvinnik/workflows/GitHub%20CI%20with%20GCC%208,%209,%2010/badge.svg)](https://github.com/striezel/botvinnik/actions)
 * GitLab CI:
 [![GitLab pipeline status](https://gitlab.com/striezel/botvinnik/badges/master/pipeline.svg)](https://gitlab.com/striezel/botvinnik/)
 * Travis CI:
