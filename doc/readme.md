@@ -14,9 +14,9 @@ server instance where you have a valid login for the bot. You can either try a
 up your own server, e. g. by using [Synapse](https://github.com/matrix-org/synapse),
 the reference implementation.
 
-Probably the easiest way to sign up and try Matrix out is to use Riot, a
-web-based client. Go to <https://riot.im/app> to get started. This will allow
-you to sign up for a new account on Matrix.org.
+Probably the easiest way to sign up and try Matrix out is to use Element, a
+web-based client. Go to <https://app.element.io/> to get started. This will
+allow you to sign up for a new account on Matrix.org.
 
 # Configuration file
 

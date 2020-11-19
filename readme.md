@@ -3,10 +3,10 @@
 botvinnik is a bot that hooks into a Matrix home server and provides some (more
 or less) useful additions.
 
-It is still in a very early stage of development and not meant for production
-use yet.
+It is still in an early stage of development.
 
-See the [documentation](doc/readme.md) for more information.
+See the [documentation](doc/readme.md) for more information on how to get
+started with the bot.
 
 ## Build status
 
