@@ -211,8 +211,19 @@ bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
 
 std::string Matrix::encodeRoomId(const std::string& roomId)
 {
+  try
+  {
+    return urlencode(roomId);
+  }
+  catch(const std::exception& ex)
+  {
+    std::cerr << "Error: URL-encoding of room id failed!\n"
+              << ex.what() << std::endl
+              << "Falling back to simpler encoding algorithm." << std::endl;
+  }
+
   std::string encodedRoomId = roomId;
-  // TODO: use better URL encoding
+  // Note: This is not perfectly safe, but it works for valid room ids.
   auto pos = encodedRoomId.find(':');
   if (pos != std::string::npos)
     encodedRoomId.replace(pos, 1, "%3A");
