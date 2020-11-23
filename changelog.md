@@ -4,6 +4,13 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version NEXT (2020-11-??)
+
+The Matrix client has been hardened against unexpected values by using more
+URL-encoding on parameters that are supplied by the server. This may not be
+necessary for the default Matrix server implementation (Synapse), but it might
+help when someone uses another Matrix server implementation.
+
 ## Version 0.2.4 (2020-11-10)
 
 The library that does the JSON parsing (simdjson) has been updated from version

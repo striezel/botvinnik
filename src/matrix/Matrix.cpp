@@ -389,11 +389,26 @@ bool Matrix::sync(std::string& events, std::string& nextBatch, std::vector<matri
 
   Curly curl;
   if (!since.empty())
+  {
     // incremental sync
-    curl.setURL(conf.homeServer() + "/_matrix/client/r0/sync?since=" + since);
+    std::string encodedSince;
+    try
+    {
+      encodedSince = urlencode(since);
+    }
+    catch (const std::exception& ex)
+    {
+      std::cerr << "Error: URL-encoding of parameter 'since' failed!"
+                << std::endl << ex.what() << std::endl;
+      return false;
+    }
+    curl.setURL(conf.homeServer() + "/_matrix/client/r0/sync?since=" + encodedSince);
+  }
   else
+  {
     // initial sync
     curl.setURL(conf.homeServer() + "/_matrix/client/r0/sync");
+  }
 
   curl.addHeader("Authorization: Bearer " + accessToken);
   if (!curl.perform(response) || curl.getResponseCode() != 200)
