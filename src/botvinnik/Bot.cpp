@@ -127,12 +127,21 @@ void Bot::start()
     mat.logout();
     return;
   }
+  if (next_batch.empty())
+  {
+    std::cerr << "Error: Initial sync request did not return a 'next_batch' value!" << std::endl;
+    mat.logout();
+    return;
+  }
 
   const std::string prefix = mat.configuration().prefix();
   FailCounter counter(mat.configuration().allowedFailures());
 
   while (!stopRequested())
   {
+    // Sleep a few seconds to avoid DOS-ing the server.
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
     std::string events;
     const bool syncSuccess = mat.sync(events, next_batch, rooms, invites, next_batch);
     counter.next(syncSuccess);
@@ -147,6 +156,7 @@ void Bot::start()
         mat.logout();
         return;
       }
+      continue;
     }
     else
     {
@@ -215,9 +225,6 @@ void Bot::start()
       std::clog << nowToString() << " Info: Bot stop was requested, exiting sync loop." << std::endl;
       break;
     }
-
-    // Sleep a few seconds to avoid DOS-ing the server.
-    std::this_thread::sleep_for(std::chrono::seconds(5));
   }
 }
 

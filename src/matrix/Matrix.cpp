@@ -434,7 +434,18 @@ bool Matrix::sync(std::string& events, std::string& nextBatch, std::vector<matri
               << " a next_batch element or it's not a string!" << std::endl;
     return false;
   }
-  nextBatch = jsonNextBatch.get<std::string_view>().value();
+  // nextBatch should only be overwritten, if it is not empty.
+  if (!jsonNextBatch.get<std::string_view>().value().empty())
+  {
+    nextBatch = jsonNextBatch.get<std::string_view>().value();
+  }
+  else
+  {
+    std::cerr << "Error while syncing events: JSON data contains an empty "
+              << "next_batch element, and that is against the specification!"
+              << std::endl;
+    return false;
+  }
   events = response;
 
   Sync::parse(doc, rooms, invites);
