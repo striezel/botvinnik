@@ -210,15 +210,8 @@ void Bot::start()
     // Iterate over invites.
     for (const auto & roomId : invites)
     {
-      if (!mat.joinRoom(roomId))
-      {
-        std::cerr << "Error: Could not join room " << roomId << "!" << std::endl;
-      }
-      else
-      {
-        std::clog << "Info: Joined room " << roomId << "." << std::endl;
-      }
-    }
+      joinRoom(roomId);
+    } // for
 
     if (stopRequested())
     {
@@ -226,6 +219,54 @@ void Bot::start()
       break;
     }
   }
+}
+
+void Bot::joinRoom(const std::string& roomId)
+{
+  if (!mat.joinRoom(roomId))
+  {
+    std::cerr << "Error: Could not join room " << roomId << "!" << std::endl;
+  }
+  else
+  {
+    std::clog << "Info: Joined room " << roomId << "." << std::endl;
+    const auto encryption = mat.encryptionAlgorithm(roomId);
+    Message leaveMessage;
+    if (encryption.has_value() && !encryption.value().empty())
+    {
+      // Room uses encryption, but the bot cannot handle this yet.
+      std::clog << "Info: The room " << roomId << " uses encryption ("
+                << encryption.value() << "), but the bot cannot handle "
+                << "encrypted messages (yet)." << std::endl;
+      leaveMessage = Message("This room uses encryption, but the bot cannot decipher such messages (yet). Therefore, it will leave the room.");
+    }
+    if (!encryption.has_value())
+    {
+      std::cerr << "Error: Encryption of the room " << roomId
+                << " could not be determined!" << std::endl;
+      leaveMessage = Message("This room may use encryption, but the bot cannot decipher encrypted messages (yet). Therefore, it will leave the room.");
+    }
+    // If the message has a body, then there is a reason to leave the room.
+    if (!leaveMessage.body.empty())
+    {
+      if (!mat.sendMessage(roomId, leaveMessage))
+      {
+        std::cerr << "Error: Could not send message to indicate why the "
+                  << "bot is leaving the room " << roomId
+                  << ". Attempting to leave anyway." << std::endl;
+      }
+      if (!mat.leaveRoom(roomId))
+      {
+        std::cerr << "Error: Could not leave the encrypted room " << roomId
+                  << "!" << std::endl;
+      }
+      else
+      {
+        std::clog << "Info: Bot left the encrypted room " << roomId << "."
+                  << std::endl;
+      }
+    }
+  } // else
 }
 
 bool Bot::stop(const std::string_view& userId)

@@ -114,6 +114,12 @@ class Bot
     // or not changing rooms.
     friend Rooms;
   private:
+    /** \brief Handles joining of a Matrix room for the bot.
+     *
+     * \param roomId   id of the room
+     */
+    void joinRoom(const std::string& roomId);
+
     Matrix mat; /**< handles matrix requests */
     std::unordered_map<std::string, std::reference_wrapper<Plugin> > commands; /**< registered commands */
     bool stopped; /**< whether the bot shall stop */

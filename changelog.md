@@ -6,10 +6,15 @@ improvements may be omitted.)_
 
 ## Version NEXT (2020-11-??)
 
-The Matrix client has been hardened against unexpected values by using more
-URL-encoding on parameters that are supplied by the server. This may not be
-necessary for the default Matrix server implementation (Synapse), but it might
-help when someone uses another Matrix server implementation.
+* When the bot is invited into an encrypted room, it will now post a message
+  explaining it cannot handle encrypted rooms (yet) and will then leave the
+  room. Being in a room that uses encryption is no use to the bot anyway,
+  because it cannot read those messages (yet). That may or may not change in
+  the future.
+* The Matrix client has been hardened against unexpected values by using more
+  URL-encoding on parameters that are supplied by the server. This may not be
+  necessary for the default Matrix server implementation (Synapse), but it might
+  help when someone uses another Matrix server implementation.
 
 ## Version 0.2.4 (2020-11-10)
 

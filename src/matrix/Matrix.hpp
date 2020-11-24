@@ -180,6 +180,18 @@ class Matrix
        *         Returns an empty optional, if the operation failed.
        */
     std::optional<std::string> uploadImage(const std::string& imgUrl);
+
+
+    /** \brief Gets the encryption algorithm used in a room.
+     *
+     * \param roomId  id of the room to get the algorithm for
+     * \return Returns an optional containing the name of the algorithm, if the
+     *         room uses encryption.
+     *         Returns an optional containing an empty string, if the room is
+     *         not encrypted.
+     *         Returns an empty optional, if the request failed.
+     */
+    std::optional<std::string> encryptionAlgorithm(const std::string& roomId);
   private:
     /** \brief Determines whether the user is logged in to Matrix.
      *

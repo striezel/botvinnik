@@ -623,4 +623,58 @@ std::optional<std::string> Matrix::uploadImage(const std::string& imgUrl)
   return uploadString(imageData, contentType, fileName);
 }
 
+std::optional<std::string> Matrix::encryptionAlgorithm(const std::string& roomId)
+{
+  if (!isLoggedIn())
+    return std::optional<std::string>();
+
+  const auto encodedRoomId = encodeRoomId(roomId);
+  Curly curl;
+  curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId
+                                + "/state/m.room.encryption");
+  curl.addHeader("Authorization: Bearer " + accessToken);
+  std::string response;
+  if (!curl.perform(response))
+  {
+    std::cerr << "Error: Could not get room encryption algorithm!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return std::optional<std::string>();
+  }
+
+  // 404 Not Found means that the room has no encryption.
+  if (curl.getResponseCode() == 404)
+  {
+    // Return an empty string to signal unencrypted room.
+    return std::optional<std::string>("");
+  }
+
+  if (curl.getResponseCode() != 200)
+  {
+    std::cerr << "Error: Could not get room encryption algorithm!" << std::endl
+              << "HTTP status code: " << curl.getResponseCode() << std::endl
+              << "Response: " << response << std::endl;
+    return std::optional<std::string>();
+  }
+
+  simdjson::dom::parser parser;
+  const auto [doc, error] = parser.parse(response);
+  if (error)
+  {
+    std::cerr << "Error getting room's encryption algorithm: Unable to parse "
+              << "JSON response!" << std::endl << "Response is: " << response
+              << std::endl;
+    return std::optional<std::string>();
+  }
+  const auto [algorithm, jsonError] = doc["algorithm"];
+  if (jsonError || algorithm.type() != simdjson::dom::element_type::STRING)
+  {
+    std::cerr << "Error: Server did not respond with encryption algorithm!"
+              << std::endl;
+    return std::optional<std::string>();
+  }
+
+  return std::optional<std::string>(algorithm.get<std::string_view>().value());
+}
+
 } // namespace
