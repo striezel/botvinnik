@@ -107,12 +107,6 @@ class Bot
     // Help class needs to iterate over registered commands and plugins of the
     // bot, i. e. it needs access to private data.
     friend Help;
-    // Basic plugin needs to iterate over stopUsers() of matrix before stopping
-    // or not stopping the bot.
-    friend Basic;
-    // Rooms plugin needs to iterate over stopUsers() of matrix before changing
-    // or not changing rooms.
-    friend Rooms;
   private:
     /** \brief Handles joining of a Matrix room for the bot.
      *

@@ -53,7 +53,7 @@ Message Basic::handleCommand(const std::string_view& command, const std::string_
                   .append("! Only the following users are allowed to stop the bot:\n"),
                   std::string("<strong>You have no power here, ").append(userId)
                   .append("!</strong> Only the following users are allowed to stop the bot:<br />\n"));
-      for (const auto& item: theBot.mat.configuration().stopUsers())
+      for (const auto& item: theBot.matrix().configuration().stopUsers())
       {
         msg.body.append("\n").append(item);
         msg.formatted_body.append("<br />\n").append(item);

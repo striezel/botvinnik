@@ -43,7 +43,7 @@ Message Help::handleCommand(const std::string_view& command, const std::string_v
     {
       oneLiners[item.first] = item.second.get().helpOneLine(item.first);
     }
-    const std::string& prefix = theBot.mat.configuration().prefix();
+    const std::string& prefix = theBot.matrix().configuration().prefix();
     Message result("The following commands are available:\n", "The following commands are available:<br />");
     for (const auto& item : oneLiners)
     {
