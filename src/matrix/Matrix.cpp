@@ -84,7 +84,7 @@ bool Matrix::login()
       { "type", "m.login.password" },
       { "user", conf.userId() },
       { "password", conf.password() },
-      { "initial_device_display_name", "botvinnik, " + bvn::version + "(started at " + nowToString() + ")" }
+      { "initial_device_display_name", "botvinnik, " + bvn::version + " (started at " + nowToString() + ")" }
     };
     Curly curl;
     curl.setURL(conf.homeServer() + "/_matrix/client/r0/login");
