@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version NEXT (2020-11-??)
+## Version 0.2.5 (2020-11-25)
 
 * The bot can now send a User-Agent header to be easily identified as bot by
   the Matrix server. This behaviour is disabled by default. However, it can be
