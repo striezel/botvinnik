@@ -1,24 +1,39 @@
 image: debian:10-slim
 
+# Build with GCC / G++.
 build_gcc:
   stage: build
   before_script:
     - apt-get update && apt-get -y install catch cmake fortune-mod fortunes-min g++ libcurl4-gnutls-dev libsqlite3-dev pkg-config
     - export CC=gcc && export CXX=g++
   script:
+    # Build with User-Agent header.
+    - mkdir ./build-with-ua
+    - cd ./build-with-ua
+    - cmake -DUSER_AGENT=ON ../
+    - make -j4
+    - cd ..
+    # Build without User-Agent (default).
     - mkdir ./build
     - cd ./build
     - cmake ../
     - make -j4
     - ctest -V
 
-# There is no official clang image at Docker Hub.
+# Build with Clang / Clang++.
 build_clang:
   stage: build
   before_script:
     - apt-get update && apt-get -y install catch clang cmake fortune-mod fortunes-min libcurl4-gnutls-dev libsqlite3-dev pkg-config
     - export CC=clang && export CXX=clang++
   script:
+    # Build with User-Agent header.
+    - mkdir ./build-with-ua
+    - cd ./build-with-ua
+    - cmake -DUSER_AGENT=ON ../
+    - make -j4
+    - cd ..
+    # Build without User-Agent (default).
     - mkdir ./build
     - cd ./build
     - cmake ../

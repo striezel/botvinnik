@@ -33,6 +33,14 @@
 namespace bvn
 {
 
+#ifdef BVN_USER_AGENT
+void addUserAgent(Curly& curl)
+{
+  curl.addHeader(std::string("User-Agent: ") + bvn::userAgent);
+}
+#endif
+
+
 Matrix::Matrix(const Configuration& _conf)
 : conf(_conf),
   accessToken(std::string()),
@@ -81,6 +89,9 @@ bool Matrix::login()
     Curly curl;
     curl.setURL(conf.homeServer() + "/_matrix/client/r0/login");
     curl.addHeader("Content-Type: application/json");
+    #ifdef BVN_USER_AGENT
+    addUserAgent(curl);
+    #endif
     curl.setPostBody(body.dump());
     if (!curl.perform(response))
     {
@@ -139,6 +150,9 @@ bool Matrix::logout()
   Curly curl;
   curl.setURL(conf.homeServer() + "/_matrix/client/r0/logout");
   curl.addHeader("Authorization: Bearer " + accessToken);
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
   curl.setPostBody("");
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
@@ -171,6 +185,9 @@ bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
   Curly curl;
   curl.setURL(conf.homeServer() + "/_matrix/client/r0/joined_rooms");
   curl.addHeader("Authorization: Bearer " + accessToken);
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
     std::cerr << "Error: Listing joined rooms failed!" << std::endl
@@ -248,6 +265,9 @@ bool Matrix::roomName(const std::string& roomId, std::string& name)
   const std::string encodedRoomId = encodeRoomId(roomId);
   curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/state/m.room.name/");
   curl.addHeader("Authorization: Bearer " + accessToken);
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
     std::cerr << "Error: Listing joined rooms failed!" << std::endl
@@ -325,6 +345,9 @@ bool Matrix::roomMembershipChange(const std::string& roomId, const std::string& 
   Curly curl;
   curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/" + change);
   curl.addHeader("Authorization: Bearer " + accessToken);
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
   curl.setPostBody("");
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
@@ -365,6 +388,9 @@ std::optional<matrix::PowerLevels> Matrix::powerLevels(const std::string& roomId
   Curly curl;
   curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/state/m.room.power_levels");
   curl.addHeader("Authorization: Bearer " + accessToken);
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
@@ -411,6 +437,9 @@ bool Matrix::sync(std::string& events, std::string& nextBatch, std::vector<matri
   }
 
   curl.addHeader("Authorization: Bearer " + accessToken);
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
     std::cerr << "Error: Syncing events failed!" << std::endl
@@ -485,6 +514,9 @@ bool Matrix::sendMessage(const std::string& roomId, const Message& message)
   curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId + "/send/m.room.message/" + std::to_string(txnId));
   curl.addHeader("Authorization: Bearer " + accessToken);
   curl.addHeader("Content-Type: application/json");
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
   curl.setPutData(body.dump());
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
@@ -505,6 +537,9 @@ std::optional<int64_t> Matrix::getUploadLimit()
   Curly curl;
   curl.setURL(conf.homeServer() + "/_matrix/media/r0/config");
   curl.addHeader("Authorization: Bearer " + accessToken);
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
@@ -553,6 +588,9 @@ std::optional<std::string> Matrix::uploadString(const std::string& data, const s
   curl.setURL(conf.homeServer() + "/_matrix/media/r0/upload?filename=" + encodedFileName);
   curl.addHeader("Authorization: Bearer " + accessToken);
   curl.addHeader("Content-Type: " + contentType);
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
   if (!curl.setPostBody(data))
   {
     std::cerr << "Error: Could not set body for POST request of file upload."
@@ -592,6 +630,9 @@ std::optional<std::string> Matrix::uploadImage(const std::string& imgUrl)
   {
     Curly curl;
     curl.setURL(imgUrl);
+    #ifdef BVN_USER_AGENT
+    addUserAgent(curl);
+    #endif
     std::clog << "Info: Downloading image " << imgUrl << "..." << std::endl;
     if (!curl.perform(imageData) || curl.getResponseCode() != 200)
     {
@@ -633,6 +674,9 @@ std::optional<std::string> Matrix::encryptionAlgorithm(const std::string& roomId
   curl.setURL(conf.homeServer() + "/_matrix/client/r0/rooms/" + encodedRoomId
                                 + "/state/m.room.encryption");
   curl.addHeader("Authorization: Bearer " + accessToken);
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
   std::string response;
   if (!curl.perform(response))
   {

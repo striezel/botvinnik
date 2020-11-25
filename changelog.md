@@ -6,6 +6,16 @@ improvements may be omitted.)_
 
 ## Version NEXT (2020-11-??)
 
+* The bot can now send a User-Agent header to be easily identified as bot by
+  the Matrix server. This behaviour is disabled by default. However, it can be
+  enabled during the build by using the flag `USER_AGENT` for CMake, e. g.
+
+      cmake -DUSER_AGENT=ON
+
+  instead of just
+
+      cmake
+
 * When the bot is invited into an encrypted room, it will now post a message
   explaining it cannot handle encrypted rooms (yet) and will then leave the
   room. Being in a room that uses encryption is no use to the bot anyway,

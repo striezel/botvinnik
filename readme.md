@@ -59,6 +59,8 @@ Starting in the root directory of the source, you can do the following steps:
     mkdir build
     cd build
     cmake ../
+    # If you want the bot to send its User-Agent header to the Matrix server,
+    # then use `cmake -DUSER_AGENT=ON ../` instead.
     make -j4
 
 If you want to run the test suite, too, then there is one more step:

@@ -40,6 +40,10 @@ if (CMAKE_COMPILER_IS_GNUCC)
 endif (CMAKE_COMPILER_IS_GNUCC)
 add_definitions(-std=c++17)
 
+if (USER_AGENT)
+  add_definitions (-DBVN_USER_AGENT)
+endif(USER_AGENT)
+
 set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -s" )
 
 add_executable(botvinnik ${botvinnik_sources})

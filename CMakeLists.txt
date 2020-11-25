@@ -3,6 +3,13 @@ cmake_minimum_required (VERSION 2.8)
 
 enable_testing()
 
+# If the option USER_AGENT is enabled (e. g. via `cmake -DUSER_AGENT=ON`)
+# during the build, then the bot will send its user agent with every request
+# to the Matrix server.
+# It is disabled by default, because sending a User-Agent will introduce a
+# slight overhead of ca. 30 bytes per request.
+option(USER_AGENT "Send user agent to Matrix server" OFF)
+
 # Recurse into subdirectory for the main executable.
 add_subdirectory (src)
 
