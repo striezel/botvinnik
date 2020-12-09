@@ -64,6 +64,26 @@ int64_t getInt64(const std::string& value)
   }
 }
 
+double getDouble(const std::string& value)
+{
+  try
+  {
+    std::size_t pos;
+    const double d = std::stod(value, &pos);
+    if (pos != value.size())
+    {
+      std::cerr << "Error: '"<< value << "' is not a valid floating point value!";
+      return std::numeric_limits<double>::quiet_NaN();
+    }
+    return d;
+  }
+  catch (const std::exception& ex)
+  {
+    std::cerr << "Error: Could not convert value '" << value << "' to double!" << std::endl;
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+}
+
 std::string getTempFileName()
 {
   namespace fs = std::filesystem;
@@ -100,7 +120,8 @@ bool createDbStructure(sql::database& db)
           countryId INTEGER NOT NULL,
           date TEXT,
           cases INTEGER,
-          deaths INTEGER
+          deaths INTEGER,
+          incidence14 REAL
         );
         )SQL";
   if (!sql::exec(db, statement))
@@ -530,6 +551,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     const auto& yearStr = parts.at(3);
     const int64_t cases = !parts.at(4).empty() ? getInt64(parts.at(4)) : 0;
     const int64_t deaths = !parts.at(5).empty() ? getInt64(parts.at(5)) : 0;
+    const double incidence14 = !parts.at(11).empty() ? getDouble(parts.at(11)) : std::numeric_limits<double>::quiet_NaN();
     if (cases == std::numeric_limits<int64_t>::min() || deaths == std::numeric_limits<int64_t>::min())
     {
       std::cerr << "Error: Got invalid case numbers in the following line:\n" << line << std::endl;
@@ -539,7 +561,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
 
     if (batch.empty())
     {
-      batch = "INSERT INTO covid19 (countryId, date, cases, deaths) VALUES ";
+      batch = "INSERT INTO covid19 (countryId, date, cases, deaths, incidence14) VALUES ";
       batchCount = 0;
     }
 
@@ -547,11 +569,12 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
          .append(std::to_string(countryId)).append(", ")
          .append(sql::quote(date)).append(", ")
          .append(std::to_string(cases)).append(", ")
-         .append(std::to_string(deaths))
+         .append(std::to_string(deaths)).append(", ")
+         .append(std::isnan(incidence14) ? "NULL" : std::to_string(incidence14))
          .append("),");
     ++batchCount;
 
-    // Perform one insert for every 200 data sets.
+    // Perform one insert for every 250 data sets.
     if (batchCount >= 250 && !batch.empty())
     {
       batch.at(batch.size() - 1) = ';';

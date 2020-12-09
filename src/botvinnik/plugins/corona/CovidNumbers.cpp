@@ -20,6 +20,7 @@
 
 #include "CovidNumbers.hpp"
 #include <cmath>
+#include <limits>
 #include <sstream>
 
 namespace bvn
@@ -28,6 +29,7 @@ namespace bvn
 CovidNumbersElem::CovidNumbersElem()
 : cases(-1),
   deaths(-1),
+  incidence14(std::numeric_limits<double>::quiet_NaN()),
   date(std::string())
 {
 }

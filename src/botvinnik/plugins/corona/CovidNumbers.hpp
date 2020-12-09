@@ -35,6 +35,7 @@ struct CovidNumbersElem
 
   int64_t cases;     /**< number of infections */
   int64_t deaths;    /**< number of deaths */
+  double incidence14; /**< cases per 100000 inhabitants over the last 14 days */
   std::string date;  /**< date for the above numbers */
 };
 
