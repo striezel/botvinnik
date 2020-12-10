@@ -84,6 +84,13 @@ double getDouble(const std::string& value)
   }
 }
 
+std::string roundTo2(const double d)
+{
+  std::ostringstream stream;
+  stream << std::round(d * 100.0) / 100.0;
+  return stream.str();
+}
+
 std::string getTempFileName()
 {
   namespace fs = std::filesystem;
@@ -231,7 +238,7 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
   result.totalCases = sqlite3_column_int64(stmt.get(), 0);
   result.totalDeaths = sqlite3_column_int64(stmt.get(), 1);
 
-  stmt = sql::prepare(db, "SELECT date, cases, deaths FROM covid19 WHERE countryId = @cid ORDER BY date DESC LIMIT 10;");
+  stmt = sql::prepare(db, "SELECT date, cases, deaths, ifnull(incidence14, -20.0) FROM covid19 WHERE countryId = @cid ORDER BY date DESC LIMIT 10;");
   if (!stmt)
   {
     return CovidNumbers();
@@ -245,6 +252,11 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
     CovidNumbersElem elem;
     elem.cases = sqlite3_column_int64(stmt.get(), 1);
     elem.deaths = sqlite3_column_int64(stmt.get(), 2);
+    elem.incidence14 = sqlite3_column_double(stmt.get(), 3);
+    if (elem.incidence14 < 0.0)
+    {
+      elem.incidence14 = std::numeric_limits<double>::quiet_NaN();
+    }
     elem.date = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 0));
     result.days.emplace_back(elem);
   }
@@ -363,7 +375,7 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     Message result;
     if (name.empty())
     {
-      name = "Germany";
+      name = "Germany"; // Germany is the default country, if none is given.
       result.body = "No country was specified - assuming " + name + ".\n";
       result.formatted_body = "<em>No country was specified - assuming " + name + ".</em><br />\n";
     }
@@ -388,26 +400,45 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     }
 
     result.body.append("Corona cases in " + country.name + " (" + country.geoId + "):\n");
-    result.formatted_body.append("Corona cases in " + country.name + " (" + country.geoId + "):<br />\n<ul>\n");
+    result.formatted_body.append("Corona cases in " + country.name + " (" + country.geoId + "):<br />\n<ul>");
+    bool hasIncidence = false;
     for (const CovidNumbersElem& elem : data.days)
     {
       result.body.append("\n* ").append(elem.date).append(": ").append(std::to_string(elem.cases))
                  .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)");
-      result.formatted_body.append("  <li>").append(elem.date).append(": ").append(std::to_string(elem.cases))
-                 .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)</li>\n");
+      result.formatted_body.append("\n  <li>").append(elem.date).append(": ").append(std::to_string(elem.cases))
+                 .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)");
+      if (!std::isnan(elem.incidence14))
+      {
+        hasIncidence = true;
+        result.body.append(", 14-day incidence: ").append(roundTo2(elem.incidence14));
+        result.formatted_body.append(", 14-day incidence<sup>1</sup>: ").append(roundTo2(elem.incidence14));
+      }
+      result.formatted_body.append("</li>");
     }
     const auto percentage = data.percentage();
     result.body.append("\nTotal cases: " + std::to_string(data.totalCases))
                 .append(", total deaths: " + std::to_string(data.totalDeaths));
     if (!percentage.empty())
       result.body.append(" (" + percentage + ")");
+    if (hasIncidence)
+    {
+      result.body.append("\n\nThe 14-day incidence is the number of infections during the last 14 days per 100000 inhabitants.")
+                 .append(" Note that some authorities like e. g. Germany's Robert Koch Institute use a 7-day incidence value instead, which is different.");
+    }
     result.body.append("\n\nData source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
                 .append("provided by European Centre for Disease Prevention and Control");
-    result.formatted_body.append("</ul><br>\n<b>Total cases: " + std::to_string(data.totalCases))
+    result.formatted_body.append("\n</ul><br>\n<b>Total cases: " + std::to_string(data.totalCases))
                 .append(", total deaths: " + std::to_string(data.totalDeaths));
     if (!percentage.empty())
       result.formatted_body.append(" (" + percentage + ")");
-    result.formatted_body.append("</b><br />\n<br />\nData source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
+    result.formatted_body.append("</b>");
+    if (hasIncidence)
+    {
+      result.formatted_body.append("<br />\n<br />\n<sup>1</sup>=The 14-day incidence is the number of infections during the last 14 days per 100000 inhabitants.")
+                 .append(" Note that some authorities like e. g. Germany's Robert Koch Institute use a 7-day incidence value instead, which is different.");
+    }
+    result.formatted_body.append("<br />\n<br />\nData source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
                 .append("provided by European Centre for Disease Prevention and Control");
     return result;
   }
