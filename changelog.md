@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version NEXT (2020-12-xx)
+## Version 0.2.6 (2020-12-10)
 
 The command `!corona` will now show the 14-day incidence values, too, if they
 are available. These values are better suited than absolute case numbers to
