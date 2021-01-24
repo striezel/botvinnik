@@ -217,7 +217,7 @@ Country getCountryId(sql::database& db, const std::string& country)
   }
 
   // Something went wrong, maybe country was not found.
-  return -1;
+  return { -1, "", "" };
 }
 
 CovidNumbers getCountryData(sql::database& db, const int64_t countryId)

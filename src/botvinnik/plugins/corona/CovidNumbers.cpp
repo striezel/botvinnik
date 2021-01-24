@@ -62,10 +62,11 @@ std::string CovidNumbers::percentage() const
   return stream.str();
 }
 
-Country::Country(const int64_t id, const std::string& _name, const std::string& _geoId)
+Country::Country(const int64_t id, const std::string& _name, const std::string& _geoId, const int64_t pop)
 : countryId(id),
   name(_name),
-  geoId(_geoId)
+  geoId(_geoId),
+  population(pop)
 {
 }
 

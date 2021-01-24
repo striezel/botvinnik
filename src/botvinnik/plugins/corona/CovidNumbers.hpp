@@ -73,12 +73,14 @@ struct Country
    * \param id     numeric countryId from database
    * \param _name  name of the country
    * \param _geoId geoId from the database / ISO-3166 two letter code
+   * \param pop    population of the country
    */
-  Country(const int64_t id = -1, const std::string& _name = "", const std::string& _geoId = "");
+  Country(const int64_t id = -1, const std::string& _name = "", const std::string& _geoId = "", const int64_t pop = -1);
 
   int64_t countryId;
   std::string name;
   std::string geoId;
+  int64_t population;
 };
 
 /**
