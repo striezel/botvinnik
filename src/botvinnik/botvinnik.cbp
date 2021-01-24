@@ -100,6 +100,8 @@
 		<Unit filename="plugins/corona/Corona.hpp" />
 		<Unit filename="plugins/corona/CovidNumbers.cpp" />
 		<Unit filename="plugins/corona/CovidNumbers.hpp" />
+		<Unit filename="plugins/corona/disease.sh.cpp" />
+		<Unit filename="plugins/corona/disease.sh.hpp" />
 		<Unit filename="plugins/xkcd/Xkcd.cpp" />
 		<Unit filename="plugins/xkcd/Xkcd.hpp" />
 		<Unit filename="plugins/xkcd/XkcdData.cpp" />
