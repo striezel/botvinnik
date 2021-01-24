@@ -26,10 +26,13 @@
 		</Compiler>
 		<Unit filename="../../src/botvinnik/FailCounter.cpp" />
 		<Unit filename="../../src/botvinnik/FailCounter.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.hpp" />
 		<Unit filename="../../src/matrix/events/PowerLevels.cpp" />
 		<Unit filename="../../src/matrix/events/PowerLevels.hpp" />
 		<Unit filename="FailCounter.cpp" />
 		<Unit filename="PowerLevels.cpp" />
+		<Unit filename="calculate_incidence.cpp" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
