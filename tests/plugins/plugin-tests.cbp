@@ -54,6 +54,10 @@
 		<Unit filename="../../src/botvinnik/plugins/corona/Corona.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/World.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/World.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/disease.sh.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/disease.sh.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdData.cpp" />

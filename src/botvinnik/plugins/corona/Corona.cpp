@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #include "../../../util/sqlite3.hpp"
 #include "../../../util/Strings.hpp"
 #include "CovidNumbers.hpp"
+#include "World.hpp"
 
 namespace bvn
 {
@@ -315,61 +316,6 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
 {
   if (command == "corona")
   {
-    const auto now = std::chrono::steady_clock::now();
-    if (!dbLocation.has_value() || ((now - dbLocation.value().second) > std::chrono::hours(6)))
-    {
-      theMatrix.sendMessage(std::string(roomId),
-                            Message(std::string("Getting current COVID-19 data. This may take a while ...\n")
-                                + "(It may be ten seconds, it may be two minutes, depending on network and I/O speed.)"));
-      const auto db = createDatabase();
-      if (!db)
-      {
-        std::cerr << "Error: Database creation failed!" << std::endl;
-        return Message("Could not get case numbers for COVID-19.");
-      }
-      std::string home;
-      std::string dbFileName = "/tmp/corona.db";
-      if (filesystem::getHome(home))
-      {
-        const auto delim = filesystem::pathDelimiter;
-        const std::string directory = home + delim + ".bvn";
-        dbFileName = directory + delim + std::string("corona.db");
-        try
-        {
-          // Attempt to create directory and set permissions.
-          std::filesystem::create_directories(directory);
-          std::filesystem::permissions(directory,
-              std::filesystem::perms::owner_all |
-              std::filesystem::perms::group_read |
-              std::filesystem::perms::others_read);
-        }
-        catch (const std::exception& ex)
-        {
-          std::cerr << "Error: Could not create directory " << directory
-                    << " and set permissions for it!\nException message: "
-                    << ex.what() << std::endl;
-        }
-      }
-      try
-      {
-        std::filesystem::rename(db.value(), dbFileName);
-      }
-      catch(const std::exception& ex)
-      {
-        std::cerr << "Error: Could not move file " << db.value() << " to "
-                  << dbFileName << "!\nException message: " << ex.what() << std::endl;
-        return Message("Could not get current case numbers for COVID-19.");
-      }
-
-      dbLocation = { dbFileName, now };
-    }
-
-    auto db = sql::open(dbLocation.value().first);
-    if (!db)
-    {
-      std::clog << "Failed to open database " << dbLocation.value().first << std::endl;
-      return Message("Could not open database containing COVID-19 case numbers!");
-    }
     std::string name = std::string(message.substr(command.size()));
     trim(name);
     Message result;
@@ -382,8 +328,8 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
 
     const bool worldwide = toLowerString(name) == "world" || toLowerString(name) == "the world"
                            || toLowerString(name) == "all";
-    const Country country = !worldwide ? getCountryId(db, name) : Country(0, "the world", "all");
-    if (country.countryId == -1)
+    const auto country_opt = !worldwide ? World::find(name) : std::optional<Country>(Country(0, "the world", "all"));
+    if (!country_opt.has_value() || country_opt.value().countryId == -1)
     {
       return Message("Could not find COVID-19 case numbers for '" + name
                    + "'. Use a two letter country code (ISO 3166) or the English name of the country."
@@ -392,11 +338,21 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
                    + "'. Use a two letter country code (see <a href=\"https://en.wikipedia.org/wiki/ISO_3166\">ISO 3166</a>) or the English name of the country."
                    + " If you want worldwide case numbers, use 'world' or 'all' instead.");
     }
+    const auto& country = country_opt.value();
 
-    const CovidNumbers data = !worldwide ? getCountryData(db, country.countryId) : getWorldData(db);
+    CovidNumbers data = World::getCountryData(country);
     if (data.totalCases == -1)
     {
-      return Message("Could not get case numbers from database!");
+      return Message("Could not get case numbers from API!");
+    }
+    // Post-processing of retrieved data: Calculate 14-day incidence, ...
+    data.days = calculate_incidence(data.days, country.population);
+    // ... and start with newest instead of oldest data, ...
+    std::reverse(data.days.begin(), data.days.end());
+    // ... and cut it down to no more than ten elements.
+    if (data.days.size() > 10)
+    {
+      data.days.resize(10);
     }
 
     result.body.append("Corona cases in " + country.name + " (" + country.geoId + "):\n");
@@ -426,8 +382,8 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
       result.body.append("\n\nThe 14-day incidence is the number of infections during the last 14 days per 100000 inhabitants.")
                  .append(" Note that some authorities like e. g. Germany's Robert Koch Institute use a 7-day incidence value instead, which is different.");
     }
-    result.body.append("\n\nData source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
-                .append("provided by European Centre for Disease Prevention and Control");
+    result.body.append("\n\nData source: https://github.com/CSSEGISandData/COVID-19, ")
+                .append("provided by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University");
     result.formatted_body.append("\n</ul><br>\n<b>Total cases: " + std::to_string(data.totalCases))
                 .append(", total deaths: " + std::to_string(data.totalDeaths));
     if (!percentage.empty())
@@ -438,8 +394,8 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
       result.formatted_body.append("<br />\n<br />\n<sup>1</sup>=The 14-day incidence is the number of infections during the last 14 days per 100000 inhabitants.")
                  .append(" Note that some authorities like e. g. Germany's Robert Koch Institute use a 7-day incidence value instead, which is different.");
     }
-    result.formatted_body.append("<br />\n<br />\nData source: https://data.europa.eu/euodp/data/dataset/covid-19-coronavirus-data, ")
-                .append("provided by European Centre for Disease Prevention and Control");
+    result.formatted_body.append("<br />\n<br />\nData source: https://github.com/CSSEGISandData/COVID-19, ")
+                .append("provided by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University");
     return result;
   }
 

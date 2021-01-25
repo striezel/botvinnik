@@ -12,6 +12,8 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/convert/Conversion.cpp
     ../../src/botvinnik/plugins/corona/Corona.cpp
     ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
+    ../../src/botvinnik/plugins/corona/World.cpp
+    ../../src/botvinnik/plugins/corona/disease.sh.cpp
     ../../src/botvinnik/plugins/Debian.cpp
     ../../src/botvinnik/plugins/Fortune.cpp
     ../../src/botvinnik/plugins/Ping.cpp
