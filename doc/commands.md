@@ -1,8 +1,10 @@
 # botvinnik: Available bot commands
 
 botvinnik provides a (still rather small) number of commands for Matrix users
-in the channels where the bot has joined. Note that joining channels has to be
-done manually (as of version 0.0.6).
+in the channels where the bot has joined. The bot automatically joins channels,
+if the invitation takes place when the bot is running.
+
+_Note that the bot currently does not support encrypted channels.__
 
 ## General usage
 
