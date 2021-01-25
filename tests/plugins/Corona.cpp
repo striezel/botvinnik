@@ -31,7 +31,7 @@ TEST_CASE("plugin Corona")
   using namespace std::chrono;
   Configuration conf;
   Bot bot(conf);
-  Corona plugin(bot.matrix());
+  Corona plugin;
 
   const auto commands = plugin.commands();
 
