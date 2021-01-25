@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.3.0-rc1 (2021-01-??)
+## Version 0.3.0 (2021-01-25)
 
 The command `!corona` does now work again. Its data source has been switched
 from the European Centre for Disease Prevention and Control (ECDC) to the
