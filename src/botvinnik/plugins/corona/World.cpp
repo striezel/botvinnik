@@ -114,7 +114,7 @@ std::vector<Country> World::all()
     { 81, "Grenada", "GD", 112002 },
     { 82, "Guam", "GU", 167295 },
     { 83, "Guatemala", "GT", 17581476 },
-    { 84, "Guernsey", "GG", 64468 },
+    //{ 84, "Guernsey", "GG", 64468 },
     { 85, "Guinea", "GN", 12771246 },
     { 86, "Guinea Bissau", "GW", 1920917 },
     { 87, "Guyana", "GY", 782775 },
@@ -133,7 +133,7 @@ std::vector<Country> World::all()
     { 100, "Italy", "IT", 60359546 },
     { 101, "Jamaica", "JM", 2948277 },
     { 102, "Japan", "JP", 126860299 },
-    { 103, "Jersey", "JE", 107796 },
+    //{ 103, "Jersey", "JE", 107796 },
     { 104, "Jordan", "JO", 10101697 },
     { 105, "Kazakhstan", "KZ", 18551428 },
     { 106, "Kenya", "KE", 52573967 },
@@ -286,10 +286,21 @@ const std::unordered_map<std::string, std::function<CovidNumbers(const Country&)
   { "GI", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "gibraltar", false); } },
   // Greenland
   { "GL", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("DK", "Greenland", false); } },
+  // Guam / GU: TODO! (Uses API for USA counties.)
+  // Isle of Man
+  { "IM", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "isle%20of%20man", false); } },
   // Cayman Islands
   { "KY", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "Cayman%20Islands", false); } },
+  // Myanmar
+  { "MM", [] (const Country& c) { return disease_sh::requestHistoricalApi("BU", false); } },
   // Montserrat
   { "MS", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "Montserrat", false); } },
+  // New Caledonia
+  { "NC", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "new%20caledonia", false); } },
+  // Netherlands
+  { "NL", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "mainland", false); } },
+  // French Polynesia
+  { "PF", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "french%20polynesia", false); } },
   // Puerto Rico / PR: TODO! (Uses API for USA counties.)
   // Palestine
   { "PS", [] (const Country& c) { return disease_sh::requestHistoricalApi("West%20Bank%20and%20Gaza", false); } },
@@ -297,13 +308,15 @@ const std::unordered_map<std::string, std::function<CovidNumbers(const Country&)
   { "SX", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "sint%20maarten", false); } },
   // Turks and Caicos Islands
   { "TC", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "turks%20and%20caicos%20islands", false); } },
+  // United Kingdom
+  { "UK", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "mainland", false); } },
   // Vatican City
   { "VA", [] (const Country& c) { return disease_sh::requestHistoricalApi("Holy%20See", false); } },
   // British Virgin Islands
   { "VG", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "British%20Virgin%20Islands", false); } },
   // United States Virgin Islands (VI): TODO! (Uses API for USA counties.)
-
-  // TODO: More countries after Europe/VA.
+  // Wallis and Futuna
+  { "WF", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "wallis%20and%20futuna", false); } }
 };
 
 CovidNumbers World::getCountryData(const Country& country)
