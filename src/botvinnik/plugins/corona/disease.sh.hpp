@@ -50,6 +50,16 @@ CovidNumbers requestHistoricalApi(const std::string& geoId, const bool all);
  */
 CovidNumbers requestHistoricalApiProvince(const std::string& geoId, const std::string& province, const bool all);
 
+/**
+ * Request historical API of disease.sh for counties in the USA.
+ *
+ * @param  county  name of the county
+ * @param  all     whether to collect recent or all data
+ * @return Returns a CovidNumbers containing the new daily cases.
+ *         If an error occurred, an empty CovidNumbers struct is returned.
+ */
+CovidNumbers requestHistoricalApiUsaCounties(const std::string& county, const bool all);
+
 } // namespace
 
 } // namespace

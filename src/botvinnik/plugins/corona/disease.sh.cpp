@@ -70,6 +70,23 @@ std::string constructHistoricalApiUrl(const std::string& geoId, const std::strin
 }
 
 /**
+ * Constructs the URL for a request to the historical API of disease.sh for an county of the USA.
+ *
+ * @param  county  name of the county as seen in the API
+ * @param  all     whether to collect recent or all data
+ * @return Returns a string containing the URL.
+ */
+std::string constructHistoricalApiUrlUsaCounties(const std::string& county, const bool all)
+{
+  if (all)
+    return std::string("https://corona.lmao.ninja/v3/covid-19/historical/usacounties/")
+          .append(county).append("?lastdays=all");
+  else
+    return std::string("https://corona.lmao.ninja/v3/covid-19/historical/usacounties/")
+          .append(county);
+}
+
+/**
  * Performs a request to the API of disease.sh for a given URL and deserializes the JSON.
  *
  * @param  url   URL of the endpoint
@@ -258,6 +275,88 @@ CovidNumbers requestHistoricalApiProvince(const std::string& geoId, const std::s
   }
 
   return parseJsonTimeline(doc);
+}
+
+CovidNumbers requestHistoricalApiUsaCounties(const std::string& county, const bool all)
+{
+  const auto url = constructHistoricalApiUrlUsaCounties(county, all);
+  const auto response = performApiRequest(url);
+  if (!response.has_value())
+    return CovidNumbers();
+
+  simdjson::dom::parser parser;
+  const auto [doc, error] = parser.parse(response.value());
+  if (error)
+  {
+    std::cerr << "Error while trying to parse JSON response from disease.sh API!" << std::endl
+              << "Response is: " << response.value() << std::endl;
+    return CovidNumbers();
+  }
+
+  // The API for US counties returns an array, where each element within is the
+  // data for a province within the area. To get the total numbers, those have
+  // to be added up.
+  const auto [vec, error_array] = doc.get_array();
+  if (error_array)
+  {
+    std::cerr << "Error: Found invalid JSON format in request for USA counties." << std::endl;
+    return CovidNumbers();
+  }
+
+
+  bool mayNeedSorting = false;
+  CovidNumbers numbers;
+  for (auto elem : vec)
+  {
+    const auto partial_numbers = parseJsonTimeline(elem);
+    if (partial_numbers.days.empty())
+    {
+      std::cerr << "Error: Got no data for one of the USA counties!" << std::endl;
+      return CovidNumbers();
+    }
+    if (numbers.days.empty())
+    {
+      numbers = partial_numbers;
+    }
+    else
+    {
+      // Add it up to existing numbers.
+      for (auto num : partial_numbers.days)
+      {
+        const auto pos = std::find_if(numbers.days.begin(), numbers.days.end(),
+                         [&num] (const CovidNumbersElem& x) { return x.date == num.date; } );
+        if (pos != numbers.days.end())
+        {
+          pos->cases += num.cases;
+          pos->deaths += num.deaths;
+        }
+        else
+        {
+          numbers.days.push_back(num);
+          // Vector may need to be sorted, because we do not know whether it is
+          // still sorted after the push().
+          mayNeedSorting = true;
+        }
+      }
+      if ((partial_numbers.totalCases > 0) && (numbers.totalCases >= 0))
+      {
+        numbers.totalCases += partial_numbers.totalCases;
+      }
+      if ((partial_numbers.totalDeaths > 0) && (numbers.totalDeaths >= 0))
+      {
+        numbers.totalDeaths += partial_numbers.totalDeaths;
+      }
+    }
+  }
+
+  if (mayNeedSorting)
+  {
+    std::sort(numbers.days.begin(), numbers.days.end(),
+              [](const CovidNumbersElem& a, const CovidNumbersElem& b) {
+                  return a.date < b.date;
+             });
+  }
+  return numbers;
 }
 
 } // namespace

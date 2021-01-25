@@ -73,4 +73,27 @@ TEST_CASE("disease.sh API")
     REQUIRE( all_numbers.days.size() > numbers.days.size());
   }
 
+  SECTION("historical_api_usa_counties")
+  {
+    const auto numbers = requestHistoricalApiUsaCounties("guam", false);
+    REQUIRE( numbers.days.size() > 0 );
+    for (std::size_t idx = 1; idx < numbers.days.size(); ++idx)
+    {
+      REQUIRE( numbers.days[idx-1].date < numbers.days[idx].date );
+    }
+    REQUIRE( numbers.totalCases > 0 );
+    REQUIRE( numbers.totalDeaths > 0 );
+
+    const auto all_numbers = requestHistoricalApiUsaCounties("guam", true);
+    REQUIRE( all_numbers.days.size() > 0 );
+    for (std::size_t idx = 1; idx < all_numbers.days.size(); ++idx)
+    {
+      REQUIRE( all_numbers.days[idx-1].date < all_numbers.days[idx].date );
+    }
+    REQUIRE( all_numbers.totalCases > 0 );
+    REQUIRE( all_numbers.totalDeaths > 0 );
+
+    // All data should have more entries than recent data.
+    REQUIRE( all_numbers.days.size() > numbers.days.size());
+  }
 }

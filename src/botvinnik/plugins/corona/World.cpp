@@ -286,7 +286,8 @@ const std::unordered_map<std::string, std::function<CovidNumbers(const Country&)
   { "GI", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "gibraltar", false); } },
   // Greenland
   { "GL", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("DK", "Greenland", false); } },
-  // Guam / GU: TODO! (Uses API for USA counties.)
+  // Guam
+  { "GU", [] (const Country& c) { return disease_sh::requestHistoricalApiUsaCounties("guam", false); } },
   // Isle of Man
   { "IM", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "isle%20of%20man", false); } },
   // Cayman Islands
@@ -301,7 +302,8 @@ const std::unordered_map<std::string, std::function<CovidNumbers(const Country&)
   { "NL", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "mainland", false); } },
   // French Polynesia
   { "PF", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "french%20polynesia", false); } },
-  // Puerto Rico / PR: TODO! (Uses API for USA counties.)
+  // Puerto Rico
+  { "PR", [] (const Country& c) { return disease_sh::requestHistoricalApiUsaCounties("puerto%20rico", false); } },
   // Palestine
   { "PS", [] (const Country& c) { return disease_sh::requestHistoricalApi("West%20Bank%20and%20Gaza", false); } },
   // Sint Maarten
@@ -314,7 +316,8 @@ const std::unordered_map<std::string, std::function<CovidNumbers(const Country&)
   { "VA", [] (const Country& c) { return disease_sh::requestHistoricalApi("Holy%20See", false); } },
   // British Virgin Islands
   { "VG", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "British%20Virgin%20Islands", false); } },
-  // United States Virgin Islands (VI): TODO! (Uses API for USA counties.)
+  // United States Virgin Islands
+  { "VI", [] (const Country& c) { return disease_sh::requestHistoricalApiUsaCounties("virgin%20islands", false); } },
   // Wallis and Futuna
   { "WF", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "wallis%20and%20futuna", false); } }
 };
