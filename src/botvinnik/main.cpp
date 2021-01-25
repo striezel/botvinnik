@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -192,7 +192,7 @@ int main(int argc, char** argv)
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }
-  bvn::Corona covid(bot.matrix());
+  bvn::Corona covid;
   if (!bot.registerPlugin(covid))
   {
     // Should never happen!

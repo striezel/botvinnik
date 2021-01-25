@@ -26,6 +26,8 @@ set(botvinnik_sources
     plugins/convert/Conversion.cpp
     plugins/corona/Corona.cpp
     plugins/corona/CovidNumbers.cpp
+    plugins/corona/World.cpp
+    plugins/corona/disease.sh.cpp
     plugins/Debian.cpp
     plugins/Fortune.cpp
     plugins/Ping.cpp

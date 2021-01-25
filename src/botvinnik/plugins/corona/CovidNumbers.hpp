@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -33,6 +33,16 @@ struct CovidNumbersElem
   /** Default constructor. */
   CovidNumbersElem();
 
+  /**
+   * Constructor with initial values.
+   *
+   * @param _cases  number of cases on that day
+   * @param _deaths number of deaths
+   * @param _incidence14 incidence value, or NaN if unknown
+   * @param _data   date (e.g. "2020-12-31")
+   */
+  CovidNumbersElem(int64_t _cases, int64_t _deaths, double _incidence14, const std::string& _date);
+
   int64_t cases;     /**< number of infections */
   int64_t deaths;    /**< number of deaths */
   double incidence14; /**< cases per 100000 inhabitants over the last 14 days */
@@ -63,13 +73,26 @@ struct Country
    * \param id     numeric countryId from database
    * \param _name  name of the country
    * \param _geoId geoId from the database / ISO-3166 two letter code
+   * \param pop    population of the country
    */
-  Country(const int64_t id = -1, const std::string& _name = "", const std::string& _geoId = "");
+  Country(const int64_t id = -1, const std::string& _name = "", const std::string& _geoId = "", const int64_t pop = -1);
 
   int64_t countryId;
   std::string name;
   std::string geoId;
+  int64_t population;
 };
+
+/**
+ * Calculates the 14-day incidence for a vector of numbers that are pre-sorted
+ * by date in ascending order.
+ *
+ * @param number  vector of numbers, has to be sorted by date in ascending order
+ *                without any gaps
+ * @param population  number of inhabitants in the country
+ * @return Returns the numbers with 14-day incidence calculated.
+ */
+std::vector<CovidNumbersElem> calculate_incidence(const std::vector<CovidNumbersElem>& numbers, const int32_t population);
 
 } // namespace
 

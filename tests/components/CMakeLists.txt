@@ -6,9 +6,11 @@ project(component_tests)
 
 set(component_tests_sources
     ../../src/botvinnik/FailCounter.cpp
+    ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
     ../../src/matrix/events/PowerLevels.cpp
     FailCounter.cpp
     PowerLevels.cpp
+    calculate_incidence.cpp
     main.cpp)
 
 if (CMAKE_COMPILER_IS_GNUCC)

@@ -45,7 +45,7 @@ TEST_CASE("plugin registration for all known plugins")
   Rooms rooms(bot.matrix());
   // other plugins
   Conversion convert;
-  Corona cov(bot.matrix());
+  Corona cov;
   Debian deb;
   Fortune fortune;
   Ping ping;

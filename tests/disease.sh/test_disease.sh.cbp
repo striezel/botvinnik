@@ -2,12 +2,12 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="component_tests" />
+		<Option title="test_disease_sh" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Release">
-				<Option output="bin/Release/component_tests" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Release/test_disease_sh" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -24,15 +24,18 @@
 			<Add option="-std=c++17" />
 			<Add option="-fexceptions" />
 		</Compiler>
-		<Unit filename="../../src/botvinnik/FailCounter.cpp" />
-		<Unit filename="../../src/botvinnik/FailCounter.hpp" />
+		<Linker>
+			<Add library="curl" />
+		</Linker>
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.hpp" />
-		<Unit filename="../../src/matrix/events/PowerLevels.cpp" />
-		<Unit filename="../../src/matrix/events/PowerLevels.hpp" />
-		<Unit filename="FailCounter.cpp" />
-		<Unit filename="PowerLevels.cpp" />
-		<Unit filename="calculate_incidence.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/disease.sh.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/corona/disease.sh.hpp" />
+		<Unit filename="../../src/net/Curly.cpp" />
+		<Unit filename="../../src/net/Curly.hpp" />
+		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
+		<Unit filename="../../third-party/simdjson/simdjson.h" />
+		<Unit filename="disease.sh.cpp" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />

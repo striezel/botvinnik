@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include "CovidNumbers.hpp"
 #include <cmath>
 #include <limits>
+#include <numeric>
 #include <sstream>
 
 namespace bvn
@@ -31,6 +32,14 @@ CovidNumbersElem::CovidNumbersElem()
   deaths(-1),
   incidence14(std::numeric_limits<double>::quiet_NaN()),
   date(std::string())
+{
+}
+
+CovidNumbersElem::CovidNumbersElem(int64_t _cases, int64_t _deaths, double _incidence14, const std::string& _date)
+: cases(_cases),
+  deaths(_deaths),
+  incidence14(_incidence14),
+  date(_date)
 {
 }
 
@@ -53,11 +62,60 @@ std::string CovidNumbers::percentage() const
   return stream.str();
 }
 
-Country::Country(const int64_t id, const std::string& _name, const std::string& _geoId)
+Country::Country(const int64_t id, const std::string& _name, const std::string& _geoId, const int64_t pop)
 : countryId(id),
   name(_name),
-  geoId(_geoId)
+  geoId(_geoId),
+  population(pop)
 {
+}
+
+std::vector<CovidNumbersElem> calculate_incidence(const std::vector<CovidNumbersElem>& numbers, const int32_t population)
+{
+  const auto len = numbers.size();
+  std::vector<CovidNumbersElem> result;
+  result.reserve(len);
+  const int max_len = std::min(13ul, len);
+  for (int i = 0; i < max_len; ++i)
+  {
+    CovidNumbersElem elem = numbers[i];
+    elem.incidence14 = std::numeric_limits<double>::quiet_NaN();
+    result.push_back(elem);
+  }
+  // If there is not enough data to ever get to 14 days, then there can be no
+  // 14-day incidence.
+  if (len <= 13)
+  {
+    return result;
+  }
+  // If there is no valid population number, no incidence can be calculated.
+  if (population <= 0)
+  {
+    for (std::size_t i = 13; i < len; ++i)
+    {
+      result.push_back(numbers[i]);
+      result.back().incidence14 = std::numeric_limits<double>::quiet_NaN();
+    }
+    return result;
+  }
+
+  auto accumulator = [](int32_t acc, const CovidNumbersElem& b) {
+                         return acc + b.cases;
+                     };
+  int32_t sum = std::accumulate(numbers.begin(), numbers.begin() + 14, 0, accumulator);
+  CovidNumbersElem elem = numbers[13];
+  elem.incidence14 = static_cast<double>(sum) * 100000.0 / static_cast<double>(population);
+  result.push_back(elem);
+  for (std::size_t idx = 14; idx < len; ++idx)
+  {
+    // Recalculate sum.
+    sum = sum + numbers[idx].cases - numbers[idx - 14].cases;
+    elem = numbers[idx];
+    elem.incidence14 = static_cast<double>(sum) * 100000.0 / static_cast<double>(population);
+    result.push_back(elem);
+  }
+
+  return result;
 }
 
 } // namespace
