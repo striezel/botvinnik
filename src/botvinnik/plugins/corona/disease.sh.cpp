@@ -118,11 +118,17 @@ std::optional<std::string> performApiRequest(const std::string& url)
  */
 CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
 {
-  const auto [cases_elem, error] = json.at_pointer("/timeline/cases");
+  auto [cases_elem, error] = json.at_pointer("/timeline/cases");
   if (error)
   {
-    std::cerr << "JSON from API does not contain cases in timeline!" << std::endl;
-    return CovidNumbers();
+    // Just try "cases", as it is used by worldwide data.
+    json.at_pointer("/cases").tie(cases_elem, error);
+    // If it still is not there, it is beyond hope.
+    if (error)
+    {
+      std::cerr << "JSON from API does not contain cases in timeline!" << std::endl;
+      return CovidNumbers();
+    }
   }
   const auto [cases, err] = cases_elem.get_object();
   if (err)
@@ -131,11 +137,17 @@ CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
     return CovidNumbers();
   }
 
-  const auto [deaths_elem, error_d] = json.at_pointer("/timeline/deaths");
+  auto [deaths_elem, error_d] = json.at_pointer("/timeline/deaths");
   if (error_d)
   {
-    std::cerr << "JSON from API does not contain deaths in timeline!" << std::endl;
-    return CovidNumbers();
+    // Just try "deaths", as it is used by worldwide data.
+    json.at_pointer("/deaths").tie(deaths_elem, error_d);
+    // If it still is not there, it is beyond hope.
+    if (error_d)
+    {
+      std::cerr << "JSON from API does not contain deaths in timeline!" << std::endl;
+      return CovidNumbers();
+    }
   }
   const auto [deaths, err2] = deaths_elem.get_object();
   if (err2)
