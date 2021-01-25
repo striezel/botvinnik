@@ -271,7 +271,7 @@ const std::unordered_map<std::string, std::function<CovidNumbers(const Country&)
   // Bermuda
   { "BM", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "Bermuda", false); } },
   // Bonaire, Saint Eustatius and Saba
-  { "BQ", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "bonaire%2C%20sint%20eustatius%20and%20saba%7C", false); } },
+  { "BQ", [] (const Country& c) { return disease_sh::requestHistoricalApiFirstOfMultipleProvinces("NL", "bonaire%2C%20sint%20eustatius%20and%20saba%7C", false); } },
   // Curacao
   { "CW", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "Curacao", false); } },
   // Denmark

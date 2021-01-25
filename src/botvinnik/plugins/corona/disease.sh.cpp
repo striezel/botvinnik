@@ -359,6 +359,35 @@ CovidNumbers requestHistoricalApiUsaCounties(const std::string& county, const bo
   return numbers;
 }
 
+CovidNumbers requestHistoricalApiFirstOfMultipleProvinces(const std::string& geoId, const std::string& provinces, const bool all)
+{
+  const auto url = constructHistoricalApiUrl(geoId, provinces, all);
+  const auto response = performApiRequest(url);
+  if (!response.has_value())
+    return CovidNumbers();
+
+  simdjson::dom::parser parser;
+  const auto [doc, error] = parser.parse(response.value());
+  if (error)
+  {
+    std::cerr << "Error while trying to parse JSON response from disease.sh API!" << std::endl
+              << "Response is: " << response.value() << std::endl;
+    return CovidNumbers();
+  }
+  const auto [vec, error_array] = doc.get_array();
+  if (error_array)
+  {
+    std::cerr << "Error: Found invalid JSON format in request for multiple provinces." << std::endl;
+    return CovidNumbers();
+  }
+  if (vec.size() == 0)
+  {
+    std::cerr << "Error: Found empty JSON array in request for multiple provinces." << std::endl;
+    return CovidNumbers();
+  }
+  return parseJsonTimeline(vec.at(0).value());
+}
+
 } // namespace
 
 } // namespace

@@ -60,6 +60,20 @@ CovidNumbers requestHistoricalApiProvince(const std::string& geoId, const std::s
  */
 CovidNumbers requestHistoricalApiUsaCounties(const std::string& county, const bool all);
 
+/**
+ * Request historical API of disease.sh for the 1st province (out of multiple) of a country.
+ *
+ * @param  geoId  geo id (i. e. two letter country code) of a country
+ * @param  provinces  names of the province as seen in the API response for
+ *                    the country, separated by '|' (pipe character)
+ * @param  all   whether to collect recent or all data
+ * @return Returns a CovidNumbers containing the new daily cases for the first province.
+ *         No guarantee is given about the order of the provinces, so the first province out
+ *         of many could be any of the given provinces.
+ *         If an error occurred, an empty CovidNumbers struct is returned.
+ */
+CovidNumbers requestHistoricalApiFirstOfMultipleProvinces(const std::string& geoId, const std::string& provinces, const bool all);
+
 } // namespace
 
 } // namespace

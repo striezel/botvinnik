@@ -96,4 +96,28 @@ TEST_CASE("disease.sh API")
     // All data should have more entries than recent data.
     REQUIRE( all_numbers.days.size() > numbers.days.size());
   }
+
+  SECTION("requestHistoricalApiFirstOfMultipleProvinces")
+  {
+    const auto numbers = requestHistoricalApiFirstOfMultipleProvinces("NL", "bonaire%2C%20sint%20eustatius%20and%20saba%7C", false);
+    REQUIRE( numbers.days.size() > 0 );
+    for (std::size_t idx = 1; idx < numbers.days.size(); ++idx)
+    {
+      REQUIRE( numbers.days[idx-1].date < numbers.days[idx].date );
+    }
+    REQUIRE( numbers.totalCases > 0 );
+    REQUIRE( numbers.totalDeaths > 0 );
+
+    const auto all_numbers = requestHistoricalApiFirstOfMultipleProvinces("NL", "bonaire%2C%20sint%20eustatius%20and%20saba%7C", true);
+    REQUIRE( all_numbers.days.size() > 0 );
+    for (std::size_t idx = 1; idx < all_numbers.days.size(); ++idx)
+    {
+      REQUIRE( all_numbers.days[idx-1].date < all_numbers.days[idx].date );
+    }
+    REQUIRE( all_numbers.totalCases > 0 );
+    REQUIRE( all_numbers.totalDeaths > 0 );
+
+    // All data should have more entries than recent data.
+    REQUIRE( all_numbers.days.size() > numbers.days.size());
+  }
 }
