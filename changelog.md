@@ -4,6 +4,15 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.3.0-rc1 (2021-01-??)
+
+The command `!corona` does now work again. Its data source has been switched
+from the European Centre for Disease Prevention and Control (ECDC) to the
+Center for Systems Science and Engineering (CSSE) at Johns Hopkins University.
+Reason for that switch is the ECDC's change in the published data: Instead of
+daily data it started publishing bi-weekly data after 14th December 2020.
+However, the bot expects daily data to show detailed information.
+
 ## Version 0.2.6 (2020-12-10)
 
 The command `!corona` will now show the 14-day incidence values, too, if they
