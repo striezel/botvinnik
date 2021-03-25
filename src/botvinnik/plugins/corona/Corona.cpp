@@ -100,11 +100,11 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
                  .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)");
       result.formatted_body.append("\n  <li>").append(elem.date).append(": ").append(std::to_string(elem.cases))
                  .append(" infection(s), ").append(std::to_string(elem.deaths)).append(" death(s)");
-      if (!std::isnan(elem.incidence14))
+      if (!std::isnan(elem.incidence7))
       {
         hasIncidence = true;
-        result.body.append(", 14-day incidence: ").append(roundTo2(elem.incidence14));
-        result.formatted_body.append(", 14-day incidence<sup>1</sup>: ").append(roundTo2(elem.incidence14));
+        result.body.append(", 7-day incidence: ").append(roundTo2(elem.incidence7));
+        result.formatted_body.append(", 7-day incidence<sup>1</sup>: ").append(roundTo2(elem.incidence7));
       }
       result.formatted_body.append("</li>");
     }
@@ -115,8 +115,7 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
       result.body.append(" (" + percentage + ")");
     if (hasIncidence)
     {
-      result.body.append("\n\nThe 14-day incidence is the number of infections during the last 14 days per 100000 inhabitants.")
-                 .append(" Note that some authorities like e. g. Germany's Robert Koch Institute use a 7-day incidence value instead, which is different.");
+      result.body.append("\n\nThe 7-day incidence is the number of infections during the last seven days per 100000 inhabitants.");
     }
     result.body.append("\n\nData source: https://github.com/CSSEGISandData/COVID-19, ")
                 .append("provided by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University");
@@ -127,8 +126,7 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     result.formatted_body.append("</b>");
     if (hasIncidence)
     {
-      result.formatted_body.append("<br />\n<br />\n<sup>1</sup>=The 14-day incidence is the number of infections during the last 14 days per 100000 inhabitants.")
-                 .append(" Note that some authorities like e. g. Germany's Robert Koch Institute use a 7-day incidence value instead, which is different.");
+      result.formatted_body.append("<br />\n<br />\n<sup>1</sup>=The 7-day incidence is the number of infections during the last seven days per 100000 inhabitants.");
     }
     result.formatted_body.append("<br />\n<br />\nData source: https://github.com/CSSEGISandData/COVID-19, ")
                 .append("provided by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University");

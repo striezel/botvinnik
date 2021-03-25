@@ -38,14 +38,14 @@ struct CovidNumbersElem
    *
    * @param _cases  number of cases on that day
    * @param _deaths number of deaths
-   * @param _incidence14 incidence value, or NaN if unknown
+   * @param _incidence7 incidence value, or NaN if unknown
    * @param _data   date (e.g. "2020-12-31")
    */
-  CovidNumbersElem(int64_t _cases, int64_t _deaths, double _incidence14, const std::string& _date);
+  CovidNumbersElem(int64_t _cases, int64_t _deaths, double _incidence7, const std::string& _date);
 
   int64_t cases;     /**< number of infections */
   int64_t deaths;    /**< number of deaths */
-  double incidence14; /**< cases per 100000 inhabitants over the last 14 days */
+  double incidence7; /**< cases per 100000 inhabitants over the last seven days */
   std::string date;  /**< date for the above numbers */
 };
 
@@ -84,13 +84,13 @@ struct Country
 };
 
 /**
- * Calculates the 14-day incidence for a vector of numbers that are pre-sorted
+ * Calculates the seven-day incidence for a vector of numbers that are pre-sorted
  * by date in ascending order.
  *
  * @param number  vector of numbers, has to be sorted by date in ascending order
  *                without any gaps
  * @param population  number of inhabitants in the country
- * @return Returns the numbers with 14-day incidence calculated.
+ * @return Returns the numbers with seven-day incidence calculated.
  */
 std::vector<CovidNumbersElem> calculate_incidence(const std::vector<CovidNumbersElem>& numbers, const int32_t population);
 

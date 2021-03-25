@@ -30,13 +30,13 @@ TEST_CASE("calculate_incidence")
   SECTION("calculate_incidence_few_elements")
   {
     std::vector<CovidNumbersElem> numbers;
-    for (int i = 1; i < 10; ++i)
+    for (int i = 1; i < 5; ++i)
     {
       CovidNumbersElem elem;
       elem.date = "2020-01-0" + std::to_string(i);
       elem.cases = i;
       elem.deaths = 0;
-      elem.incidence14 = std::numeric_limits<double>::quiet_NaN();
+      elem.incidence7 = std::numeric_limits<double>::quiet_NaN();
       numbers.push_back(elem);
     }
     const auto incidence = calculate_incidence(numbers, 123456789);
@@ -48,11 +48,11 @@ TEST_CASE("calculate_incidence")
       REQUIRE( numbers[idx].cases == incidence[idx].cases );
       REQUIRE( numbers[idx].deaths == incidence[idx].deaths );
       // Incidence values should not be set.
-      REQUIRE( std::isnan(incidence[idx].incidence14) );
+      REQUIRE( std::isnan(incidence[idx].incidence7) );
     }
   }
 
-  SECTION("calculate_incidence_14_elements")
+  SECTION("calculate_incidence_7_elements")
   {
     const double nan = std::numeric_limits<double>::quiet_NaN();
     std::vector<CovidNumbersElem> numbers = {
@@ -62,14 +62,7 @@ TEST_CASE("calculate_incidence")
       { 119,  5, nan, "2020-12-04" },
       { 235, 18, nan, "2020-12-05" },
       { 234, 10, nan, "2020-12-06" },
-      { 210, 26, nan, "2020-12-07" },
-      { 200,  6, nan, "2020-12-08" },
-      { 135, 13, nan, "2020-12-09" },
-      { 202, 16, nan, "2020-12-10" },
-      {  63, 10, nan, "2020-12-11" },
-      { 113, 11, nan, "2020-12-12" },
-      { 298,  9, nan, "2020-12-13" },
-      { 746,  6, nan, "2020-12-14" }
+      { 210, 26, nan, "2020-12-07" }
     };
 
     const auto incidence = calculate_incidence(numbers, 38041757);
@@ -82,19 +75,19 @@ TEST_CASE("calculate_incidence")
       REQUIRE( numbers[idx].deaths == incidence[idx].deaths );
     }
     // Check incidence.
-    for (std::size_t idx = 0; idx < 13; ++idx)
+    for (std::size_t idx = 0; idx < 6; ++idx)
     {
       // Incidence values should not be set.
-      REQUIRE( std::isnan(incidence[idx].incidence14) );
+      REQUIRE( std::isnan(incidence[idx].incidence7) );
     }
     // Incidence for last entry should be set.
-    REQUIRE_FALSE( std::isnan(incidence[13].incidence14) );
-    // Incidence should be roughly 9.01377925.
-    REQUIRE( incidence[13].incidence14 > 9.013779 );
-    REQUIRE( incidence[13].incidence14 < 9.013780 );
+    REQUIRE_FALSE( std::isnan(incidence[6].incidence7) );
+    // Incidence should be roughly 4.395170286.
+    REQUIRE( incidence[6].incidence7 > 4.395170 );
+    REQUIRE( incidence[6].incidence7 < 4.395171 );
   }
 
-  SECTION("calculate_incidence_more_than_14_elements")
+  SECTION("calculate_incidence_more_than_7_elements")
   {
     const double nan = std::numeric_limits<double>::quiet_NaN();
     std::vector<CovidNumbersElem> numbers = {
@@ -141,70 +134,91 @@ TEST_CASE("calculate_incidence")
       REQUIRE( numbers[idx].deaths == incidence[idx].deaths );
     }
     // Check incidence.
-    for (std::size_t idx = 0; idx < 13; ++idx)
+    for (std::size_t idx = 0; idx < 6; ++idx)
     {
       // Incidence values should not be set.
-      REQUIRE( std::isnan(incidence[idx].incidence14) );
+      REQUIRE( std::isnan(incidence[idx].incidence7) );
     }
-    for (std::size_t idx = 13; idx < numbers.size(); ++idx)
+    for (std::size_t idx = 6; idx < numbers.size(); ++idx)
     {
       // Incidence values should be set.
-      REQUIRE_FALSE( std::isnan(incidence[idx].incidence14) );
+      REQUIRE_FALSE( std::isnan(incidence[idx].incidence7) );
     }
-    // 13th: 302.82267311
-    REQUIRE( incidence[13].incidence14 > 302.822673);
-    REQUIRE( incidence[13].incidence14 < 302.822674);
-    // 14th: 306.92051971
-    REQUIRE( incidence[14].incidence14 > 306.920519);
-    REQUIRE( incidence[14].incidence14 < 306.920520);
-    // 15th: 310.25709675
-    REQUIRE( incidence[15].incidence14 > 310.257096);
-    REQUIRE( incidence[15].incidence14 < 310.257097);
-    // 16th: 308.72371676
-    REQUIRE( incidence[16].incidence14 > 308.723716);
-    REQUIRE( incidence[16].incidence14 < 308.723717);
-    // 17th: 307.59988052
-    REQUIRE( incidence[17].incidence14 > 307.599880);
-    REQUIRE( incidence[17].incidence14 < 307.599881);
-    // 18th: 308.01785606
-    REQUIRE( incidence[18].incidence14 > 308.017856);
-    REQUIRE( incidence[18].incidence14 < 308.017857);
-    // 19th: 311.17254749
-    REQUIRE( incidence[19].incidence14 > 311.172547);
-    REQUIRE( incidence[19].incidence14 < 311.172548);
-    // 20th: 313.75267313
-    REQUIRE( incidence[20].incidence14 > 313.752673);
-    REQUIRE( incidence[20].incidence14 < 313.752674);
-    // 21st: 313.22869804
-    REQUIRE( incidence[21].incidence14 > 313.228698);
-    REQUIRE( incidence[21].incidence14 < 313.228699);
-    // 22nd: 312.89624487
-    REQUIRE( incidence[22].incidence14 > 312.896244);
-    REQUIRE( incidence[22].incidence14 < 312.896245);
-    // 23rd: 309.88609829
-    REQUIRE( incidence[23].incidence14 > 309.886098);
-    REQUIRE( incidence[23].incidence14 < 309.886099);
-    // 24th: 307.74442538
-    REQUIRE( incidence[24].incidence14 > 307.744425);
-    REQUIRE( incidence[24].incidence14 < 307.744426);
-    // 25th: 307.92028828
-    REQUIRE( incidence[25].incidence14 > 307.920288);
-    REQUIRE( incidence[25].incidence14 < 307.920289);
-    // 26th: 308.40451354
-    REQUIRE( incidence[26].incidence14 > 308.404513);
-    REQUIRE( incidence[26].incidence14 < 308.404514);
-    // 27th: 307.51797177
-    REQUIRE( incidence[27].incidence14 > 307.517971);
-    REQUIRE( incidence[27].incidence14 < 307.517972);
-    // 28th: 306.59529379
-    REQUIRE( incidence[28].incidence14 > 306.595293);
-    REQUIRE( incidence[28].incidence14 < 306.595294);
-    // 29th: 303.7814873
-    REQUIRE( incidence[29].incidence14 > 303.781487);
-    REQUIRE( incidence[29].incidence14 < 303.781488);
-    // 30th: 304.19705376
-    REQUIRE( incidence[30].incidence14 > 304.197053);
-    REQUIRE( incidence[30].incidence14 < 304.197054);
+    // 6th:  143.81610676
+    REQUIRE( incidence[6].incidence7 > 143.816106);
+    REQUIRE( incidence[6].incidence7 < 143.816107);
+    // 7th:  149.04381230
+    REQUIRE( incidence[7].incidence7 > 149.043812);
+    REQUIRE( incidence[7].incidence7 < 149.043813);
+    // 8th:  151.26016672
+    REQUIRE( incidence[8].incidence7 > 151.260166);
+    REQUIRE( incidence[8].incidence7 < 151.260167);
+    // 9th:  152.78511493
+    REQUIRE( incidence[9].incidence7 > 152.785114);
+    REQUIRE( incidence[9].incidence7 < 152.785115);
+    // 10th: 152.76102412
+    REQUIRE( incidence[10].incidence7 > 152.761024);
+    REQUIRE( incidence[10].incidence7 < 152.761025);
+    // 11th: 154.29440411
+    REQUIRE( incidence[11].incidence7 > 154.294404);
+    REQUIRE( incidence[11].incidence7 < 154.294405);
+    // 12th: 156.55412199
+    REQUIRE( incidence[12].incidence7 > 156.554121);
+    REQUIRE( incidence[12].incidence7 < 156.554122);
+    // 13th: 159.00656634
+    REQUIRE( incidence[13].incidence7 > 159.006566);
+    REQUIRE( incidence[13].incidence7 < 159.006567);
+    // 14th: 157.87670740
+    REQUIRE( incidence[14].incidence7 > 157.876707);
+    REQUIRE( incidence[14].incidence7 < 157.876708);
+    // 15th: 158.99693002
+    REQUIRE( incidence[15].incidence7 > 158.996930);
+    REQUIRE( incidence[15].incidence7 < 158.996931);
+    // 16th: 155.93860182
+    REQUIRE( incidence[16].incidence7 > 155.938601);
+    REQUIRE( incidence[16].incidence7 < 155.938602);
+    // 17th: 154.83885639
+    REQUIRE( incidence[17].incidence7 > 154.838856);
+    REQUIRE( incidence[17].incidence7 < 154.838857);
+    // 18th: 153.72345194
+    REQUIRE( incidence[18].incidence7 > 153.723451);
+    REQUIRE( incidence[18].incidence7 < 153.723452);
+    // 19th: 154.61842549
+    REQUIRE( incidence[19].incidence7 > 154.618425);
+    REQUIRE( incidence[19].incidence7 < 154.618426);
+    // 20th: 154.74610678
+    REQUIRE( incidence[20].incidence7 > 154.746106);
+    REQUIRE( incidence[20].incidence7 < 154.746107);
+    // 21st: 155.3519906
+    REQUIRE( incidence[21].incidence7 > 155.351990);
+    REQUIRE( incidence[21].incidence7 < 155.351991);
+    // 22nd: 153.8993148
+    REQUIRE( incidence[22].incidence7 > 153.899314);
+    REQUIRE( incidence[22].incidence7 < 153.899315);
+    // 23rd: 153.9474964
+    REQUIRE( incidence[23].incidence7 > 153.947496);
+    REQUIRE( incidence[23].incidence7 < 153.947497);
+    // 24th: 152.9055689
+    REQUIRE( incidence[24].incidence7 > 152.905568);
+    REQUIRE( incidence[24].incidence7 < 152.905569);
+    // 25th: 154.1968363
+    REQUIRE( incidence[25].incidence7 > 154.196836);
+    REQUIRE( incidence[25].incidence7 < 154.196837);
+    // 26th: 153.7860880
+    REQUIRE( incidence[26].incidence7 > 153.786088);
+    REQUIRE( incidence[26].incidence7 < 153.786089);
+    // 27th: 152.7718649
+    REQUIRE( incidence[27].incidence7 > 152.771864);
+    REQUIRE( incidence[27].incidence7 < 152.771865);
+    // 28th: 151.2433031
+    REQUIRE( incidence[28].incidence7 > 151.243303);
+    REQUIRE( incidence[28].incidence7 < 151.243304);
+    // 29th: 149.8821724
+    REQUIRE( incidence[29].incidence7 > 149.882172);
+    REQUIRE( incidence[29].incidence7 < 149.882173);
+    // 30th: 150.2495572
+    REQUIRE( incidence[30].incidence7 > 150.249557);
+    REQUIRE( incidence[30].incidence7 < 150.249558);
   }
 
   SECTION("calculate_incidence_no_population")
@@ -254,7 +268,7 @@ TEST_CASE("calculate_incidence")
         REQUIRE( numbers[idx].cases == incidence[idx].cases );
         REQUIRE( numbers[idx].deaths == incidence[idx].deaths );
         // Incidence values should not be set.
-        REQUIRE( std::isnan(incidence[idx].incidence14) );
+        REQUIRE( std::isnan(incidence[idx].incidence7) );
       }
     }
 
@@ -269,7 +283,7 @@ TEST_CASE("calculate_incidence")
         REQUIRE( numbers[idx].cases == incidence[idx].cases );
         REQUIRE( numbers[idx].deaths == incidence[idx].deaths );
         // Incidence values should not be set.
-        REQUIRE( std::isnan(incidence[idx].incidence14) );
+        REQUIRE( std::isnan(incidence[idx].incidence7) );
       }
     }
   }

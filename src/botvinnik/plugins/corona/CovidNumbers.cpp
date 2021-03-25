@@ -30,15 +30,15 @@ namespace bvn
 CovidNumbersElem::CovidNumbersElem()
 : cases(-1),
   deaths(-1),
-  incidence14(std::numeric_limits<double>::quiet_NaN()),
+  incidence7(std::numeric_limits<double>::quiet_NaN()),
   date(std::string())
 {
 }
 
-CovidNumbersElem::CovidNumbersElem(int64_t _cases, int64_t _deaths, double _incidence14, const std::string& _date)
+CovidNumbersElem::CovidNumbersElem(int64_t _cases, int64_t _deaths, double _incidence7, const std::string& _date)
 : cases(_cases),
   deaths(_deaths),
-  incidence14(_incidence14),
+  incidence7(_incidence7),
   date(_date)
 {
 }
@@ -75,26 +75,26 @@ std::vector<CovidNumbersElem> calculate_incidence(const std::vector<CovidNumbers
   const auto len = numbers.size();
   std::vector<CovidNumbersElem> result;
   result.reserve(len);
-  const int max_len = std::min(13ul, len);
+  const int max_len = std::min(6ul, len);
   for (int i = 0; i < max_len; ++i)
   {
     CovidNumbersElem elem = numbers[i];
-    elem.incidence14 = std::numeric_limits<double>::quiet_NaN();
+    elem.incidence7 = std::numeric_limits<double>::quiet_NaN();
     result.push_back(elem);
   }
-  // If there is not enough data to ever get to 14 days, then there can be no
-  // 14-day incidence.
-  if (len <= 13)
+  // If there is not enough data to ever get to 7 days, then there can be no
+  // 7-day incidence.
+  if (len <= 6)
   {
     return result;
   }
   // If there is no valid population number, no incidence can be calculated.
   if (population <= 0)
   {
-    for (std::size_t i = 13; i < len; ++i)
+    for (std::size_t i = 6; i < len; ++i)
     {
       result.push_back(numbers[i]);
-      result.back().incidence14 = std::numeric_limits<double>::quiet_NaN();
+      result.back().incidence7 = std::numeric_limits<double>::quiet_NaN();
     }
     return result;
   }
@@ -102,16 +102,16 @@ std::vector<CovidNumbersElem> calculate_incidence(const std::vector<CovidNumbers
   auto accumulator = [](int32_t acc, const CovidNumbersElem& b) {
                          return acc + b.cases;
                      };
-  int32_t sum = std::accumulate(numbers.begin(), numbers.begin() + 14, 0, accumulator);
-  CovidNumbersElem elem = numbers[13];
-  elem.incidence14 = static_cast<double>(sum) * 100000.0 / static_cast<double>(population);
+  int32_t sum = std::accumulate(numbers.begin(), numbers.begin() + 7, 0, accumulator);
+  CovidNumbersElem elem = numbers[6];
+  elem.incidence7 = static_cast<double>(sum) * 100000.0 / static_cast<double>(population);
   result.push_back(elem);
-  for (std::size_t idx = 14; idx < len; ++idx)
+  for (std::size_t idx = 7; idx < len; ++idx)
   {
     // Recalculate sum.
-    sum = sum + numbers[idx].cases - numbers[idx - 14].cases;
+    sum = sum + numbers[idx].cases - numbers[idx - 7].cases;
     elem = numbers[idx];
-    elem.incidence14 = static_cast<double>(sum) * 100000.0 / static_cast<double>(population);
+    elem.incidence7 = static_cast<double>(sum) * 100000.0 / static_cast<double>(population);
     result.push_back(elem);
   }
 

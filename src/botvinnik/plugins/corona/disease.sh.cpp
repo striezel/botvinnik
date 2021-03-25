@@ -185,7 +185,7 @@ CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
     CovidNumbersElem elem;
     elem.cases = infections;
     elem.deaths = std::numeric_limits<int64_t>::min();
-    elem.incidence14 = std::numeric_limits<double>::quiet_NaN();
+    elem.incidence7 = std::numeric_limits<double>::quiet_NaN();
     elem.date = isoDate;
     numbers[isoDate] = elem;
   }
@@ -239,7 +239,7 @@ CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
     item.date = elems[idx].date;
     item.cases = elems[idx].cases - elems[idx-1].cases;
     item.deaths = elems[idx].deaths - elems[idx-1].deaths;
-    item.incidence14 = std::numeric_limits<double>::quiet_NaN();
+    item.incidence7 = std::numeric_limits<double>::quiet_NaN();
     result.days.push_back(item);
   }
 
