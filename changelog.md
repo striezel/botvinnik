@@ -4,6 +4,13 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Next version (2021-04-??)
+
+A rare case where determining the user's home directory could lead to reading
+uninitialized data is fixed. While it is unlikely that a normal user has no
+entry in the user database, it can happen. That case was not handled properly,
+and therefore could lead to reading uninitialized data.
+
 ## Version 0.3.1 (2021-03-25)
 
 The incidence values of the `!corona` command are changed from the previous

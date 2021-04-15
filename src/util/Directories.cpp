@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2018, 2020  Dirk Stolle
+    Copyright (C) 2018, 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -54,9 +54,12 @@ bool getHome(std::string& result)
     struct passwd info;
     struct passwd * pwd_ptr = nullptr;
     const int error = getpwuid_r(getuid(), &info, buffer, buf_size, &pwd_ptr);
-    if (error != 0)
+    // getpwuid_r() failed, if return value is non-zero. However, it can still
+    // return zero, if no matching entry is found. In that case, the pointer is
+    // set to null.
+    if ((error != 0) || (pwd_ptr == NULL))
     {
-      // getpwuid_r() failed.
+      // getpwuid_r() failed or found no matching entry.
       delete [] buffer;
       return false;
     }
