@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Next version (2021-04-??)
+## Version 0.3.2 (2021-04-15)
 
 A rare case where determining the user's home directory could lead to reading
 uninitialized data is fixed. While it is unlikely that a normal user has no
