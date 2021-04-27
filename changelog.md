@@ -4,6 +4,11 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Next version
+
+The minimum required CMake version for compiling the project is raised from 2.8
+to 3.8.
+
 ## Version 0.3.2 (2021-04-15)
 
 A rare case where determining the user's home directory could lead to reading
