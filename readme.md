@@ -67,6 +67,41 @@ If you want to run the test suite, too, then there is one more step:
 
     ctest -V
 
+## Building in Docker
+
+This repository contains a `Dockerfile` that does a multistage build.
+Be sure to replace the dummy values of the environment variables near the end of
+the file to set the URL of your Matrix homeserver, the Matrix user ID and
+password before building it.
+
+### Prerequisites
+
+Obviously, you will need a running Docker installation. Since the Dockerfile
+uses a multistage build, at least version 17.05 of Docker is required.
+
+### Build and run with Docker
+
+To build the Docker image for botvinnik, type
+
+```shell
+docker build . -t botvinnik
+```
+
+in the root directory of this repository. After the image has been built, type
+
+```shell
+docker run -d --restart=unless-stopped --name=matrix-bot-instance botvinnik
+```
+
+to start the container. To stop it later, type
+
+```shell
+docker container stop matrix-bot-instance
+```
+
+You can also use the [Bash scripts in the `docker/` directory](./docker/readme.md),
+if you want to avoid typing those commands out manually.
+
 ## Usage
 
     botvinnik [OPTIONS]
