@@ -16,7 +16,7 @@ jobs:
         run: |
           export CXX=clang++-10
           export CC=clang-10
-          cd $GITHUB_WORKSPACE && pwd && ls -lah
+          cd $GITHUB_WORKSPACE
           mkdir build
           cd build
           cmake ../
@@ -38,7 +38,7 @@ jobs:
         run: |
           export CXX=clang++-9
           export CC=clang-9
-          cd $GITHUB_WORKSPACE && pwd && ls -lah
+          cd $GITHUB_WORKSPACE
           mkdir build
           cd build
           cmake ../
@@ -60,7 +60,7 @@ jobs:
         run: |
           export CXX=clang++-8
           export CC=clang-8
-          cd $GITHUB_WORKSPACE && pwd && ls -lah
+          cd $GITHUB_WORKSPACE
           mkdir build
           cd build
           cmake ../
