@@ -9,6 +9,9 @@ improvements may be omitted.)_
 The library that does the JSON parsing (simdjson) has been updated from version
 0.6.0 to version 0.7.0.
 
+The library that does the JSON serialization (nlohmann/json) has been updated
+from version 3.5.0 to version 3.9.1.
+
 Add missing `#include` statement that could lead to build error on some
 compilers.
 
