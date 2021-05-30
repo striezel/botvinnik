@@ -94,6 +94,13 @@ int main()
       std::cout << "Error: HTTP status code is not 200, it is "
                 << curl.getResponseCode() << " instead!" << std::endl;
       std::cout << "PUT data is: '" << elem << "'." << std::endl;
+      // Sometimes httpbin.org times out. Avoid test failure in that case.
+      if (curl.getResponseCode() == 504)
+      {
+        std::cout << "Server returned 504 Gateway Timeout, skipping this iteration."
+                  << std::endl;
+        continue;
+      }
       return 1;
     }
     // check content type

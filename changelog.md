@@ -15,6 +15,8 @@ from version 3.5.0 to version 3.9.1.
 Add missing `#include` statement that could lead to build error on some
 compilers.
 
+Add workaround for gateway timeout of test server.
+
 ## Version 0.3.3 (2021-04-27)
 
 The minimum required CMake version for compiling the project is raised from 2.8
