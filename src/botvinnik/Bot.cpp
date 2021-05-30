@@ -152,7 +152,7 @@ void Bot::start()
                 << counter.limit() << " requests failed during the last " << counter.N << " requests.\n";
       if (counter.limitExceeded())
       {
-        std::cerr << nowToString() << " Error: Failure limit was execeeded, quitting!\n";
+        std::cerr << nowToString() << " Error: Failure limit was exceeded, quitting!\n";
         mat.logout();
         return;
       }
