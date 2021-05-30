@@ -6,6 +6,9 @@ improvements may be omitted.)_
 
 ## Version NEXT (2021-05-??)
 
+The library that does the JSON parsing (simdjson) has been updated from version
+0.6.0 to version 0.7.0.
+
 Add missing `#include` statement that could lead to build error on some
 compilers.
 
