@@ -10,6 +10,9 @@ The `!corona` command will now recognize the Cook Islands as a separate country.
 Case numbers have previously been part of New Zealand's numbers, but they are
 not anymore.
 
+The library that does the JSON parsing (simdjson) has been updated from version
+0.7.0 to version 0.7.1.
+
 ## Version 0.3.4 (2021-05-30)
 
 The library that does the JSON parsing (simdjson) has been updated from version
