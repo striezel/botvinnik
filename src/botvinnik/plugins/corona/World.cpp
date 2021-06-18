@@ -77,6 +77,7 @@ std::vector<Country> World::all()
     { 44, "Colombia", "CO", 50339443 },
     { 45, "Comoros", "KM", 850891 },
     { 46, "Congo", "CG", 5380504 },
+    { 215, "Cook Islands", "CK", 17459 },
     { 47, "Costa Rica", "CR", 5047561 },
     { 48, "Cote dIvoire", "CI", 25716554 },
     { 49, "Croatia", "HR", 4076246 },
@@ -272,6 +273,8 @@ const std::unordered_map<std::string, std::function<CovidNumbers(const Country&)
   { "BM", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "Bermuda", false); } },
   // Bonaire, Saint Eustatius and Saba
   { "BQ", [] (const Country& c) { return disease_sh::requestHistoricalApiFirstOfMultipleProvinces("NL", "bonaire%2C%20sint%20eustatius%20and%20saba%7C", false); } },
+  // Cook Islands
+  { "CK", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NZ", "cook%20islands", false); } },
   // Curacao
   { "CW", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "Curacao", false); } },
   // Denmark
@@ -300,6 +303,8 @@ const std::unordered_map<std::string, std::function<CovidNumbers(const Country&)
   { "NC", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "new%20caledonia", false); } },
   // Netherlands
   { "NL", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "mainland", false); } },
+  // New Zealand
+  { "NZ", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NZ", "mainland", false); } },
   // French Polynesia
   { "PF", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "french%20polynesia", false); } },
   // Puerto Rico
