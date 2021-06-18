@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2021-06-??)
+## Version 0.3.5 (2021-06-18)
 
 The `!corona` command will now recognize the Cook Islands as a separate country.
 Case numbers have previously been part of New Zealand's numbers, but they are
