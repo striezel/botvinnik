@@ -15,8 +15,6 @@ started with the bot.
   * [![GitHub CI GCC status](https://github.com/striezel/botvinnik/workflows/GitHub%20CI%20with%20GCC%208,%209,%2010/badge.svg)](https://github.com/striezel/botvinnik/actions)
 * GitLab CI:
 [![GitLab pipeline status](https://gitlab.com/striezel/botvinnik/badges/master/pipeline.svg)](https://gitlab.com/striezel/botvinnik/)
-* Travis CI:
-[![Build Status](https://travis-ci.org/striezel/botvinnik.svg?branch=master)](https://travis-ci.org/striezel/botvinnik)
 
 ## Building from source
 
