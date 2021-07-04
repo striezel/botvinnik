@@ -79,7 +79,7 @@ std::vector<Country> World::all()
     { 46, "Congo", "CG", 5380504 },
     { 215, "Cook Islands", "CK", 17459 },
     { 47, "Costa Rica", "CR", 5047561 },
-    { 48, "Cote dIvoire", "CI", 25716554 },
+    { 48, "Cote d'Ivoire", "CI", 25716554 },
     { 49, "Croatia", "HR", 4076246 },
     { 50, "Cuba", "CU", 11333484 },
     { 51, "Curaçao", "CW", 163423 },
