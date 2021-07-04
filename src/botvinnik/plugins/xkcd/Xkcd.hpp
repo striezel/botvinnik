@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 
 #include "../Plugin.hpp"
 #include "../../../matrix/Matrix.hpp"
+#include "XkcdData.hpp"
 
 namespace bvn
 {
@@ -68,9 +69,28 @@ class Xkcd: public Plugin
   private:
     /** \brief Gets a random number denoting a valid comic.
      *
+     * \param latest   latest known comic number
      * \return Returns a random number denoting a comic.
      */
-    unsigned int getRandomNumber() const;
+    static unsigned int getRandomNumber(const unsigned int latest);
+
+    /** \brief Extracts comic number from message, or - if none is given - gets a random number.
+     *
+     * \param command   name of the command to handle (usually "xkcd")
+     * \param message   complete text message that triggered the command
+     * \param latest   latest known comic number
+     * \return Returns a number denoting a comic.
+     */
+    static unsigned int determineComicId(const std::string_view& command, const std::string_view& message, const unsigned int latest);
+
+    /** \brief Uploads the comic image (if necessary) and gets its MXC URI.
+     *
+     * \param data   data about the comic
+     * \return Returns an optional containing the MXC URI, if successful.
+     *         Returns an empty optional, if an error occurred.
+     */
+    std::optional<std::string> uploadComic(const XkcdData& data);
+
     unsigned int mLatestNum; /**< latest known comic number */
     Matrix& theMatrix; /**< reference to the Matrix instance */
 }; // class

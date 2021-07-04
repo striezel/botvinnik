@@ -21,7 +21,6 @@
 #include "Xkcd.hpp"
 #include <iostream>
 #include <random>
-#include "XkcdData.hpp"
 #include "XkcdDb.hpp"
 #include "../../../util/Strings.hpp"
 
@@ -44,23 +43,16 @@ std::vector<std::string> Xkcd::commands() const
   return { "xkcd" };
 }
 
-unsigned int Xkcd::getRandomNumber() const
+unsigned int Xkcd::getRandomNumber(const unsigned int latest)
 {
   std::random_device randDev;
   std::mt19937 generator(randDev());
-  std::uniform_int_distribution<unsigned int> distribution(1, mLatestNum);
+  std::uniform_int_distribution<unsigned int> distribution(1, latest);
   return distribution(generator);
 }
 
-Message Xkcd::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
+unsigned int Xkcd::determineComicId(const std::string_view& command, const std::string_view& message, const unsigned int latest)
 {
-  if (command != "xkcd")
-  {
-    // unknown command
-    return Message();
-  }
-
-  unsigned int num = 0;
   if (message.size() > command.size() + 1)
   {
     std::string number(message.substr(command.size()));
@@ -70,9 +62,9 @@ Message Xkcd::handleCommand(const std::string_view& command, const std::string_v
     try
     {
       value = std::stoul(number, &pos);
-      if (pos == number.size() && value > 0 && value <= mLatestNum)
+      if (pos == number.size() && value > 0 && value <= latest)
       {
-         num = value;
+         return value;
       }
     }
     catch (const std::exception& ex)
@@ -81,17 +73,11 @@ Message Xkcd::handleCommand(const std::string_view& command, const std::string_v
     }
   }
 
-  if (num == 0)
-    num = getRandomNumber();
+  return getRandomNumber(latest);
+}
 
-  // XkcdData::get() only works when server can be reached.
-  const auto info = XkcdData::get(num);
-  if (!info.has_value() || info.value().img.empty())
-  {
-    return Message("Error: Could not get comic from xkcd.com!",
-                   std::string("<strong>Error:</strong> Could not get comic from xkcd.com!"));
-  }
-  const XkcdData& data = info.value();
+std::optional<std::string> Xkcd::uploadComic(const XkcdData& data)
+{
   auto db = XkcdDb::getDatabase();
   std::optional<std::string> mxcUri;
   if (db.has_value())
@@ -120,6 +106,28 @@ Message Xkcd::handleCommand(const std::string_view& command, const std::string_v
     // and upload new media every time.
     mxcUri = theMatrix.uploadImage(data.img);
   }
+  return mxcUri;
+}
+
+Message Xkcd::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
+{
+  if (command != "xkcd")
+  {
+    // unknown command
+    return Message();
+  }
+
+  const unsigned int num = determineComicId(command, message, mLatestNum);
+
+  // XkcdData::get() only works when server can be reached.
+  const auto info = XkcdData::get(num);
+  if (!info.has_value() || info.value().img.empty())
+  {
+    return Message("Error: Could not get comic from xkcd.com!",
+                   std::string("<strong>Error:</strong> Could not get comic from xkcd.com!"));
+  }
+  const XkcdData& data = info.value();
+  const std::optional<std::string> mxcUri = uploadComic(data);
 
   Message xkcd;
   // Create normal body - varies, when transcript is there.
