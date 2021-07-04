@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,13 +22,12 @@
 #define BVN_MATRIX_JSON_POWERLEVELS_HPP
 
 #include <optional>
-#include "../../../third-party/simdjson/simdjson.h"
 #include "../events/PowerLevels.hpp"
 
 namespace bvn::matrix::json
 {
 
-/** \brief Parses the power level response from the matrix client-server API.
+/** \brief Parses the power level response from the Matrix client-server API.
  *
  * \param json   the JSON as plain text
  * \return Returns an optional containing parsed power levels.
