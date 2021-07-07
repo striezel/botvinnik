@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -31,22 +31,24 @@ namespace bvn
  */
 struct XkcdData
 {
-  /** Default constructor. Sets everything to empty or zero. */
-  XkcdData();
+  private:
+    /** Default constructor. Sets everything to empty or zero. */
+    XkcdData();
 
-  /** \brief Gets data for a given comic.
-   *
-   * \param num   number of the comic
-   * \return Returns data about the comic in case of success.
-   *         Returns empty optional, if data retrieval failed.
-   */
-  static std::optional<XkcdData> get(unsigned int num);
+  public:
+    /** \brief Gets data for a given comic.
+     *
+     * \param num   number of the comic
+     * \return Returns data about the comic in case of success.
+     *         Returns empty optional, if data retrieval failed.
+     */
+    static std::optional<XkcdData> get(unsigned int num);
 
-  unsigned int num;  /**< number of comic */
-  std::string title; /**< comic title */
-  std::string img;   /**< URL for the image */
-  std::string transcript; /**< transcribed text of comic (optional) */
-  std::string alt;  /**< alt text of image */
+    unsigned int num;  /**< number of comic */
+    std::string title; /**< comic title */
+    std::string img;   /**< URL for the image */
+    std::string transcript; /**< transcribed text of comic (optional) */
+    std::string alt;  /**< alt text of image */
 }; // struct
 
 } // namespace

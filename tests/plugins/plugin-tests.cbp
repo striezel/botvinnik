@@ -101,6 +101,7 @@
 		<Unit filename="Ping.cpp" />
 		<Unit filename="Wikipedia.cpp" />
 		<Unit filename="Xkcd.cpp" />
+		<Unit filename="XkcdData.cpp" />
 		<Unit filename="core/Basic.cpp" />
 		<Unit filename="core/Help.cpp" />
 		<Unit filename="core/Rooms.cpp" />

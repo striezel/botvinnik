@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ std::optional<XkcdData> XkcdData::get(unsigned int num)
       curl.setURL("https://xkcd.com/" + std::to_string(num) + "/info.0.json");
     else
       curl.setURL("https://xkcd.com/info.0.json");
-    if (!curl.perform(response))
+    if (!curl.perform(response) || curl.getResponseCode() != 200)
     {
       return std::optional<XkcdData>();
     }

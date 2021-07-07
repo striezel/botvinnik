@@ -45,6 +45,7 @@ set(plugin_tests_sources
     Ping.cpp
     Wikipedia.cpp
     Xkcd.cpp
+    XkcdData.cpp
     pluginRegistrationCombined.cpp
     main.cpp)
 
