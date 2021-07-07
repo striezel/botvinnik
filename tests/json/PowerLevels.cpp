@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -191,5 +191,168 @@ TEST_CASE("parsing PowerLevels")
     REQUIRE( 10 == levels.value().users_default );
     // Check users.
     REQUIRE( levels.value().users.size() == 0 );
+  }
+
+  // The following checks test error handling by giving invalid JSON or wrong
+  // types for certain elements.
+
+  SECTION("invalid JSON")
+  {
+    const std::string json = "{\n\"10\n}";
+    const auto levels = bvn::matrix::json::parsePowerLevels(json);
+    // Parsing must fail.
+    REQUIRE_FALSE( levels.has_value() );
+  }
+
+  SECTION("invalid: users is not an object")
+  {
+    const std::string json = R"json(
+{
+    "ban": 42,
+    "events": {
+        "m.room.avatar": 50,
+        "m.room.canonical_alias": 50,
+        "m.room.history_visibility": 100,
+        "m.room.name": 50,
+        "m.room.power_levels": 100
+    },
+    "events_default": 0,
+    "invite": 0,
+    "kick": 45,
+    "redact": 50,
+    "state_default": 50,
+    "users": "I am not an object and you should detect it!",
+    "users_default": 10
+}
+    )json";
+
+
+    const auto levels = bvn::matrix::json::parsePowerLevels(json);
+    // Parsing must fail.
+    REQUIRE_FALSE( levels.has_value() );
+  }
+
+  SECTION("invalid: elements of object 'users' are not numbers")
+  {
+    const std::string json = R"json(
+{
+    "ban": 42,
+    "events": {
+        "m.room.avatar": 50,
+        "m.room.canonical_alias": 50,
+        "m.room.history_visibility": 100,
+        "m.room.name": 50,
+        "m.room.power_levels": 100
+    },
+    "events_default": 0,
+    "invite": 0,
+    "kick": 45,
+    "redact": 50,
+    "state_default": 50,
+    "users": {
+        "@alice:matrix.homeserver.tld": 98,
+        "@bob:matrix.homeserver.tld": false,
+        "@charlie:matrix.homeserver.tld": "I am a string!"
+    },
+    "users_default": 10
+}
+    )json";
+
+
+    const auto levels = bvn::matrix::json::parsePowerLevels(json);
+    // Parsing must fail.
+    REQUIRE_FALSE( levels.has_value() );
+  }
+
+  SECTION("invalid: ban is not an integer")
+  {
+    const std::string json = R"json(
+{
+    "ban": 42.12,
+    "events": {
+        "m.room.avatar": 50,
+        "m.room.canonical_alias": 50,
+        "m.room.history_visibility": 100,
+        "m.room.name": 50,
+        "m.room.power_levels": 100
+    },
+    "events_default": 0,
+    "invite": 0,
+    "kick": 45,
+    "redact": 50,
+    "state_default": 50,
+    "users": {
+        "@alice:matrix.homeserver.tld": 98,
+        "@bob:matrix.homeserver.tld": 99
+    },
+    "users_default": 10
+}
+    )json";
+
+
+    const auto levels = bvn::matrix::json::parsePowerLevels(json);
+    // Parsing must fail.
+    REQUIRE_FALSE( levels.has_value() );
+  }
+
+  SECTION("invalid: kick is not an integer")
+  {
+    const std::string json = R"json(
+{
+    "ban": 42,
+    "events": {
+        "m.room.avatar": 50,
+        "m.room.canonical_alias": 50,
+        "m.room.history_visibility": 100,
+        "m.room.name": 50,
+        "m.room.power_levels": 100
+    },
+    "events_default": 0,
+    "invite": 0,
+    "kick": "hey, this is wrong...",
+    "redact": 50,
+    "state_default": 50,
+    "users": {
+        "@alice:matrix.homeserver.tld": 98,
+        "@bob:matrix.homeserver.tld": 99
+    },
+    "users_default": 10
+}
+    )json";
+
+
+    const auto levels = bvn::matrix::json::parsePowerLevels(json);
+    // Parsing must fail.
+    REQUIRE_FALSE( levels.has_value() );
+  }
+
+  SECTION("invalid: users_default is not an integer")
+  {
+    const std::string json = R"json(
+{
+    "ban": 42,
+    "events": {
+        "m.room.avatar": 50,
+        "m.room.canonical_alias": 50,
+        "m.room.history_visibility": 100,
+        "m.room.name": 50,
+        "m.room.power_levels": 100
+    },
+    "events_default": 0,
+    "invite": 0,
+    "kick": 99,
+    "redact": 50,
+    "state_default": 50,
+    "users": {
+        "@alice:matrix.homeserver.tld": 98,
+        "@bob:matrix.homeserver.tld": 99
+    },
+    "users_default": { }
+}
+    )json";
+
+    const auto levels = bvn::matrix::json::parsePowerLevels(json);
+    // Parsing must fail.
+    REQUIRE_FALSE( levels.has_value() );
   }
 }

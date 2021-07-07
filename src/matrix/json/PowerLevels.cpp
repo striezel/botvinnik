@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,40 +40,72 @@ std::optional<PowerLevels> parsePowerLevels(const std::string& json)
   simdjson::dom::element elem;
   simdjson::error_code err;
   doc["ban"].tie(elem, err);
-  if (!err && elem.type() == simdjson::dom::element_type::INT64)
+  if (!err)
   {
-    result.ban = elem.get<int64_t>();
+    if (elem.type() == simdjson::dom::element_type::INT64)
+    {
+      result.ban = elem.get<int64_t>();
+    }
+    else
+    {
+      std::cerr << "Error: 'ban' is not an integer!" << std::endl;
+      return std::optional<matrix::PowerLevels>();
+    }
   }
   doc["kick"].tie(elem, err);
-  if (!err && elem.type() == simdjson::dom::element_type::INT64)
+  if (!err)
   {
-    result.kick = elem.get<int64_t>();
+    if (elem.type() == simdjson::dom::element_type::INT64)
+    {
+      result.kick = elem.get<int64_t>();
+    }
+    else
+    {
+      std::cerr << "Error: 'kick' is not an integer!" << std::endl;
+      return std::optional<matrix::PowerLevels>();
+    }
   }
   doc["users_default"].tie(elem, err);
-  if (!err && elem.type() == simdjson::dom::element_type::INT64)
+  if (!err)
   {
-    result.users_default = elem.get<int64_t>();
+    if (elem.type() == simdjson::dom::element_type::INT64)
+    {
+      result.users_default = elem.get<int64_t>();
+    }
+    else
+    {
+      std::cerr << "Error: 'users_default' is not an integer!" << std::endl;
+      return std::optional<matrix::PowerLevels>();
+    }
   }
   const auto [users, errUsers] = doc["users"];
-  if (!errUsers && users.type() == simdjson::dom::element_type::OBJECT)
+  if (!errUsers)
   {
-    simdjson::dom::object usersObject;
-    users.get<simdjson::dom::object>().tie(usersObject, err);
-    if (err)
+    if (users.type() == simdjson::dom::element_type::OBJECT)
+    {
+      simdjson::dom::object usersObject;
+      users.get<simdjson::dom::object>().tie(usersObject, err);
+      if (err)
+      {
+        std::cerr << "Error: 'users' is not an object!" << std::endl;
+        return std::optional<matrix::PowerLevels>();
+      }
+
+      // iterate
+      for (const auto [key, value] : usersObject)
+      {
+        if (value.type() != simdjson::dom::element_type::INT64)
+        {
+          std::cerr << "Error: 'users' is not an object with string keys and integer values!" << std::endl;
+          return std::optional<matrix::PowerLevels>();
+        }
+        result.users[std::string(key)] = value.get<int64_t>();
+      }
+    }
+    else
     {
       std::cerr << "Error: 'users' is not an object!" << std::endl;
       return std::optional<matrix::PowerLevels>();
-    }
-
-    // iterate
-    for (const auto [key, value] : usersObject)
-    {
-      if (value.type() != simdjson::dom::element_type::INT64)
-      {
-        std::cerr << "Error: 'users' is not an object with string keys and integer values!" << std::endl;
-        return std::optional<matrix::PowerLevels>();
-      }
-      result.users[std::string(key)] = value.get<int64_t>();
     }
   }
 
