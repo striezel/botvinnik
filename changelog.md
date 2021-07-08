@@ -9,6 +9,13 @@ improvements may be omitted.)_
 The parsing of Matrix power levels is now stricter, allowing less deviation from
 the Matrix specification.
 
+Due to a typo in previous versions, the `!corona` command did not properly
+recognize the country Ivory Coast. One had to type `!corona Cote dIvoire` to get
+the numbers. This is now changed, `!corona Cote d'Ivoire` will now show the
+numbers for that country, because that is the correct spelling. As before, you
+can also use the ISO 3166 country code, i. e. `!corona CI` will also show the
+data for Cote d'Ivore.
+
 ## Version 0.3.5 (2021-06-18)
 
 The `!corona` command will now recognize the Cook Islands as a separate country.
