@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -403,7 +403,7 @@ std::optional<matrix::PowerLevels> Matrix::powerLevels(const std::string& roomId
   return matrix::json::parsePowerLevels(response);
 }
 
-bool Matrix::sync(std::string& events, std::string& nextBatch, std::vector<matrix::Room>& rooms, std::vector<std::string>& invites, const std::string& since)
+bool Matrix::sync(std::string& nextBatch, std::vector<matrix::Room>& rooms, std::vector<std::string>& invites, const std::string& since)
 {
   if (!isLoggedIn())
   {
@@ -475,7 +475,6 @@ bool Matrix::sync(std::string& events, std::string& nextBatch, std::vector<matri
               << std::endl;
     return false;
   }
-  events = response;
 
   Sync::parse(doc, rooms, invites);
 

@@ -117,11 +117,10 @@ void Bot::start()
     }
   }
 
-  std::string initialEvents;
   std::string next_batch;
   std::vector<matrix::Room> rooms;
   std::vector<std::string> invites;
-  if (!mat.sync(initialEvents, next_batch, rooms, invites, ""))
+  if (!mat.sync(next_batch, rooms, invites, ""))
   {
     std::cerr << "Error: Initial sync request failed!" << std::endl;
     mat.logout();
@@ -143,8 +142,7 @@ void Bot::start()
     // The sync endpoint is not rate-limited, but we do not have to overdo it.
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    std::string events;
-    const bool syncSuccess = mat.sync(events, next_batch, rooms, invites, next_batch);
+    const bool syncSuccess = mat.sync(next_batch, rooms, invites, next_batch);
     counter.next(syncSuccess);
     if (!syncSuccess)
     {

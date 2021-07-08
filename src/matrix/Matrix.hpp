@@ -131,7 +131,6 @@ class Matrix
 
     /** \brief Gets room events for the user.
      *
-     * \param events      string that will be used to store the events as JSON (if any)
      * \param nextBatch   string that will be used to store the "next_batch" (if any)
      * \param rooms       events of Matrix rooms
      * \param invites     vector to store ids of room where user has been invited to join
@@ -139,7 +138,7 @@ class Matrix
      * \return Returns true, if the request succeeded.
      *         Returns false otherwise.
      */
-    bool sync(std::string& events, std::string& nextBatch, std::vector<matrix::Room>& rooms, std::vector<std::string>& invites, const std::string& since = "");
+    bool sync(std::string& nextBatch, std::vector<matrix::Room>& rooms, std::vector<std::string>& invites, const std::string& since = "");
 
 
     /** \brief Sends a message to a given room.
