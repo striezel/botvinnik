@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,43 +32,56 @@ void Sync::parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& r
   invitedRoomIds.clear();
   // parse room data
   auto [jsonRooms, error] = doc["rooms"];
-  if (error || jsonRooms.type() != simdjson::dom::element_type::OBJECT)
+  if (error)
   {
-    std::cerr << "Error: There is no rooms element or it's not an object!" << std::endl;
+    // No rooms element is available. This can happen, if no new room events
+    // have occurred since the last sync request. In this case, nothing else is
+    // left to do here.
+    return;
+  }
+  if (jsonRooms.type() != simdjson::dom::element_type::OBJECT)
+  {
+    std::cerr << "Error: The rooms element is not an object!" << std::endl;
     return;
   }
 
   {
     simdjson::dom::element join;
     jsonRooms["join"].tie(join, error);
-    if (error || join.type() != simdjson::dom::element_type::OBJECT)
+    if (!error)
     {
-      std::cerr << "Error: There is no join element or it's not an object!" << std::endl;
-      return;
-    }
+      if (join.type() != simdjson::dom::element_type::OBJECT)
+      {
+        std::cerr << "Error: The join element is not an object!" << std::endl;
+        return;
+      }
 
-    // iterate over rooms
-    simdjson::dom::object joinObject;
-    join.get<simdjson::dom::object>().tie(joinObject, error);
-    if (error)
-    {
-      std::cerr << "Error: 'join' is not an object!" << std::endl;
-      return;
-    }
+      // iterate over rooms
+      simdjson::dom::object joinObject;
+      join.get<simdjson::dom::object>().tie(joinObject, error);
+      if (error)
+      {
+        std::cerr << "Error: 'join' is not an object!" << std::endl;
+        return;
+      }
 
-    if (parseJoinedRooms(joinObject, rooms) != 0)
-      return;
+      if (parseJoinedRooms(joinObject, rooms) != 0)
+        return;
+    }
   }
 
   {
     simdjson::dom::element invite;
     jsonRooms["invite"].tie(invite, error);
-    if (error || invite.type() != simdjson::dom::element_type::OBJECT)
+    if (!error)
     {
-      std::cerr << "Error: There is no invite element or it's not an object!" << std::endl;
-      return;
+      if (invite.type() != simdjson::dom::element_type::OBJECT)
+      {
+        std::cerr << "Error: The invite element is not an object!" << std::endl;
+        return;
+      }
+      parseInvitedRooms(invite, invitedRoomIds);
     }
-    parseInvitedRooms(invite, invitedRoomIds);
   }
 }
 
@@ -197,7 +210,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
       {
         matrix::RoomTopic topic;
         simdjson::dom::element data;
-        // name must always be present.
+        // topic must always be present.
         elem.at_pointer("/content/topic").tie(data, error);
         if (error || data.type() != simdjson::dom::element_type::STRING)
         {

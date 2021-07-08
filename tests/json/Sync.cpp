@@ -99,6 +99,74 @@ TEST_CASE("parsing sync events")
     REQUIRE( std::find(invitedRoomIds.begin(), invitedRoomIds.end(), "!next0r:ma.tricks.example.tld") != invitedRoomIds.end() );
   }
 
+  SECTION("invites to rooms, without any join element")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"foobar1234_5678_9012",
+    "rooms":{
+        "invite":{
+            "!test0r:example.com":{
+                "invite_state":{
+                    "events":[
+                        {
+                            "sender":"@alice:bob.tld",
+                            "type":"m.room.name",
+                            "state_key":"",
+                            "content":{
+                                "name":"The Room Has A Name"
+                            }
+                        },
+                        {
+                            "sender":"@alice:bob.tld",
+                            "type":"m.room.member",
+                            "state_key":"@bob:example.com",
+                            "content":{
+                                "membership":"invite"
+                            }
+                        }
+                    ]
+                }
+            },
+            "!next0r:ma.tricks.example.tld":{
+                "invite_state":{
+                    "events":[
+                        {
+                            "sender":"@alice:bob.tld",
+                            "type":"m.room.name",
+                            "state_key":"",
+                            "content":{
+                                "name":"The Room Has Another Name"
+                            }
+                        },
+                        {
+                            "sender":"@alice:bob.tld",
+                            "type":"m.room.member",
+                            "state_key":"@bob:example.com",
+                            "content":{
+                                "membership":"invite"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    }
+    )json";
+    const auto [doc, error] = parser.parse(json);
+    REQUIRE_FALSE( error );
+    Sync::parse(doc, rooms, invitedRoomIds);
+
+    // Rooms should be empty (no join element).
+    REQUIRE( rooms.size() == 0 );
+    // Should have been invited into two rooms.
+    REQUIRE( invitedRoomIds.size() == 2 );
+    // Both room ids should be present as in JSON.
+    REQUIRE( std::find(invitedRoomIds.begin(), invitedRoomIds.end(), "!test0r:example.com") != invitedRoomIds.end() );
+    REQUIRE( std::find(invitedRoomIds.begin(), invitedRoomIds.end(), "!next0r:ma.tricks.example.tld") != invitedRoomIds.end() );
+  }
+
   SECTION("messages in rooms")
   {
     const std::string json = R"json(
@@ -265,6 +333,119 @@ TEST_CASE("parsing sync events")
     REQUIRE( rooms[1].texts[1].formatted_body == "<b>Another</b> text message" );
     REQUIRE( rooms[1].texts[1].sender == "@sending_user_id:example.org" );
     REQUIRE( rooms[1].texts[1].server_ts == std::chrono::milliseconds(1223344554321) );
+  }
+
+  SECTION("messages in rooms, without any invite element")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"foobar1234_5678_9012",
+    "rooms":{
+        "join":{
+            "!roomid1234:example.com":{
+                "summary":{
+                    "m.heroes":[
+                        "@alice:example.com",
+                        "@bob:example.com"
+                    ],
+                    "m.joined_member_count":2,
+                    "m.invited_member_count":0
+                },
+                "state":{
+                    "events":[
+                        {
+                            "content":{
+                                "membership":"join",
+                                "avatar_url":"mxc://example.org/SEsfnsuifSDFSSEF",
+                                "displayname":"Unit Tests are Good"
+                            },
+                            "type":"m.room.member",
+                            "event_id":"$ashdbasjdhauuuuau:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@example:example.org",
+                            "origin_server_ts":12345678901234,
+                            "unsigned":{
+                                "age":1234
+                            },
+                            "state_key":"@alice:example.org"
+                        }
+                    ]
+                },
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "membership":"join",
+                                "avatar_url":"mxc://example.org/SEsfnsuifSDFSSEF",
+                                "displayname":"Unit Tests are Good"
+                            },
+                            "type":"m.room.member",
+                            "event_id":"$ashdbasjdhauuuuau:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@example:example.org",
+                            "origin_server_ts":12345678901234,
+                            "unsigned":{
+                                "age":1234
+                            },
+                            "state_key":"@alice:example.org"
+                        },
+                        {
+                            "content":{
+                                "body":"This is an example text message",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>This is an example text message</b>"
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@example:example.org",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                },
+                "ephemeral":{
+                    "events":[
+                        {
+                            "content":{
+                                "user_ids":[
+                                    "@alice:matrix.org",
+                                    "@bob:example.com"
+                                ]
+                            },
+                            "type":"m.typing",
+                            "room_id":"!09876abcde:example.org"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    }
+    )json";
+    const auto [doc, error] = parser.parse(json);
+    REQUIRE_FALSE( error );
+    Sync::parse(doc, rooms, invitedRoomIds);
+
+    // Invited rooms should be empty (no invite element).
+    REQUIRE( invitedRoomIds.size() == 0 );
+    // Rooms should be one.
+    REQUIRE( rooms.size() == 1 );
+    // Id of 1st room should be "!roomid1234:example.com".
+    REQUIRE( "!roomid1234:example.com" == rooms[0].id );
+    // First room should have one text message.
+    REQUIRE( rooms[0].texts.size() == 1 );
+    // Check contents of 1st message in 1st room.
+    REQUIRE( rooms[0].texts[0].body == "This is an example text message" );
+    REQUIRE( rooms[0].texts[0].format == "org.matrix.custom.html" );
+    REQUIRE( rooms[0].texts[0].formatted_body == "<b>This is an example text message</b>" );
+    REQUIRE( rooms[0].texts[0].sender == "@example:example.org" );
+    REQUIRE( rooms[0].texts[0].server_ts == std::chrono::milliseconds(13375678901234) );
   }
 
   SECTION("non-text messages in rooms are ignored")
@@ -617,5 +798,22 @@ TEST_CASE("parsing sync events")
     REQUIRE( rooms[0].topics[0].topic == "Nice topic is 'noice'." );
     REQUIRE( rooms[0].topics[0].sender == "@somebody_else:example.org" );
     REQUIRE( rooms[0].topics[0].server_ts == std::chrono::milliseconds(13375678904444) );
+  }
+
+  SECTION("no events, next_batch only")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"foobar1234_was_here"
+    }
+    )json";
+    const auto [doc, error] = parser.parse(json);
+    REQUIRE_FALSE( error );
+    Sync::parse(doc, rooms, invitedRoomIds);
+
+    // No room should be present.
+    REQUIRE( rooms.size() == 0 );
+    // Should have been invited into no rooms.
+    REQUIRE( invitedRoomIds.size() == 0 );
   }
 }

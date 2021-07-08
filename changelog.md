@@ -9,6 +9,9 @@ improvements may be omitted.)_
 The parsing of Matrix power levels is now stricter, allowing less deviation from
 the Matrix specification.
 
+The parsing of room events is now more tolerant to missing optional JSON
+members that can be left out, according to the Matrix specification.
+
 Due to a typo in previous versions, the `!corona` command did not properly
 recognize the country Ivory Coast. One had to type `!corona Cote dIvoire` to get
 the numbers. This is now changed, `!corona Cote d'Ivoire` will now show the
