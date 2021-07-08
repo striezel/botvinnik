@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -140,6 +140,7 @@ void Bot::start()
   while (!stopRequested())
   {
     // Sleep a few seconds to avoid DOS-ing the server.
+    // The sync endpoint is not rate-limited, but we do not have to overdo it.
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     std::string events;
@@ -164,48 +165,7 @@ void Bot::start()
     }
 
     // Iterate over events of all rooms.
-    for (const auto& room : rooms)
-    {
-      // The bot only cares for text messages, since only those can contain
-      // textual commands.
-      for (const matrix::RoomMessageText& msg : room.texts)
-      {
-        // Check whether text starts with prefix.
-        // Since there is no C++20 and starts_with() yet, do it another way.
-        if (msg.body.rfind(prefix, 0) == 0)
-        {
-          // Found it!
-          const auto spacePos = msg.body.find(' ', prefix.size());
-          const std::string command = (spacePos != std::string::npos)
-              ? msg.body.substr(prefix.size(), spacePos - prefix.size())
-              : msg.body.substr(prefix.size());
-          if (command.empty())
-          {
-            // Nice try, but there are no empty commands.
-            continue;
-          }
-          const auto iter = commands.find(command);
-          if (iter == commands.end())
-          {
-            // There is no such command.
-            mat.sendMessage(room.id, Message("The bot does not recognize the command '" + prefix + command + "'."));
-            continue;
-          }
-
-          // Let the plugin handle the command.
-          const std::string_view message(msg.body.data() + prefix.size(), msg.body.size() - prefix.size());
-          const Message answer = iter->second.get().handleCommand(command, message, msg.sender, room.id, msg.server_ts);
-          if (!answer.body.empty())
-          {
-            if (!mat.sendMessage(room.id, answer))
-            {
-              // Sending messages could fail due to rate limit or because the bot has left the room.
-              std::cerr << "Error: Could not send answer for command " + command + "!" << std::endl;
-            }
-          }
-        }
-      }
-    }
+    handleRoomEvents(prefix, rooms);
 
     // Iterate over invites.
     for (const auto & roomId : invites)
@@ -217,6 +177,53 @@ void Bot::start()
     {
       std::clog << nowToString() << " Info: Bot stop was requested, exiting sync loop." << std::endl;
       break;
+    }
+  }
+}
+
+void Bot::handleRoomEvents(const std::string& prefix, const std::vector<matrix::Room>& rooms)
+{
+  // Iterate over events of all rooms.
+  for (const auto& room : rooms)
+  {
+    // The bot only cares for text messages, since only those can contain
+    // textual commands.
+    for (const matrix::RoomMessageText& msg : room.texts)
+    {
+      // Check whether text starts with prefix.
+      // Since there is no C++20 and starts_with() yet, do it another way.
+      if (msg.body.rfind(prefix, 0) == 0)
+      {
+        // Found it!
+        const auto spacePos = msg.body.find(' ', prefix.size());
+        const std::string command = (spacePos != std::string::npos)
+            ? msg.body.substr(prefix.size(), spacePos - prefix.size())
+            : msg.body.substr(prefix.size());
+        if (command.empty())
+        {
+          // Nice try, but there are no empty commands.
+          continue;
+        }
+        const auto iter = commands.find(command);
+        if (iter == commands.end())
+        {
+          // There is no such command.
+          mat.sendMessage(room.id, Message("The bot does not recognize the command '" + prefix + command + "'."));
+          continue;
+        }
+
+        // Let the plugin handle the command.
+        const std::string_view message(msg.body.data() + prefix.size(), msg.body.size() - prefix.size());
+        const Message answer = iter->second.get().handleCommand(command, message, msg.sender, room.id, msg.server_ts);
+        if (!answer.body.empty())
+        {
+          if (!mat.sendMessage(room.id, answer))
+          {
+            // Sending messages could fail due to rate limit or because the bot has left the room.
+            std::cerr << "Error: Could not send answer for command " + command + "!" << std::endl;
+          }
+        }
+      }
     }
   }
 }

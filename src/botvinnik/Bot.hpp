@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -113,6 +113,13 @@ class Bot
      * \param roomId   id of the room
      */
     void joinRoom(const std::string& roomId);
+
+    /** \brief Handles Matrix room events received via the sync endpoint.
+     *
+     * \param prefix  prefix for commands, e. g. "!"
+     * \param rooms   vector of rooms with their events
+     */
+    void handleRoomEvents(const std::string& prefix, const std::vector<matrix::Room>& rooms);
 
     Matrix mat; /**< handles matrix requests */
     std::unordered_map<std::string, std::reference_wrapper<Plugin> > commands; /**< registered commands */
