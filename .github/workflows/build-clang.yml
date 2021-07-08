@@ -17,6 +17,13 @@ jobs:
           export CXX=clang++-10
           export CC=clang-10
           cd $GITHUB_WORKSPACE
+          # Build with User-Agent header.
+          mkdir ./build-with-ua
+          cd ./build-with-ua
+          cmake -DUSER_AGENT=ON ../
+          make -j4
+          cd ..
+          # Build without User-Agent (default).
           mkdir build
           cd build
           cmake ../
