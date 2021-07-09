@@ -21,12 +21,11 @@
 #include <algorithm> // std::find
 #include <catch.hpp>
 #include "../../src/matrix/json/Sync.hpp"
-#include "../../third-party/simdjson/simdjson.h"
 
 TEST_CASE("parsing sync events")
 {
   using namespace bvn;
-  simdjson::dom::parser parser;
+  std::string nextBatch;
   std::vector<matrix::Room> rooms;
   std::vector<std::string> invitedRoomIds;
 
@@ -86,10 +85,10 @@ TEST_CASE("parsing sync events")
     }
     }
     )json";
-    const auto [doc, error] = parser.parse(json);
-    REQUIRE_FALSE( error );
-    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
+    REQUIRE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
 
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foobar1234_5678_9012" );
     // Rooms should be empty (no data in join element).
     REQUIRE( rooms.size() == 0 );
     // Should have been invited into two rooms.
@@ -103,7 +102,7 @@ TEST_CASE("parsing sync events")
   {
     const std::string json = R"json(
     {
-    "next_batch":"foobar1234_5678_9012",
+    "next_batch":"foobar1234_5678_9101112",
     "rooms":{
         "invite":{
             "!test0r:example.com":{
@@ -154,10 +153,10 @@ TEST_CASE("parsing sync events")
     }
     }
     )json";
-    const auto [doc, error] = parser.parse(json);
-    REQUIRE_FALSE( error );
-    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
+    REQUIRE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
 
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foobar1234_5678_9101112" );
     // Rooms should be empty (no join element).
     REQUIRE( rooms.size() == 0 );
     // Should have been invited into two rooms.
@@ -171,7 +170,7 @@ TEST_CASE("parsing sync events")
   {
     const std::string json = R"json(
     {
-    "next_batch":"foobar1234_5678_9012",
+    "next_batch":"foobar1234_5678_90",
     "rooms":{
         "join":{
             "!roomid1234:example.com":{
@@ -299,10 +298,10 @@ TEST_CASE("parsing sync events")
     }
     }
     )json";
-    const auto [doc, error] = parser.parse(json);
-    REQUIRE_FALSE( error );
-    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
+    REQUIRE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
 
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foobar1234_5678_90" );
     // Invited rooms should be empty (no data in invite element).
     REQUIRE( invitedRoomIds.size() == 0 );
     // Rooms should be two.
@@ -339,7 +338,7 @@ TEST_CASE("parsing sync events")
   {
     const std::string json = R"json(
     {
-    "next_batch":"foobar1234_5678_9012",
+    "next_batch":"foobar1234_5678_90123",
     "rooms":{
         "join":{
             "!roomid1234:example.com":{
@@ -428,10 +427,10 @@ TEST_CASE("parsing sync events")
     }
     }
     )json";
-    const auto [doc, error] = parser.parse(json);
-    REQUIRE_FALSE( error );
-    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
+    REQUIRE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
 
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foobar1234_5678_90123" );
     // Invited rooms should be empty (no invite element).
     REQUIRE( invitedRoomIds.size() == 0 );
     // Rooms should be one.
@@ -452,7 +451,7 @@ TEST_CASE("parsing sync events")
   {
     const std::string json = R"json(
     {
-    "next_batch":"foobar1234_5678_9012",
+    "next_batch":"foobar1234_5678_9876",
     "rooms":{
         "join":{
             "!roomid5678:example.com":{
@@ -630,10 +629,10 @@ TEST_CASE("parsing sync events")
     }
     }
     )json";
-    const auto [doc, error] = parser.parse(json);
-    REQUIRE_FALSE( error );
-    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
+    REQUIRE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
 
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foobar1234_5678_9876" );
     // Invited rooms should be empty (no data in invite element).
     REQUIRE( invitedRoomIds.size() == 0 );
     // There should only be one room.
@@ -654,7 +653,7 @@ TEST_CASE("parsing sync events")
   {
     const std::string json = R"json(
     {
-    "next_batch":"foobar1234_5678_9012",
+    "next_batch":"foobar4213_5678_9012",
     "rooms":{
         "join": {
             "!roomid1234:example.com":{
@@ -700,10 +699,10 @@ TEST_CASE("parsing sync events")
     }
     }
     )json";
-    const auto [doc, error] = parser.parse(json);
-    REQUIRE_FALSE( error );
-    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
+    REQUIRE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
 
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foobar4213_5678_9012" );
     // Only one room should be present.
     REQUIRE( rooms.size() == 1 );
     // Should have been invited into no rooms.
@@ -729,7 +728,7 @@ TEST_CASE("parsing sync events")
   {
     const std::string json = R"json(
     {
-    "next_batch":"foobar1234_5678_9012",
+    "next_batch":"foobar1234_5678_9999",
     "rooms":{
         "join": {
             "!roomid1234:example.com":{
@@ -775,10 +774,10 @@ TEST_CASE("parsing sync events")
     }
     }
     )json";
-    const auto [doc, error] = parser.parse(json);
-    REQUIRE_FALSE( error );
-    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
+    REQUIRE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
 
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foobar1234_5678_9999" );
     // Only one room should be present.
     REQUIRE( rooms.size() == 1 );
     // Should have been invited into no rooms.
@@ -807,10 +806,24 @@ TEST_CASE("parsing sync events")
     "next_batch":"foobar1234_was_here"
     }
     )json";
-    const auto [doc, error] = parser.parse(json);
-    REQUIRE_FALSE( error );
-    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
+    REQUIRE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
 
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foobar1234_was_here" );
+    // No room should be present.
+    REQUIRE( rooms.size() == 0 );
+    // Should have been invited into no rooms.
+    REQUIRE( invitedRoomIds.size() == 0 );
+  }
+
+  SECTION("no events, missing next_batch")
+  {
+    const std::string json = "{ }";
+    // Parsing fails, because missing next_batch violates the Matrix specification.
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be empty.
+    REQUIRE( nextBatch.empty() );
     // No room should be present.
     REQUIRE( rooms.size() == 0 );
     // Should have been invited into no rooms.

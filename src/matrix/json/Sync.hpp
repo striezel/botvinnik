@@ -36,13 +36,14 @@ struct Sync
   public:
     /** \brief Parses JSON data from the sync endpoint of Matrix.
      *
-     * \param doc   parsed JSON document
+     * \param json  JSON document as string
+     * \param nextBatch  string to populate with the next_batch element
      * \param rooms vector of rooms to populate with parsed data
      * \param invitedRoomIds  vector of rooms ids to populate with parsed data
      * \return Returns true, if the parsing was successful.
      *         Returns false otherwise.
      */
-    static bool parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& rooms, std::vector<std::string>& invitedRoomIds);
+    static bool parse(const std::string& json, std::string& nextBatch, std::vector<matrix::Room>& rooms, std::vector<std::string>& invitedRoomIds);
   private:
     static const int JsonError; /**< non-zero error code for JSON errors */
 

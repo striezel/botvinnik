@@ -26,10 +26,39 @@ namespace bvn
 
 const int Sync::JsonError = 1; /**< non-zero error code for JSON errors */
 
-bool Sync::parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& rooms, std::vector<std::string>& invitedRoomIds)
+bool Sync::parse(const std::string& json, std::string& nextBatch, std::vector<matrix::Room>& rooms, std::vector<std::string>& invitedRoomIds)
 {
   rooms.clear();
   invitedRoomIds.clear();
+
+  simdjson::dom::parser parser;
+  const auto [doc, parseError] = parser.parse(json);
+  if (parseError)
+  {
+    std::cerr << "Error while syncing events: Unable to parse JSON data!" << std::endl
+              << "Response is: " << json << std::endl;
+    return false;
+  }
+  const auto [jsonNextBatch, jsonError] = doc["next_batch"];
+  if (jsonError || jsonNextBatch.type() != simdjson::dom::element_type::STRING)
+  {
+    std::cerr << "Error while syncing events: JSON data does not contain"
+              << " a next_batch element or it's not a string!" << std::endl;
+    return false;
+  }
+  // nextBatch should only be overwritten, if it is not empty.
+  if (!jsonNextBatch.get<std::string_view>().value().empty())
+  {
+    nextBatch = jsonNextBatch.get<std::string_view>().value();
+  }
+  else
+  {
+    std::cerr << "Error while syncing events: JSON data contains an empty "
+              << "next_batch element, and that is against the specification!"
+              << std::endl;
+    return false;
+  }
+
   // parse room data
   auto [jsonRooms, error] = doc["rooms"];
   if (error)
