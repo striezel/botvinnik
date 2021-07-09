@@ -26,7 +26,7 @@ namespace bvn
 
 const int Sync::JsonError = 1; /**< non-zero error code for JSON errors */
 
-void Sync::parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& rooms, std::vector<std::string>& invitedRoomIds)
+bool Sync::parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& rooms, std::vector<std::string>& invitedRoomIds)
 {
   rooms.clear();
   invitedRoomIds.clear();
@@ -37,12 +37,12 @@ void Sync::parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& r
     // No rooms element is available. This can happen, if no new room events
     // have occurred since the last sync request. In this case, nothing else is
     // left to do here.
-    return;
+    return true;
   }
   if (jsonRooms.type() != simdjson::dom::element_type::OBJECT)
   {
     std::cerr << "Error: The rooms element is not an object!" << std::endl;
-    return;
+    return false;
   }
 
   {
@@ -53,7 +53,7 @@ void Sync::parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& r
       if (join.type() != simdjson::dom::element_type::OBJECT)
       {
         std::cerr << "Error: The join element is not an object!" << std::endl;
-        return;
+        return false;
       }
 
       // iterate over rooms
@@ -62,11 +62,11 @@ void Sync::parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& r
       if (error)
       {
         std::cerr << "Error: 'join' is not an object!" << std::endl;
-        return;
+        return false;
       }
 
       if (parseJoinedRooms(joinObject, rooms) != 0)
-        return;
+        return false;
     }
   }
 
@@ -78,11 +78,14 @@ void Sync::parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& r
       if (invite.type() != simdjson::dom::element_type::OBJECT)
       {
         std::cerr << "Error: The invite element is not an object!" << std::endl;
-        return;
+        return false;
       }
-      parseInvitedRooms(invite, invitedRoomIds);
+      return parseInvitedRooms(invite, invitedRoomIds) == 0;
     }
   }
+
+  // No errors occurred.
+  return true;
 }
 
 int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix::Room>& rooms)

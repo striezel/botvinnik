@@ -476,9 +476,7 @@ bool Matrix::sync(std::string& nextBatch, std::vector<matrix::Room>& rooms, std:
     return false;
   }
 
-  Sync::parse(doc, rooms, invites);
-
-  return true;
+  return Sync::parse(doc, rooms, invites);
 }
 
 bool Matrix::sendMessage(const std::string& roomId, const Message& message)

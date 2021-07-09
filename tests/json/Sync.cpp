@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ TEST_CASE("parsing sync events")
     )json";
     const auto [doc, error] = parser.parse(json);
     REQUIRE_FALSE( error );
-    Sync::parse(doc, rooms, invitedRoomIds);
+    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
 
     // Rooms should be empty (no data in join element).
     REQUIRE( rooms.size() == 0 );
@@ -156,7 +156,7 @@ TEST_CASE("parsing sync events")
     )json";
     const auto [doc, error] = parser.parse(json);
     REQUIRE_FALSE( error );
-    Sync::parse(doc, rooms, invitedRoomIds);
+    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
 
     // Rooms should be empty (no join element).
     REQUIRE( rooms.size() == 0 );
@@ -301,7 +301,7 @@ TEST_CASE("parsing sync events")
     )json";
     const auto [doc, error] = parser.parse(json);
     REQUIRE_FALSE( error );
-    Sync::parse(doc, rooms, invitedRoomIds);
+    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
 
     // Invited rooms should be empty (no data in invite element).
     REQUIRE( invitedRoomIds.size() == 0 );
@@ -430,7 +430,7 @@ TEST_CASE("parsing sync events")
     )json";
     const auto [doc, error] = parser.parse(json);
     REQUIRE_FALSE( error );
-    Sync::parse(doc, rooms, invitedRoomIds);
+    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
 
     // Invited rooms should be empty (no invite element).
     REQUIRE( invitedRoomIds.size() == 0 );
@@ -632,7 +632,7 @@ TEST_CASE("parsing sync events")
     )json";
     const auto [doc, error] = parser.parse(json);
     REQUIRE_FALSE( error );
-    Sync::parse(doc, rooms, invitedRoomIds);
+    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
 
     // Invited rooms should be empty (no data in invite element).
     REQUIRE( invitedRoomIds.size() == 0 );
@@ -702,7 +702,7 @@ TEST_CASE("parsing sync events")
     )json";
     const auto [doc, error] = parser.parse(json);
     REQUIRE_FALSE( error );
-    Sync::parse(doc, rooms, invitedRoomIds);
+    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
 
     // Only one room should be present.
     REQUIRE( rooms.size() == 1 );
@@ -777,7 +777,7 @@ TEST_CASE("parsing sync events")
     )json";
     const auto [doc, error] = parser.parse(json);
     REQUIRE_FALSE( error );
-    Sync::parse(doc, rooms, invitedRoomIds);
+    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
 
     // Only one room should be present.
     REQUIRE( rooms.size() == 1 );
@@ -809,7 +809,7 @@ TEST_CASE("parsing sync events")
     )json";
     const auto [doc, error] = parser.parse(json);
     REQUIRE_FALSE( error );
-    Sync::parse(doc, rooms, invitedRoomIds);
+    REQUIRE( Sync::parse(doc, rooms, invitedRoomIds) );
 
     // No room should be present.
     REQUIRE( rooms.size() == 0 );

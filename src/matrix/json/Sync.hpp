@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -39,8 +39,10 @@ struct Sync
      * \param doc   parsed JSON document
      * \param rooms vector of rooms to populate with parsed data
      * \param invitedRoomIds  vector of rooms ids to populate with parsed data
+     * \return Returns true, if the parsing was successful.
+     *         Returns false otherwise.
      */
-    static void parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& rooms, std::vector<std::string>& invitedRoomIds);
+    static bool parse(const simdjson::dom::element& doc, std::vector<matrix::Room>& rooms, std::vector<std::string>& invitedRoomIds);
   private:
     static const int JsonError; /**< non-zero error code for JSON errors */
 
