@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2021-07-??)
+## Version 0.3.6 (2021-07-11)
 
 The parsing of Matrix power levels is now stricter, allowing less deviation from
 the Matrix specification.
