@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -142,7 +142,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
     const auto [exact, exactError] = doc.at_pointer("/results/exact");
     if (exactError)
     {
-      std::cerr << "Error: JSON response from Debian does not contain 'results/exact' element!" << std::endl
+      std::cerr << "Error: JSON response from Debian does not contain '/results/exact' element!" << std::endl
                 << "Response is: " << response << std::endl;
       return Message("The request to get information about Debian packages failed. Debian server returned unexpected JSON format.");
     }
@@ -151,7 +151,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
       const auto [exactName, error2] = exact["name"];
       if (error2 || exactName.type() != simdjson::dom::element_type::STRING)
       {
-        std::cerr << "Error: JSON response from Debian does not contain 'results/exact/name' element!" << std::endl
+        std::cerr << "Error: JSON response from Debian does not contain '/results/exact/name' element!" << std::endl
                   << "Response is: " << response << std::endl;
         return Message("The request to get information about Debian packages failed. Debian server returned unexpected JSON format.");
       }
@@ -162,7 +162,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
   const auto [other, otherError] = doc.at_pointer("/results/other");
   if (otherError || other.type() != simdjson::dom::element_type::ARRAY)
   {
-    std::cerr << "Error: JSON response from Debian does not contain 'results/other' element!" << std::endl
+    std::cerr << "Error: JSON response from Debian does not contain '/results/other' element!" << std::endl
               << "Response is: " << response << std::endl;
     return Message("The request to get information about Debian packages failed. Debian server returned unexpected JSON format.");
   }
@@ -172,7 +172,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
     const auto [itemName, itemError] = item["name"];
     if (itemError || itemName.type() != simdjson::dom::element_type::STRING)
     {
-      std::cerr << "Error: JSON response from Debian does not contain 'results/other/name' element!" << std::endl
+      std::cerr << "Error: JSON response from Debian does not contain '/results/other/name' element!" << std::endl
                 << "Response is: " << response << std::endl;
       return Message("The request to get information about Debian packages failed. Debian server returned unexpected JSON format.");
     }
