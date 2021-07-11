@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -134,14 +134,16 @@ Message Wikipedia::extract(const std::string& lang, const std::string_view& comm
   }
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response);
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response).get(doc);
   if (error)
   {
     std::cerr << "Error while trying to parse JSON response from Wikipedia!" << std::endl
               << "Response is: " << response << std::endl;
     return Message("The request to get information from Wikipedia failed. Wikipedia server returned invalid JSON.");
   }
-  const auto [pages, pagesError] = doc.at_pointer("/query/pages");
+  simdjson::dom::element pages;
+  const auto pagesError = doc.at_pointer("/query/pages").get(pages);
   if (pagesError || pages.type() != simdjson::dom::element_type::OBJECT)
   {
     std::cerr << "Error while trying to parse JSON response from Wikipedia! JSON data does not contain a '/query/pages' object!" << std::endl;

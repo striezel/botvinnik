@@ -63,14 +63,16 @@ void Debian::getVersion(Packages::nameVersion& pack, const std::string& suite)
   }
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response);
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response).get(doc);
   if (error)
   {
     std::cerr << "Error while trying to parse JSON response from Debian!" << std::endl
               << "Response is: " << response << std::endl;
     return;
   }
-  const auto [v, vError] = doc.at_pointer("/versions/0/version");
+  simdjson::dom::element v;
+  const auto vError = doc.at_pointer("/versions/0/version").get(v);
   if (vError || v.type() != simdjson::dom::element_type::STRING)
   {
     return;
@@ -129,7 +131,8 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
   }
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response);
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response).get(doc);
   if (error)
   {
     std::cerr << "Error while trying to parse JSON response from Debian!" << std::endl
@@ -139,7 +142,8 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
 
   Packages packs;
   {
-    const auto [exact, exactError] = doc.at_pointer("/results/exact");
+    simdjson::dom::element exact;
+    const auto exactError = doc.at_pointer("/results/exact").get(exact);
     if (exactError)
     {
       std::cerr << "Error: JSON response from Debian does not contain '/results/exact' element!" << std::endl
@@ -148,7 +152,8 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
     }
     if (exact.type() == simdjson::dom::element_type::OBJECT)
     {
-      const auto [exactName, error2] = exact["name"];
+      simdjson::dom::element exactName;
+      const auto error2 = exact["name"].get(exactName);
       if (error2 || exactName.type() != simdjson::dom::element_type::STRING)
       {
         std::cerr << "Error: JSON response from Debian does not contain '/results/exact/name' element!" << std::endl
@@ -159,7 +164,8 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
     }
   }
 
-  const auto [other, otherError] = doc.at_pointer("/results/other");
+  simdjson::dom::element other;
+  const auto otherError = doc.at_pointer("/results/other").get(other);
   if (otherError || other.type() != simdjson::dom::element_type::ARRAY)
   {
     std::cerr << "Error: JSON response from Debian does not contain '/results/other' element!" << std::endl
@@ -169,7 +175,8 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
 
   for (const auto & item : other)
   {
-    const auto [itemName, itemError] = item["name"];
+    simdjson::dom::element itemName;
+    const auto itemError = item["name"].get(itemName);
     if (itemError || itemName.type() != simdjson::dom::element_type::STRING)
     {
       std::cerr << "Error: JSON response from Debian does not contain '/results/other/name' element!" << std::endl
