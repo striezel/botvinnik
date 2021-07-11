@@ -50,7 +50,8 @@ std::optional<XkcdData> XkcdData::get(unsigned int num)
   }
 
   simdjson::dom::parser parser;
-  const auto [doc, parseError] = parser.parse(response);
+  simdjson::dom::element doc;
+  const auto parseError = parser.parse(response).get(doc);
   if (parseError)
   {
     std::cerr << "Error while trying to parse JSON response from xkcd.com!" << std::endl
@@ -60,7 +61,8 @@ std::optional<XkcdData> XkcdData::get(unsigned int num)
 
   XkcdData data;
 
-  auto [value, error] = doc["num"];
+  simdjson::dom::element value;
+  auto error = doc["num"].get(value);
   if (error || value.type() != simdjson::dom::element_type::INT64)
   {
     std::cerr << "Error while trying to parse JSON response from xkcd.com! JSON data does not contain a 'num' member!" << std::endl;

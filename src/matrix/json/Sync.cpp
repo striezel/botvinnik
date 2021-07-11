@@ -32,14 +32,16 @@ bool Sync::parse(const std::string& json, std::string& nextBatch, std::vector<ma
   invitedRoomIds.clear();
 
   simdjson::dom::parser parser;
-  const auto [doc, parseError] = parser.parse(json);
+  simdjson::dom::element doc;
+  const auto parseError = parser.parse(json).get(doc);
   if (parseError)
   {
     std::cerr << "Error while syncing events: Unable to parse JSON data!" << std::endl
               << "Response is: " << json << std::endl;
     return false;
   }
-  const auto [jsonNextBatch, jsonError] = doc["next_batch"];
+  simdjson::dom::element jsonNextBatch;
+  const auto jsonError = doc["next_batch"].get(jsonNextBatch);
   if (jsonError || jsonNextBatch.type() != simdjson::dom::element_type::STRING)
   {
     std::cerr << "Error while syncing events: JSON data does not contain"
@@ -60,7 +62,8 @@ bool Sync::parse(const std::string& json, std::string& nextBatch, std::vector<ma
   }
 
   // parse room data
-  auto [jsonRooms, error] = doc["rooms"];
+  simdjson::dom::element jsonRooms;
+  auto error = doc["rooms"].get(jsonRooms);
   if (error)
   {
     // No rooms element is available. This can happen, if no new room events
@@ -123,7 +126,8 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
   {
     matrix::Room room;
     room.id = keyValue.key;
-    auto [roomObject, error] = keyValue.value.get<simdjson::dom::object>();
+    simdjson::dom::object roomObject;
+    auto error = keyValue.value.get<simdjson::dom::object>(roomObject);
     if (error)
     {
       std::cerr << "Error: 'join' contains at least one non-object!" << std::endl;

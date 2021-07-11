@@ -28,7 +28,8 @@ namespace bvn::matrix::json
 std::optional<PowerLevels> parsePowerLevels(const std::string& json)
 {
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(json);
+  simdjson::dom::element doc;
+  const auto error = parser.parse(json).get(doc);
   if (error)
   {
     std::cerr << "Error while parsing power levels: Unable to parse JSON data!" << std::endl
@@ -78,7 +79,8 @@ std::optional<PowerLevels> parsePowerLevels(const std::string& json)
       return std::optional<matrix::PowerLevels>();
     }
   }
-  const auto [users, errUsers] = doc["users"];
+  simdjson::dom::element users;
+  const auto errUsers = doc["users"].get(users);
   if (!errUsers)
   {
     if (users.type() == simdjson::dom::element_type::OBJECT)

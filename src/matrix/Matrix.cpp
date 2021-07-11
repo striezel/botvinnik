@@ -123,14 +123,16 @@ bool Matrix::login()
   */
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response);
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response).get(doc);
   if (error)
   {
     std::cerr << "Error while trying to log in: Unable to parse JSON data!" << std::endl
               << "Response is: " << response << std::endl;
     return false;
   }
-  const auto [token, tokenError] = doc["access_token"];
+  simdjson::dom::element token;
+  const auto tokenError = doc["access_token"].get(token);
   if (tokenError || !token.is<std::string_view>())
   {
     std::cerr << "Error while trying to log in: JSON data does not contain an access_token element string!" << std::endl;
@@ -197,15 +199,17 @@ bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
   }
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response);
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response).get(doc);
   if (error)
   {
     std::cerr << "Error while trying to list rooms: Unable to parse JSON data!" << std::endl
               << "Response is: " << response << std::endl;
     return false;
   }
-  const auto [joined_rooms, jsonError] = doc["joined_rooms"];
-  if (jsonError || joined_rooms.type() != simdjson::dom::element_type::ARRAY)
+  simdjson::dom::element joined_rooms;
+  const auto jsonError = doc["joined_rooms"].get(joined_rooms);
+  if (jsonError || !joined_rooms.is_array())
   {
     std::cerr << "Error while trying to list rooms: JSON data does not contain"
               << " a joined_rooms element or it's not an array!" << std::endl;
@@ -282,14 +286,16 @@ std::optional<std::string>  Matrix::roomName(const std::string& roomId)
   }
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response);
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response).get(doc);
   if (error)
   {
     std::cerr << "Error while trying get room name: Unable to parse JSON data!" << std::endl
               << "Response is: " << response << std::endl;
     return std::optional<std::string>();
   }
-  const auto [jsonName, jsonError] = doc["name"];
+  simdjson::dom::element jsonName;
+  const auto jsonError = doc["name"].get(jsonName);
   if (jsonError || jsonName.type() != simdjson::dom::element_type::STRING)
   {
     std::cerr << "Error while trying to get room name: JSON data does not contain"
@@ -523,14 +529,16 @@ std::optional<int64_t> Matrix::getUploadLimit()
   }
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response);
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response).get(doc);
   if (error)
   {
     std::cerr << "Error retrieving upload limit: Unable to parse JSON data!" << std::endl
               << "Response is: " << response << std::endl;
     return std::optional<int64_t>();
   }
-  const auto [uploadLimit, jsonError] = doc["m.upload.size"];
+  simdjson::dom::element uploadLimit;
+  const auto jsonError = doc["m.upload.size"].get(uploadLimit);
   if (jsonError || uploadLimit.type() != simdjson::dom::element_type::INT64)
   {
     std::clog << "Warning: Server did not disclose upload size!" << std::endl;
@@ -580,14 +588,16 @@ std::optional<std::string> Matrix::uploadString(const std::string& data, const s
   }
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response);
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response).get(doc);
   if (error)
   {
     std::cerr << "Error upload file: Unable to parse JSON response!" << std::endl
               << "Response is: " << response << std::endl;
     return std::optional<std::string>();
   }
-  const auto [contentUri, jsonError] = doc["content_uri"];
+  simdjson::dom::element contentUri;
+  const auto jsonError = doc["content_uri"].get(contentUri);
   if (jsonError || contentUri.type() != simdjson::dom::element_type::STRING)
   {
     std::clog << "Warning: Server did not return a content URI for upload!" << std::endl;
@@ -675,7 +685,8 @@ std::optional<std::string> Matrix::encryptionAlgorithm(const std::string& roomId
   }
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response);
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response).get(doc);
   if (error)
   {
     std::cerr << "Error getting room's encryption algorithm: Unable to parse "
@@ -683,7 +694,8 @@ std::optional<std::string> Matrix::encryptionAlgorithm(const std::string& roomId
               << std::endl;
     return std::optional<std::string>();
   }
-  const auto [algorithm, jsonError] = doc["algorithm"];
+  simdjson::dom::element algorithm;
+  const auto jsonError = doc["algorithm"].get(algorithm);
   if (jsonError || algorithm.type() != simdjson::dom::element_type::STRING)
   {
     std::cerr << "Error: Server did not respond with encryption algorithm!"

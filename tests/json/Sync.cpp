@@ -829,4 +829,23 @@ TEST_CASE("parsing sync events")
     // Should have been invited into no rooms.
     REQUIRE( invitedRoomIds.size() == 0 );
   }
+
+  SECTION("next_batch is not a string")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch": 12.34
+    }
+    )json";
+    // Parsing fails, because next_batch must be a string accordring to the
+    // Matrix specification.
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be empty.
+    REQUIRE( nextBatch.empty() );
+    // No room should be present.
+    REQUIRE( rooms.size() == 0 );
+    // Should have been invited into no rooms.
+    REQUIRE( invitedRoomIds.size() == 0 );
+  }
 }

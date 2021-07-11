@@ -119,7 +119,8 @@ std::optional<std::string> performApiRequest(const std::string& url)
  */
 CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
 {
-  auto [cases_elem, error] = json.at_pointer("/timeline/cases");
+  simdjson::dom::element cases_elem;
+  auto error = json.at_pointer("/timeline/cases").get(cases_elem);
   if (error)
   {
     // Just try "cases", as it is used by worldwide data.
@@ -131,14 +132,16 @@ CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
       return CovidNumbers();
     }
   }
-  const auto [cases, err] = cases_elem.get_object();
+  simdjson::dom::object cases;
+  const auto err = cases_elem.get_object().get(cases);
   if (err)
   {
     std::cerr << "JSON from API contains cases, but it is not an object!" << std::endl;
     return CovidNumbers();
   }
 
-  auto [deaths_elem, error_d] = json.at_pointer("/timeline/deaths");
+  simdjson::dom::element deaths_elem;
+  auto error_d = json.at_pointer("/timeline/deaths").get(deaths_elem);
   if (error_d)
   {
     // Just try "deaths", as it is used by worldwide data.
@@ -150,7 +153,8 @@ CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
       return CovidNumbers();
     }
   }
-  const auto [deaths, err2] = deaths_elem.get_object();
+  simdjson::dom::object deaths;
+  const auto err2 = deaths_elem.get_object().get(deaths);
   if (err2)
   {
     std::cerr << "JSON from API contains deaths, but it is not an object!" << std::endl;
@@ -177,7 +181,8 @@ CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
     const auto isoDate = std::string("20").append(yearStr) + "-"
                        + std::string(monthStr.size() == 1, '0') + monthStr + "-"
                        + std::string(dayStr.size() == 1, '0') + dayStr;
-    const auto [infections, error_i64] = keyValue.value.get<int64_t>();
+    int64_t infections;
+    const auto error_i64 = keyValue.value.get<int64_t>().get(infections);
     if (error_i64)
     {
       std::cerr << "Error: JSON from API contains a non-number as number of infections!" << std::endl;
@@ -205,7 +210,8 @@ CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
     const auto isoDate = std::string("20").append(yearStr) + "-"
                        + std::string(monthStr.size() == 1, '0') + monthStr + "-"
                        + std::string(dayStr.size() == 1, '0') + dayStr;
-    const auto [deaths, error_i64] = keyValue.value.get<int64_t>();
+    int64_t deaths;
+    const auto error_i64 = keyValue.value.get<int64_t>().get(deaths);
     if (error_i64)
     {
       std::cerr << "Error: JSON from API contains a non-number as number of deaths!" << std::endl;
@@ -260,7 +266,8 @@ CovidNumbers requestHistoricalApi(const std::string& geoId, const bool all)
     return CovidNumbers();
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response.value());
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response.value()).get(doc);
   if (error)
   {
     std::cerr << "Error while trying to parse JSON response from disease.sh API!" << std::endl
@@ -279,7 +286,8 @@ CovidNumbers requestHistoricalApiProvince(const std::string& geoId, const std::s
     return CovidNumbers();
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response.value());
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response.value()).get(doc);
   if (error)
   {
     std::cerr << "Error while trying to parse JSON response from disease.sh API!" << std::endl
@@ -298,7 +306,8 @@ CovidNumbers requestHistoricalApiUsaCounties(const std::string& county, const bo
     return CovidNumbers();
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response.value());
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response.value()).get(doc);
   if (error)
   {
     std::cerr << "Error while trying to parse JSON response from disease.sh API!" << std::endl
@@ -309,7 +318,8 @@ CovidNumbers requestHistoricalApiUsaCounties(const std::string& county, const bo
   // The API for US counties returns an array, where each element within is the
   // data for a province within the area. To get the total numbers, those have
   // to be added up.
-  const auto [vec, error_array] = doc.get_array();
+  simdjson::dom::array vec;
+  const auto error_array = doc.get_array().get(vec);
   if (error_array)
   {
     std::cerr << "Error: Found invalid JSON format in request for USA counties." << std::endl;
@@ -380,14 +390,16 @@ CovidNumbers requestHistoricalApiFirstOfMultipleProvinces(const std::string& geo
     return CovidNumbers();
 
   simdjson::dom::parser parser;
-  const auto [doc, error] = parser.parse(response.value());
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response.value()).get(doc);
   if (error)
   {
     std::cerr << "Error while trying to parse JSON response from disease.sh API!" << std::endl
               << "Response is: " << response.value() << std::endl;
     return CovidNumbers();
   }
-  const auto [vec, error_array] = doc.get_array();
+  simdjson::dom::array vec;
+  const auto error_array = doc.get_array().get(vec);
   if (error_array)
   {
     std::cerr << "Error: Found invalid JSON format in request for multiple provinces." << std::endl;
