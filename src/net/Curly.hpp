@@ -154,15 +154,6 @@ class Curly
     bool setPutData(const std::string& data);
 
 
-    /** \brief sets the path to a certificate file to verify the peer with
-     *
-     * \param certFile  path to the file holding one or more certificates
-     * \return Returns true, if the path could be set.
-     * Returns false, if the operation failed.
-     */
-    bool setCertificateFile(const std::string& certFile);
-
-
     /** \brief limits the speed of an upload operation
      *
      * \param maxBytesPerSecond  limit in bytes per second
@@ -308,7 +299,6 @@ class Curly
     bool m_UsePostBody; /**< whether to use the explicit post body */
     std::string m_PutData; /**< plain put data */
     bool m_UsePutData;  /**< whether to use the explicit put data */
-    std::string m_certFile; /**< the path to the certificate file to verify the peer with */
     long m_LastResponseCode; /**< response code of the last request */
     std::string m_LastContentType; /**< string that holds the last content type */
     bool m_followRedirects; /**< whether to follow redirects */
