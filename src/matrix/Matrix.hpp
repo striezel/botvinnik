@@ -84,11 +84,11 @@ class Matrix
     /** \brief Gets the name of a room.
      *
      * \param roomId   id of the room
-     * \param name     string that will be used to store the name
-     * \return Returns true, if name retrieval was successful.
-     *         Returns false otherwise.
+     * \return Returns an optional containing the name, if name retrieval was successful.
+     *         Note that this may also contain an empty string, if no name is set.
+     *         Returns an empty optional, if the retrieval failed.
      */
-    bool roomName(const std::string& roomId, std::string& name);
+    std::optional<std::string> roomName(const std::string& roomId);
 
 
     /** \brief Joins the room with the given room id.

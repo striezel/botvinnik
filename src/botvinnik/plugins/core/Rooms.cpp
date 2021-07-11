@@ -68,13 +68,13 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
       // Add display name when possible.
       if (displayNameRequests < reqestLimit)
       {
-        std::string name;
+        const auto name = theMatrix.roomName(id);
         ++displayNameRequests;
-        if (theMatrix.roomName(id, name))
+        if (name.has_value() && !name.value().empty())
         {
-          msg.body.append(" (\"").append(name).append("\")");
+          msg.body.append(" (\"").append(name.value()).append("\")");
         }
-        else
+        else if (!name.has_value())
         {
           // Request failed, may be due to rate limit. Avoid further requests.
           displayNameRequests = reqestLimit;

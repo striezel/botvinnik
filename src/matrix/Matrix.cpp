@@ -251,12 +251,12 @@ std::string Matrix::encodeRoomId(const std::string& roomId)
   return encodedRoomId;
 }
 
-bool Matrix::roomName(const std::string& roomId, std::string& name)
+std::optional<std::string>  Matrix::roomName(const std::string& roomId)
 {
   if (!isLoggedIn())
   {
     std::cerr << "Error: Need to be logged in to get room name!" << std::endl;
-    return false;
+    return std::optional<std::string>();
   }
 
   std::string response;
@@ -270,10 +270,15 @@ bool Matrix::roomName(const std::string& roomId, std::string& name)
   #endif
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
+    if (curl.getResponseCode() == 404)
+    {
+      // Not found means that no name has been set.
+      return std::string();
+    }
     std::cerr << "Error: Listing joined rooms failed!" << std::endl
               << "HTTP status code: " << curl.getResponseCode() << std::endl
               << "Response: " << response << std::endl;
-    return false;
+    return std::optional<std::string>();
   }
 
   simdjson::dom::parser parser;
@@ -282,18 +287,17 @@ bool Matrix::roomName(const std::string& roomId, std::string& name)
   {
     std::cerr << "Error while trying get room name: Unable to parse JSON data!" << std::endl
               << "Response is: " << response << std::endl;
-    return false;
+    return std::optional<std::string>();
   }
   const auto [jsonName, jsonError] = doc["name"];
   if (jsonError || jsonName.type() != simdjson::dom::element_type::STRING)
   {
     std::cerr << "Error while trying to get room name: JSON data does not contain"
               << " a name element or it's not a string!" << std::endl;
-    return false;
+    return std::optional<std::string>();
   }
 
-  name = jsonName.get<std::string_view>().value();
-  return true;
+  return std::string(jsonName.get<std::string_view>().value());
 }
 
 bool Matrix::joinRoom(const std::string& roomId)
