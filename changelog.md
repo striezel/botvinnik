@@ -9,6 +9,9 @@ improvements may be omitted.)_
 The library that does the JSON parsing (simdjson) has been updated from version
 0.7.1 to version 0.9.1.
 
+The `!rooms` command will now display room names even in cases where one of the
+rooms has no name.
+
 ## Version 0.3.6 (2021-07-11)
 
 The parsing of Matrix power levels is now stricter, allowing less deviation from
