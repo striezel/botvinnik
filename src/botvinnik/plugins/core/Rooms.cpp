@@ -61,12 +61,12 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
 
     Message msg("The bot is currently member of the following rooms:");
     unsigned int displayNameRequests = 0;
-    const unsigned int reqestLimit = 7;
+    const unsigned int requestLimit = 7;
     for (const auto& id : rooms)
     {
       msg.body.append("\n\t").append(id);
       // Add display name when possible.
-      if (displayNameRequests < reqestLimit)
+      if (displayNameRequests < requestLimit)
       {
         const auto name = theMatrix.roomName(id);
         ++displayNameRequests;
@@ -77,8 +77,11 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
         else if (!name.has_value())
         {
           // Request failed, may be due to rate limit. Avoid further requests.
-          displayNameRequests = reqestLimit;
+          displayNameRequests = requestLimit;
         }
+        // Note: The case, where (name.has_value() && name.value().empty()) is
+        // true is not handled explicitly, because it is not an error and there
+        // is no room name to add to the message.
       }
     }
     switch (rooms.size())
