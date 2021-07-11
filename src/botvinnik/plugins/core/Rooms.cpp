@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,51 +38,7 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
 {
   if (command == "rooms")
   {
-    if (theMatrix.configuration().isAdminUser(std::string(userId)))
-    {
-      std::vector<std::string> rooms;
-      if (!theMatrix.joinedRooms(rooms))
-      {
-        return Message("Error: Could not retrieve joined rooms from homeserver.");
-      }
-
-      Message msg("The bot is currently member of the following rooms:");
-      unsigned int displayNameRequests = 0;
-      const unsigned int reqestLimit = 7;
-      for (const auto& id : rooms)
-      {
-        msg.body.append("\n\t").append(id);
-        // Add display name when possible.
-        if (displayNameRequests < reqestLimit)
-        {
-          std::string name;
-          ++displayNameRequests;
-          if (theMatrix.roomName(id, name))
-          {
-            msg.body.append(" (\"").append(name).append("\")");
-          }
-          else
-          {
-            // Request failed, may be due to rate limit. Avoid further requests.
-            displayNameRequests = reqestLimit;
-          }
-        }
-      }
-      switch (rooms.size())
-      {
-        case 0:
-             msg.body.append("\nnone");
-             break;
-        case 1:
-             msg.body.append("\nThat is one room only.");
-             break;
-        default:
-             msg.body.append("\nThese are ").append(std::to_string(rooms.size())).append(" rooms in total.");
-             break;
-      }
-      return msg;
-    }
-    else
+    if (!theMatrix.configuration().isAdminUser(std::string(userId)))
     {
       // User is not allowed to show the bot's rooms.
       Message msg(std::string("You are not allowed to list active rooms of the bot, ").append(userId)
@@ -96,6 +52,48 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
       }
       return msg;
     }
+
+    std::vector<std::string> rooms;
+    if (!theMatrix.joinedRooms(rooms))
+    {
+      return Message("Error: Could not retrieve joined rooms from homeserver.");
+    }
+
+    Message msg("The bot is currently member of the following rooms:");
+    unsigned int displayNameRequests = 0;
+    const unsigned int reqestLimit = 7;
+    for (const auto& id : rooms)
+    {
+      msg.body.append("\n\t").append(id);
+      // Add display name when possible.
+      if (displayNameRequests < reqestLimit)
+      {
+        std::string name;
+        ++displayNameRequests;
+        if (theMatrix.roomName(id, name))
+        {
+          msg.body.append(" (\"").append(name).append("\")");
+        }
+        else
+        {
+          // Request failed, may be due to rate limit. Avoid further requests.
+          displayNameRequests = reqestLimit;
+        }
+      }
+    }
+    switch (rooms.size())
+    {
+      case 0:
+           msg.body.append("\nnone");
+           break;
+      case 1:
+           msg.body.append("\nThat is one room only.");
+           break;
+      default:
+           msg.body.append("\nThese are ").append(std::to_string(rooms.size())).append(" rooms in total.");
+           break;
+    }
+    return msg;
   }
   else if (command == "leave")
   {
