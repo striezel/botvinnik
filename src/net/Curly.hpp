@@ -73,15 +73,6 @@ class Curly
     bool addPostField(const std::string& name, const std::string& value);
 
 
-    /** \brief checks, if this class instance has a POST field with the given name
-     *
-     * \param name   name of the field
-     * \return Returns true, if a field with the given name exists.
-     *         Returns false otherwise.
-     */
-    bool hasPostField(const std::string& name) const;
-
-
     /** \brief returns the value of a post field, if it exists
      *
      * \param name  name of the field

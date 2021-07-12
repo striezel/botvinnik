@@ -123,11 +123,6 @@ bool Curly::addPostField(const std::string& name, const std::string& value)
     return false;
 }
 
-bool Curly::hasPostField(const std::string& name) const
-{
-  return (m_PostFields.find(name) != m_PostFields.end());
-}
-
 std::string Curly::getPostField(const std::string& name) const
 {
   const auto iter = m_PostFields.find(name);
