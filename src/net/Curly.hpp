@@ -73,27 +73,6 @@ class Curly
     bool addPostField(const std::string& name, const std::string& value);
 
 
-    /** \brief returns the value of a post field, if it exists
-     *
-     * \param name  name of the field
-     * \return Returns the value of the field, if it exists.
-     *         Returns empty string, if the field does not exist.
-     * \remarks Note that an empty string can also be a proper return value
-     * for an existing field. If you want to check the existence of a certain
-     * field, use hasPostField().
-     */
-    std::string getPostField(const std::string& name) const;
-
-
-    /** \brief removes a POST field that was previously set
-     *
-     * \param name   name of the field
-     * \return Returns true, if a field with the given name existed and was
-     * removed. Returns false, if no such field was present.
-     */
-    bool removePostField(const std::string& name);
-
-
     /** \brief adds a file to the request
      *
      * \param filename  name of the local file to use in the post request

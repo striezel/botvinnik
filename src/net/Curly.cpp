@@ -123,19 +123,6 @@ bool Curly::addPostField(const std::string& name, const std::string& value)
     return false;
 }
 
-std::string Curly::getPostField(const std::string& name) const
-{
-  const auto iter = m_PostFields.find(name);
-  if (iter != m_PostFields.end())
-    return iter->second;
-  return std::string();
-}
-
-bool Curly::removePostField(const std::string& name)
-{
-  return (m_PostFields.erase(name) > 0);
-}
-
 bool Curly::addFile(const std::string& filename, const std::string& field)
 {
   //No empty field or file names!
