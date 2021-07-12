@@ -73,16 +73,6 @@ class Curly
     bool addPostField(const std::string& name, const std::string& value);
 
 
-    /** \brief adds a file to the request
-     *
-     * \param filename  name of the local file to use in the post request
-     * \param field     name of the form field that contains the file
-     * \return Returns true, if a file was appended.
-     * Returns false, if operation failed.
-     */
-    bool addFile(const std::string& filename, const std::string& field);
-
-
     /** \brief gets the list of additional / custom HTTP headers
      *
      * \return Returns a vector of strings that represents the headers.
@@ -263,7 +253,6 @@ class Curly
 
     std::string m_URL; /**< URL for the request */
     std::unordered_map<std::string, std::string> m_PostFields; /**< post fields; key = name; value = field's value */
-    std::unordered_map<std::string, std::string> m_Files; /**< added files; key = field name, value = file name */
     std::vector<std::string> m_headers; /**< additional / custom headers (HTTP only) */
     std::string m_PostBody; /**< plain post body */
     bool m_UsePostBody; /**< whether to use the explicit post body */
