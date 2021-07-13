@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,6 +19,9 @@
 */
 
 #include "Basic.hpp"
+#include "../../../../third-party/nlohmann/json.hpp"
+#include "../../../../third-party/simdjson/simdjson.h"
+#include "../../../net/Curly.hpp"
 #include "../../../util/GitInfos.hpp"
 #include "../../../Version.hpp"
 
@@ -64,10 +67,37 @@ Message Basic::handleCommand(const std::string_view& command, const std::string_
   else if (command == "version")
   {
     GitInfos info;
-    return Message("botvinnik, " + bvn::version + "\n"
-            + "\n"
-            + "Version control commit: " + info.commit() + "\n"
-            + "Version control date:   " + info.date());
+    auto txt = "botvinnik, " + bvn::version + "\n"
+             + "\n"
+             + "Version control commit: " + info.commit() + "\n"
+             + "Version control date:   " + info.date() + "\n\n"
+             + "Libraries:\n"
+             + "  * simdjson " + STRINGIFY(SIMDJSON_VERSION)
+             + ", using implementation "
+             + simdjson::active_implementation->name() + " ("
+             + simdjson::active_implementation->description() + ")\n"
+             + "  * nlohmann/json " + std::to_string(NLOHMANN_JSON_VERSION_MAJOR)
+             + "." + std::to_string(NLOHMANN_JSON_VERSION_MINOR) + "."
+             + std::to_string(NLOHMANN_JSON_VERSION_PATCH) + "\n";
+    const auto ver = Curly::curlVersion();
+    std::string data;
+    if (!ver.cURL.empty())
+    {
+      txt.append("  * curl " + ver.cURL);
+      if (!ver.ssl.empty())
+      {
+        txt.append(" with " + ver.ssl);
+        if (!ver.libz.empty())
+          txt.append(" and zlib/" + ver.libz);
+      }
+      else if (!ver.libz.empty())
+          txt.append(" with zlib/" + ver.libz);
+    }
+    else
+    {
+      txt.append("  * curl: unknown version");
+    }
+    return Message(txt);
   }
   else if (command == "whoami")
   {

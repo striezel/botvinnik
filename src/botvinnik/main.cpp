@@ -19,8 +19,11 @@
 */
 
 #include <iostream>
+#include "../../third-party/nlohmann/json.hpp"
+#include "../../third-party/simdjson/simdjson.h"
 #include "../conf/Configuration.hpp"
 #include "../matrix/Matrix.hpp"
+#include "../net/Curly.hpp"
 #include "../util/GitInfos.hpp"
 #include "../ReturnCodes.hpp"
 #include "../Version.hpp"
@@ -42,7 +45,35 @@ void showVersion()
   std::cout << "botvinnik, " << bvn::version << "\n"
             << "\n"
             << "Version control commit: " << info.commit() << "\n"
-            << "Version control date:   " << info.date() << std::endl;
+            << "Version control date:   " << info.date() << "\n\n"
+            << "Libraries:" << std::endl
+            << "  * simdjson " << STRINGIFY(SIMDJSON_VERSION)
+            << ", using implementation "
+            << simdjson::active_implementation->name() << " ("
+            << simdjson::active_implementation->description() << ")" << std::endl
+            << "  * nlohmann/json "
+            << NLOHMANN_JSON_VERSION_MAJOR << "." << NLOHMANN_JSON_VERSION_MINOR
+            << "." << NLOHMANN_JSON_VERSION_PATCH << std::endl;
+  const auto ver = Curly::curlVersion();
+  std::string data;
+  if (!ver.cURL.empty())
+  {
+    std::cout << "  * curl " << ver.cURL;
+    if (!ver.ssl.empty())
+    {
+      std::cout << " with " << ver.ssl;
+      if (!ver.libz.empty())
+        std::cout << " and zlib/" << ver.libz;
+    }
+    else if (!ver.libz.empty())
+        std::cout << " with zlib/" << ver.libz;
+    std::cout << std::endl;
+  }
+  else
+  {
+    std::cout << "  * curl: unknown version" << std::endl;
+  }
+
 }
 
 void showHelp()

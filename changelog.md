@@ -4,6 +4,12 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2021-07-??)
+
+The `!version` does now contains information about the used libraries, too. The
+same information is included when invoking the executable with the `--version`
+parameter on the command line.
+
 ## Version 0.3.7 (2021-07-11)
 
 The library that does the JSON parsing (simdjson) has been updated from version
