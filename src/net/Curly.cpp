@@ -265,6 +265,20 @@ bool Curly::perform(std::string& response)
     return false;
   }
 
+  #if CURL_AT_LEAST_VERSION(7, 54, 0)
+  // In curl 7.54.0 and later, the CURLOPT_SSLVERSION option can be used to set
+  // the minimal SSL / TLS version to use. CURLOPT_SSLVERSION has been available
+  // since curl 7.34.0, but then it meant the exact version, not the minimum.
+  retCode = curl_easy_setopt(handle, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+  if (retCode != CURLE_OK)
+  {
+    std::cerr << "cURL error: setting minimum TLS version failed!" << std::endl;
+    std::cerr << curl_easy_strerror(retCode) << std::endl;
+    curl_easy_cleanup(handle);
+    return false;
+  }
+  #endif
+
   //set max. upload speed
   if (m_MaxUpstreamSpeed >= 512)
   {

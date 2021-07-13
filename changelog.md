@@ -10,6 +10,12 @@ The `!version` does now contains information about the used libraries, too. The
 same information is included when invoking the executable with the `--version`
 parameter on the command line.
 
+HTTPS connections will now try to use TLS v1.2 or newer by default, if your
+system uses cURL 7.54.0 or newer. For older cURL versions, the minimum TLS
+version is 1.0 as it was before. However, even on older cURL versions that does
+not prevent botvinnik from using newer TLS versions (e. g. v1.2 or v1.3) as
+long as the SSL library supports newer TLS versions.
+
 ## Version 0.3.7 (2021-07-11)
 
 The library that does the JSON parsing (simdjson) has been updated from version
