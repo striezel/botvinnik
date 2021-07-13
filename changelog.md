@@ -16,6 +16,9 @@ version is 1.0 as it was before. However, even on older cURL versions that does
 not prevent botvinnik from using newer TLS versions (e. g. v1.2 or v1.3) as
 long as the SSL library supports newer TLS versions.
 
+Furthermore, the networking code has been stripped of unused parts, thus
+simplifying the code that interacts with the cURL library.
+
 ## Version 0.3.7 (2021-07-11)
 
 The library that does the JSON parsing (simdjson) has been updated from version
