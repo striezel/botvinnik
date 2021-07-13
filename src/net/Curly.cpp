@@ -24,6 +24,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <type_traits>
 #include <curl/curl.h>
 
 size_t writeCallbackString(char *ptr, size_t size, size_t nmemb, void *userdata)
