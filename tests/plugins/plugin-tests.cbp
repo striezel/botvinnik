@@ -32,6 +32,8 @@
 		<Unit filename="../../src/botvinnik/Bot.hpp" />
 		<Unit filename="../../src/botvinnik/FailCounter.cpp" />
 		<Unit filename="../../src/botvinnik/FailCounter.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/CheatSheet.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/CheatSheet.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Debian.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/Debian.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/Fortune.cpp" />
@@ -94,6 +96,7 @@
 		<Unit filename="../../third-party/nlohmann/json.hpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.h" />
+		<Unit filename="CheatSheet.cpp" />
 		<Unit filename="Conversion.cpp" />
 		<Unit filename="Corona.cpp" />
 		<Unit filename="Debian.cpp" />

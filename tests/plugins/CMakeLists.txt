@@ -14,6 +14,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
     ../../src/botvinnik/plugins/corona/World.cpp
     ../../src/botvinnik/plugins/corona/disease.sh.cpp
+    ../../src/botvinnik/plugins/CheatSheet.cpp
     ../../src/botvinnik/plugins/Debian.cpp
     ../../src/botvinnik/plugins/Fortune.cpp
     ../../src/botvinnik/plugins/Ping.cpp
@@ -38,6 +39,7 @@ set(plugin_tests_sources
     core/Basic.cpp
     core/Help.cpp
     core/Rooms.cpp
+    CheatSheet.cpp
     Conversion.cpp
     Corona.cpp
     Debian.cpp

@@ -33,6 +33,7 @@
 #include "plugins/core/Rooms.hpp"
 #include "plugins/convert/Conversion.hpp"
 #include "plugins/corona/Corona.hpp"
+#include "plugins/CheatSheet.hpp"
 #include "plugins/Debian.hpp"
 #include "plugins/Fortune.hpp"
 #include "plugins/Ping.hpp"
@@ -236,6 +237,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of conversion plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::CheatSheet cheat;
+  if (!bot.registerPlugin(cheat))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of cheat sheet plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

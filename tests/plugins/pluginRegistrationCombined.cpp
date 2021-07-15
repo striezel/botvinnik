@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include "../../src/botvinnik/plugins/core/Rooms.hpp"
 #include "../../src/botvinnik/plugins/convert/Conversion.hpp"
 #include "../../src/botvinnik/plugins/corona/Corona.hpp"
+#include "../../src/botvinnik/plugins/CheatSheet.hpp"
 #include "../../src/botvinnik/plugins/Debian.hpp"
 #include "../../src/botvinnik/plugins/Fortune.hpp"
 #include "../../src/botvinnik/plugins/Ping.hpp"
@@ -44,6 +45,7 @@ TEST_CASE("plugin registration for all known plugins")
   Help help(bot);
   Rooms rooms(bot.matrix());
   // other plugins
+  CheatSheet cheat;
   Conversion convert;
   Corona cov;
   Debian deb;
@@ -58,6 +60,7 @@ TEST_CASE("plugin registration for all known plugins")
     REQUIRE( bot.registerPlugin(basic) );
     REQUIRE( bot.registerPlugin(help) );
     REQUIRE( bot.registerPlugin(rooms) );
+    REQUIRE( bot.registerPlugin(cheat) );
     REQUIRE( bot.registerPlugin(convert) );
     REQUIRE( bot.registerPlugin(cov) );
     REQUIRE( bot.registerPlugin(deb) );

@@ -118,6 +118,18 @@ packages:
   ("jessie"), e.g. `!deb8 grep` will find Debian 8 packages where "grep" is
   part of the name
 
+### Information about Unix programs and programming languages
+
+The following commands search [cheat.sh](https://cheat.sh/) for information,
+so-called cheat sheets, about common Unix programs and / or programming
+languages:
+
+* `!cheat` - _(since version 0.3.9)_ displays a cheat sheet for the given Unix
+   program / command, e. g. `!cheat grep` will show a list of common usage
+   examples for the `grep` tool, while `!cheat java json parse` will show a
+   small code example how to parse JSON when using the Java programming language
+* `!cheats` - _(since version 0.3.9)_ alias for `!cheat`
+
 ### Numeric conversion commands
 
 The following commands can convert between binary, decimal and hexadecimal
