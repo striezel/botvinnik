@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2021-07-??)
+## Version 0.3.9 (2021-07-15)
 
 A new command to show cheat sheets on various topics - `!cheat` - is added. The
 cheat sheets are mainly about Unix programs and programming languages.
