@@ -203,7 +203,7 @@ the power level to ban or kick users out of the corresponding Matrix room.
 
 ## Version 0.1.7 (2020-06-24)
 
-The bot can now automatically joins Matrix rooms when invited. New room-related
+The bot can now automatically join Matrix rooms when invited. New room-related
 commands (`!rooms` and `!leave`) are added.
 
 * Any user can now invite the bot to a room of their choice. The bot will then
@@ -287,4 +287,5 @@ Russian Wikipedia.
 
 ## Version 0.0.6 and earlier
 
-You do not want to use these old versions.
+You do not want to use these old versions. They provide too little stuff that
+can be used.
