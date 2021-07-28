@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2021-07-??)
+## Version 0.3.10 (2021-07-28)
 
 An HTML injection vulnerability in the implementation of the `!cheats` command
 is fixed.
