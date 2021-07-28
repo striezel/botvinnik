@@ -80,7 +80,6 @@ Message Basic::handleCommand(const std::string_view& command, const std::string_
              + "." + std::to_string(NLOHMANN_JSON_VERSION_MINOR) + "."
              + std::to_string(NLOHMANN_JSON_VERSION_PATCH) + "\n";
     const auto ver = Curly::curlVersion();
-    std::string data;
     if (!ver.cURL.empty())
     {
       txt.append("  * curl " + ver.cURL);

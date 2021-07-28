@@ -42,7 +42,7 @@ class ConvertBases
 
   public:
     static std::string get(intT n, const baseT base = 10);
-}; //class
+}; // class
 
 template<typename intT, typename baseT>
 std::string ConvertBases<intT, baseT>::get(intT n, const baseT base)
@@ -60,7 +60,8 @@ std::string ConvertBases<intT, baseT>::get(intT n, const baseT base)
     result.push_back(digits[n % base]);
     n /= base;
   }
-  //reverse container, because order of digits comes out in reverse from loop above
+  // Reverse container, because order of digits comes out in reverse from loop
+  // above.
   std::reverse(result.begin(), result.end());
 
   return result;
