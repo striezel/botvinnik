@@ -12,6 +12,7 @@ set(botvinnik_sources
     ../matrix/json/PowerLevels.cpp
     ../matrix/json/Sync.cpp
     ../net/Curly.cpp
+    ../net/htmlspecialchars.cpp
     ../net/url_encode.cpp
     ../util/chrono.cpp
     ../util/Directories.cpp

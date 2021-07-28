@@ -29,6 +29,7 @@ set(plugin_tests_sources
     ../../src/matrix/json/PowerLevels.cpp
     ../../src/matrix/json/Sync.cpp
     ../../src/net/Curly.cpp
+    ../../src/net/htmlspecialchars.cpp
     ../../src/net/url_encode.cpp
     ../../src/util/Directories.cpp
     ../../src/util/GitInfos.cpp

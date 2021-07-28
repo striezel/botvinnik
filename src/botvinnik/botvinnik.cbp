@@ -61,6 +61,8 @@
 		<Unit filename="../matrix/json/Sync.hpp" />
 		<Unit filename="../net/Curly.cpp" />
 		<Unit filename="../net/Curly.hpp" />
+		<Unit filename="../net/htmlspecialchars.cpp" />
+		<Unit filename="../net/htmlspecialchars.hpp" />
 		<Unit filename="../net/url_encode.cpp" />
 		<Unit filename="../net/url_encode.hpp" />
 		<Unit filename="../util/Directories.cpp" />

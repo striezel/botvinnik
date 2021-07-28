@@ -21,6 +21,7 @@
 #include "CheatSheet.hpp"
 #include <iostream>
 #include "../../net/Curly.hpp"
+#include "../../net/htmlspecialchars.hpp"
 #include "../../net/url_encode.hpp"
 #include "../../util/Strings.hpp"
 
@@ -79,7 +80,7 @@ Message CheatSheet::handleCommand(const std::string_view& command, const std::st
 
   return Message(
       response.append("\n\nSource: https://cheat.sh/").append(encodedTopic),
-      std::string("<pre>").append(response).append("</pre>")
+      std::string("<pre>").append(htmlspecialchars(response)).append("</pre>")
           .append("<br />\nSource: https://cheat.sh/").append(encodedTopic));
 }
 

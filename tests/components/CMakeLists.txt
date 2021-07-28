@@ -8,9 +8,11 @@ set(component_tests_sources
     ../../src/botvinnik/FailCounter.cpp
     ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
     ../../src/matrix/events/PowerLevels.cpp
+    ../../src/net/htmlspecialchars.cpp
     FailCounter.cpp
     PowerLevels.cpp
     calculate_incidence.cpp
+    htmlspecialchars.cpp
     main.cpp)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
