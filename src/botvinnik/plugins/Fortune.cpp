@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include "../../net/htmlspecialchars.hpp"
 
 namespace bvn
 {
@@ -62,7 +63,7 @@ Message Fortune::handleCommand(const std::string_view& command, const std::strin
     const auto text = executeCommand("/usr/games/fortune");
     if (text.has_value() && !text.value().empty())
     {
-      return Message(text.value(), std::string("<pre>").append(text.value()).append("</pre>"));
+      return Message(text.value(), std::string("<pre>").append(htmlspecialchars(text.value())).append("</pre>"));
     }
 
     // fortune may not be installed. Warn user.

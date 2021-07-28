@@ -21,6 +21,7 @@
 #include "Debian.hpp"
 #include "../../../third-party/simdjson/simdjson.h"
 #include "../../net/Curly.hpp"
+#include "../../net/htmlspecialchars.hpp"
 #include "../../net/url_encode.hpp"
 #include "../../util/Strings.hpp"
 
@@ -202,7 +203,7 @@ Message Debian::formatResult(const Packages& packs, const std::string& suite, co
 
   Message result(std::string("Result for package '").append(packageName)
                  .append("' in Debian ").append(suite).append("\n\n"),
-                 std::string("Result for package '<strong>").append(packageName)
+                 std::string("Result for package '<strong>").append(htmlspecialchars(packageName))
                  .append("</strong>' in Debian ").append(suite).append("<br >\n<br >\n"));
   if (!packs.exact.first.empty())
   {
@@ -213,7 +214,7 @@ Message Debian::formatResult(const Packages& packs, const std::string& suite, co
     if (!packs.exact.second.empty())
     {
       result.body.append(", version ").append(packs.exact.second);
-      result.formatted_body.append(", version ").append(packs.exact.second);
+      result.formatted_body.append(", version ").append(htmlspecialchars(packs.exact.second));
     }
     result.body.append("\n");
     result.formatted_body.append("<br>\n");
@@ -244,7 +245,7 @@ Message Debian::formatResult(const Packages& packs, const std::string& suite, co
       if (!nv.second.empty())
       {
         result.body.append(", version ").append(nv.second);
-        result.formatted_body.append(", version ").append(nv.second);
+        result.formatted_body.append(", version ").append(htmlspecialchars(nv.second));
       }
       result.formatted_body.append("</li>");
     }

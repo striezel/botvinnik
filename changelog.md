@@ -9,6 +9,13 @@ improvements may be omitted.)_
 An HTML injection vulnerability in the implementation of the `!cheats` command
 is fixed.
 
+Other commands where similar code injections would be possible at least in
+theory have been secured, too. Those are the commands `!deb`, `!help`,
+`!fortune`, and `!xkcd`. While I believe that most of these other commands are
+not vulnerable in practice, because the input is under the program's control
+(command `!help`) or is known to not contain HTML code (e. g. `!deb`) it is
+better to take precautions.
+
 ## Version 0.3.9 (2021-07-15)
 
 A new command to show cheat sheets on various topics - `!cheat` - is added. The

@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 
 #include "Help.hpp"
 #include <map>
+#include "../../../net/htmlspecialchars.hpp"
 
 namespace bvn
 {
@@ -52,7 +53,7 @@ Message Help::handleCommand(const std::string_view& command, const std::string_v
         result.body.append(prefix).append(item.first).append(" - ")
               .append(item.second).append("\n");
         result.formatted_body.append("<code>").append(prefix).append(item.first).append("</code>").append(" - ")
-              .append(item.second).append("<br />");
+              .append(htmlspecialchars(item.second)).append("<br />");
       }
       else
       {

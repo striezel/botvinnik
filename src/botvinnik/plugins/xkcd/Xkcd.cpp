@@ -22,13 +22,14 @@
 #include <iostream>
 #include <random>
 #include "XkcdDb.hpp"
+#include "../../../net/htmlspecialchars.hpp"
 #include "../../../util/Strings.hpp"
 
 namespace bvn
 {
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2486),
+: mLatestNum(2494),
   theMatrix(mat)
 {
   const auto latest = XkcdData::get(0);
@@ -146,18 +147,20 @@ Message Xkcd::handleCommand(const std::string_view& command, const std::string_v
   if (mxcUri.has_value())
   {
     // Use mxc URI for image.
-    xkcd.formatted_body = "xkcd.com # " + std::to_string(data.num) + ": <strong>" + data.title
-            + "</strong><br />\n<br />\n<img src=\"" + mxcUri.value() + "\" alt=\"\"><br >\n"
-            + "<br /><em>" + data.alt + "</em><br />Source: https://xkcd.com/"
+    xkcd.formatted_body = "xkcd.com # " + std::to_string(data.num) + ": <strong>"
+            + htmlspecialchars(data.title)
+            + "</strong><br />\n<br />\n<img src=\"" + mxcUri.value() + "\" alt=\"\"><br />\n"
+            + "<br /><em>" + htmlspecialchars(data.alt) + "</em><br />Source: https://xkcd.com/"
             + std::to_string(data.num) + "/";
   }
   else
   {
     // Upload failed. Use original URL as fallback.
-    xkcd.formatted_body = "xkcd.com # " + std::to_string(data.num) + ": <strong>" + data.title
-            + "</strong><br />\n<br />\n" + data.img + "<br >\n"
-            + "<br /><em>" + data.alt + "</em><br />Source: https://xkcd.com/"
-            + std::to_string(data.num) + "/";
+    xkcd.formatted_body = "xkcd.com # " + std::to_string(data.num) + ": <strong>"
+            + htmlspecialchars(data.title) + "</strong><br />\n<br />\n"
+            + data.img + "<br />\n<br /><em>" + htmlspecialchars(data.alt)
+            + "</em><br />Source: https://xkcd.com/" + std::to_string(data.num)
+            + "/";
   }
   return xkcd;
 }
