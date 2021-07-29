@@ -57,32 +57,41 @@ Completely empty lines are ignored, too.
 
 The following Matrix-related settings are recognized in the configuration file:
 
-* **matrix.homeserver** - _(since 0.0.1)_ host name of the server where the
-  Matrix instance runs
-* **matrix.userid** - _(since 0.0.1)_ user id of the Matrix user (e. g.
-  `@alice:example.tld`)
-* **matrix.password** - _(since 0.0.1)_ password for the Matrix user
+* **matrix.homeserver** - _(since 0.0.1, required)_ host name of the server
+  where the Matrix instance runs (e. g. `https://matrix.example.tld/`)
+* **matrix.userid** - _(since 0.0.1, required)_ user id of the Matrix user
+  (e. g. `@alice:example.tld`)
+* **matrix.password** - _(since 0.0.1, required)_ password for the Matrix user
+
+All of these three settings are required to be present in any valid
+configuration file, because these are essential for connecting to the Matrix
+homeserver. The bot will post its replies as the Matrix user specified by the
+**matrix.userid** setting. It is therefore advisable (although not required) to
+create a separate Matrix user that is just used by the bot.
 
 ## Bot management settings
 
-* **command.prefix** - _(since 0.0.5)_ prefix for text commands (e. g. if you
-  have a hypothetical command `foo` and the prefix is set to `!`, then the text
-  message `!foo` will trigger that command)
-* **bot.stop.allowed.userid** - _(since 0.0.11)_ user id of a Matrix user that
-  is allowed to stop the bot (e. g. `@alice:example.tld`). This setting may
-  occur multiple times with different user ids to allow more users to stop the
-  bot. At least one user id must be specified. Furthermore, the user id from the
-  setting **matrix.userid** will be added to this list automatically, if it has
-  not been specified as user allowed to stop the bot.
-* **bot.sync.allowed_failures** - _(since 0.2.0)_ the number of allowed Matrix
-  synchronization failures within the last 32 synchronization attempts before
-  the bot exits. Allowed range is from 0 (zero) to 31. This setting can be used
-  to avoid that the bot stops when the network connection may occasionally be
-  down for a few seconds. One allowed failure is approx. the equivalent of five
-  seconds network downtime. Default value is twelve.
+* **command.prefix** - _(since 0.0.5, optional)_ prefix for text commands (e. g.
+  if you have a hypothetical command `foo` and the prefix is set to `!`, then
+  the text message `!foo` will trigger that command); defaults to `!` if not set
+* **bot.stop.allowed.userid** - _(since 0.0.11, required)_ user id of a Matrix
+  user that is allowed to stop the bot (e. g. `@alice:example.tld`). This
+  setting may occur multiple times with different user ids to allow more users
+  to stop the bot. At least one user id must be specified. Furthermore, the user
+  id from the setting **matrix.userid** will be added to this list
+  automatically, if it has not been specified as user allowed to stop the bot.
+* **bot.sync.allowed_failures** - _(since 0.2.0, optional)_ the number of
+  allowed Matrix synchronization failures within the last 32 synchronization
+  attempts before the bot exits. Allowed range is from 0 (zero) to 31. This
+  setting can be used to avoid that the bot stops when the network connection
+  may occasionally be down for a few seconds. One allowed failure is approx. the
+  equivalent of five seconds network downtime. Default value is twelve, if it is
+  not set explicitly.
 
   Set this to zero, if you want to restore the behaviour used in versions before
-  0.2.0.
+  0.2.0. However, a value of zero means that the bot stops whenever there is a
+  small, short network downtime, so this is not advisable.
+
 # Example of a complete configuration file
 
 The following example is a complete core configuration file for the
