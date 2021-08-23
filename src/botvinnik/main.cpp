@@ -56,7 +56,6 @@ void showVersion()
             << NLOHMANN_JSON_VERSION_MAJOR << "." << NLOHMANN_JSON_VERSION_MINOR
             << "." << NLOHMANN_JSON_VERSION_PATCH << std::endl;
   const auto ver = Curly::curlVersion();
-  std::string data;
   if (!ver.cURL.empty())
   {
     std::cout << "  * curl " << ver.cURL;
