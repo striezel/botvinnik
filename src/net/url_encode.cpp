@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2021  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@ std::string urlencode(const std::string_view& str)
 
   const std::string result(escaped);
   curl_free(escaped);
+  curl_easy_cleanup(curl);
   return result;
 }
 

@@ -4,6 +4,10 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2021-09-??)
+
+This release fixes a memory leak in the URL-encoding algorithm.
+
 ## Version 0.3.10 (2021-07-28)
 
 An HTML injection vulnerability in the implementation of the `!cheats` command
