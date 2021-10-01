@@ -4,6 +4,11 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2021-10-??)
+
+The library that does the JSON serialization (nlohmann/json) has been updated
+from version 3.9.1 to version 3.10.2.
+
 ## Version 0.3.11 (2021-09-09)
 
 This release fixes a memory leak in the URL-encoding algorithm.
