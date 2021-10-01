@@ -19,6 +19,7 @@
 */
 
 #include "disease.sh.hpp"
+#include <iostream>
 #include <optional>
 #include <regex>
 #include <unordered_map>

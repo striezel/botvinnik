@@ -19,6 +19,7 @@
 */
 
 #include "XkcdData.hpp"
+#include <iostream>
 #include "../../../../third-party/simdjson/simdjson.h"
 #include "../../../net/Curly.hpp"
 

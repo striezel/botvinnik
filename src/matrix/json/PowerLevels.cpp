@@ -20,6 +20,7 @@
 
 
 #include "PowerLevels.hpp"
+#include <iostream>
 #include "../../../third-party/simdjson/simdjson.h"
 
 namespace bvn::matrix::json
