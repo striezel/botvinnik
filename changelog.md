@@ -6,6 +6,13 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2021-10-??)
 
+The `!corona` command switches to canonical URL of disease.sh API for its
+requests. The plugin does now use `https://disease.sh/` as base URL for API
+requests. This seems to be more reliable than the previously used alternative
+base URL `https://corona.lmao.ninja/` which had problems with Cloudflare (like
+502 Bad Gateway, etc.) rather often, so that requests sometimes failed due to
+outages of it or problems with Cloudflare.
+
 The library that does the JSON parsing (simdjson) has been updated from version
 1.0.0 to version 1.0.1. This fixes an error with parsing large 64-bit integers.
 Usually, such big numbers should not occur inside the Matrix protocol's JSON,

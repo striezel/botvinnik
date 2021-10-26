@@ -47,12 +47,12 @@ std::string constructHistoricalApiUrl(const std::string& geoId, const std::strin
   {
     if (all)
     {
-      return std::string("https://corona.lmao.ninja/v3/covid-19/historical/")
+      return std::string("https://disease.sh/v3/covid-19/historical/")
             .append(geoId).append("?lastdays=all");
     }
     else
     {
-      return std::string("https://corona.lmao.ninja/v3/covid-19/historical/")
+      return std::string("https://disease.sh/v3/covid-19/historical/")
             .append(geoId);
     }
   }
@@ -60,12 +60,12 @@ std::string constructHistoricalApiUrl(const std::string& geoId, const std::strin
   {
     if (all)
     {
-      return std::string("https://corona.lmao.ninja/v3/covid-19/historical/")
+      return std::string("https://disease.sh/v3/covid-19/historical/")
             .append(geoId).append("/").append(province).append("?lastdays=all");
     }
     else
     {
-      return std::string("https://corona.lmao.ninja/v3/covid-19/historical/")
+      return std::string("https://disease.sh/v3/covid-19/historical/")
             .append(geoId).append("/").append(province);
     }
   }
@@ -81,10 +81,10 @@ std::string constructHistoricalApiUrl(const std::string& geoId, const std::strin
 std::string constructHistoricalApiUrlUsaCounties(const std::string& county, const bool all)
 {
   if (all)
-    return std::string("https://corona.lmao.ninja/v3/covid-19/historical/usacounties/")
+    return std::string("https://disease.sh/v3/covid-19/historical/usacounties/")
           .append(county).append("?lastdays=all");
   else
-    return std::string("https://corona.lmao.ninja/v3/covid-19/historical/usacounties/")
+    return std::string("https://disease.sh/v3/covid-19/historical/usacounties/")
           .append(county);
 }
 
