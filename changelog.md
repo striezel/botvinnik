@@ -4,6 +4,13 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2021-10-??)
+
+The library that does the JSON parsing (simdjson) has been updated from version
+1.0.0 to version 1.0.1. This fixes an error with parsing large 64-bit integers.
+Usually, such big numbers should not occur inside the Matrix protocol's JSON,
+but let's better be on the safe side here.
+
 ## Version 0.3.12 (2021-10-01)
 
 The library that does the JSON parsing (simdjson) has been updated from version
