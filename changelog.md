@@ -11,6 +11,9 @@ The library that does the JSON parsing (simdjson) has been updated from version
 Usually, such big numbers should not occur inside the Matrix protocol's JSON,
 but let's better be on the safe side here.
 
+The library that does the JSON serialization (nlohmann/json) has been updated
+from version 3.10.2 to version 3.10.4.
+
 ## Version 0.3.12 (2021-10-01)
 
 The library that does the JSON parsing (simdjson) has been updated from version
