@@ -14,9 +14,10 @@ base URL `https://corona.lmao.ninja/` which had problems with Cloudflare (like
 outages of it or problems with Cloudflare.
 
 The library that does the JSON parsing (simdjson) has been updated from version
-1.0.0 to version 1.0.1. This fixes an error with parsing large 64-bit integers.
+1.0.0 to version 1.0.2. This fixes an error with parsing large 64-bit integers.
 Usually, such big numbers should not occur inside the Matrix protocol's JSON,
-but let's better be on the safe side here.
+but let's better be on the safe side here. It also patches a bug when iterating
+over JSON arrays containing objects.
 
 The library that does the JSON serialization (nlohmann/json) has been updated
 from version 3.10.2 to version 3.10.4.
