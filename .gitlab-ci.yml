@@ -24,7 +24,7 @@ build_gcc:
 build_clang:
   stage: build
   before_script:
-    - apt-get update && apt-get -y install catch clang cmake fortune-mod fortunes-min libcurl4-gnutls-dev libsqlite3-dev pkg-config
+    - apt-get update && apt-get -y install catch clang cmake fortune-mod fortunes-min libc++-7-dev libcurl4-gnutls-dev libsqlite3-dev pkg-config
     - export CC=clang && export CXX=clang++
   script:
     # Build with User-Agent header.

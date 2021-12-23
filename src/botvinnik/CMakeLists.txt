@@ -76,9 +76,14 @@ else ()
   message ( FATAL_ERROR "SQLite3 was not found!" )
 endif (SQLite3_FOUND)
 
-if (NOT MSVC)
-  # link static library for std::filesystem on GNU C++ compiler
+# GNU GCC before 9.1.0 needs to link to libstdc++fs explicitly.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.1.0")
   target_link_libraries(botvinnik stdc++fs)
+endif ()
+
+# Clang before 9.0 needs to link to libc++fs explicitly.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0")
+  target_link_libraries(botvinnik c++fs)
 endif ()
 
 # create git-related constants
