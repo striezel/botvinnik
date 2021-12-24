@@ -76,3 +76,25 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE"/build
           ctest -V
+  build_ubuntu_20_04_clang7:
+    runs-on: ubuntu-20.04
+    steps:
+      # Checks-out the repository under $GITHUB_WORKSPACE.
+      - uses: actions/checkout@v2
+      - name: Install Debian packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y catch cmake fortune-mod fortunes-min clang-7 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
+      - name: Build with Clang 7
+        run: |
+          export CXX=clang++-7
+          export CC=clang-7
+          cd $GITHUB_WORKSPACE
+          mkdir build
+          cd build
+          cmake ../
+          make -j4
+      - name: Tests
+        run: |
+          cd "$GITHUB_WORKSPACE"/build
+          ctest -V
