@@ -3,6 +3,28 @@ name: GitHub CI with Clang 8, 9, 10
 on: push
 
 jobs:
+  build_ubuntu_20_04_clang11:
+    runs-on: ubuntu-20.04
+    steps:
+      # Checks-out the repository under $GITHUB_WORKSPACE.
+      - uses: actions/checkout@v2
+      - name: Install Debian packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y catch cmake fortune-mod fortunes-min clang-11 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
+      - name: Build with Clang 11
+        run: |
+          export CXX=clang++-11
+          export CC=clang-11
+          cd $GITHUB_WORKSPACE
+          mkdir build
+          cd build
+          cmake ../
+          make -j4
+      - name: Tests
+        run: |
+          cd "$GITHUB_WORKSPACE"/build
+          ctest -V
   build_ubuntu_20_04_clang10:
     runs-on: ubuntu-20.04
     steps:
