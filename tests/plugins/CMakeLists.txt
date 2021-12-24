@@ -96,7 +96,13 @@ endif ()
 
 # Clang before 9.0 needs to link to libc++fs explicitly.
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0")
-  target_link_libraries(plugin_tests c++fs)
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.0")
+    # If we are on Clang 7.x, then the filesystem library from GCC is better.
+    target_link_libraries(plugin_tests stdc++fs)
+  else ()
+   # Use Clang's C++ filesystem library, it is recent enough.
+   target_link_libraries(plugin_tests c++fs)
+  endif ()
 endif ()
 
 # create git-related constants
