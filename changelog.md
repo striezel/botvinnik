@@ -4,6 +4,11 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2022-01-??)
+
+The library that does the JSON serialization (nlohmann/json) has been updated
+from version 3.10.4 to version 3.10.5.
+
 ## Version 0.3.13 (2021-11-06)
 
 The `!corona` command switches to canonical URL of disease.sh API for its
