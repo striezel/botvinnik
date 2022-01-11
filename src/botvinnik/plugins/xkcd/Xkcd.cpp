@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,13 +29,20 @@ namespace bvn
 {
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2523),
+: mLatestNum(2566),
+  mLastUpdate(std::chrono::steady_clock::now() - std::chrono::hours(24)),
   theMatrix(mat)
+{
+  updateLatestNum();
+}
+
+void Xkcd::updateLatestNum()
 {
   const auto latest = XkcdData::get(0);
   if (latest.has_value())
   {
     mLatestNum = std::max(latest.value().num, mLatestNum);
+    mLastUpdate = std::chrono::steady_clock::now();
   }
 }
 
@@ -118,6 +125,13 @@ Message Xkcd::handleCommand(const std::string_view& command, const std::string_v
     return Message();
   }
 
+  // Check for newer comic id, if it is older than 24 hours.
+  if (mLastUpdate + std::chrono::hours(24) < std::chrono::steady_clock::now())
+  {
+    updateLatestNum();
+  }
+
+  // Get comic id from command or from (pseudo-)random number generator.
   const unsigned int num = determineComicId(command, message, mLatestNum);
 
   // XkcdData::get() only works when server can be reached.

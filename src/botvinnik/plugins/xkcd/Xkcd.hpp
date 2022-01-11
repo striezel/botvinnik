@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #ifndef BVN_PLUGIN_XKCD_HPP
 #define BVN_PLUGIN_XKCD_HPP
 
+#include <chrono>
 #include "../Plugin.hpp"
 #include "../../../matrix/Matrix.hpp"
 #include "XkcdData.hpp"
@@ -91,7 +92,12 @@ class Xkcd: public Plugin
      */
     std::optional<std::string> uploadComic(const XkcdData& data);
 
+    /** \brief Updates the last known comic id to the latest available id.
+     */
+    void updateLatestNum();
+
     unsigned int mLatestNum; /**< latest known comic number */
+    std::chrono::steady_clock::time_point mLastUpdate; /**< time of last update of mLatestNum */
     Matrix& theMatrix; /**< reference to the Matrix instance */
 }; // class
 
