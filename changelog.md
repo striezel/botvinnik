@@ -10,7 +10,7 @@ The library that does the JSON serialization (nlohmann/json) has been updated
 from version 3.10.4 to version 3.10.5.
 
 The `!xkcd` command will now automatically check for newer available comics, if
-the last check was more than 24 hours ago. This fixes a long-standing bug where
+the last check was more than 12 hours ago. This fixes a long-standing bug where
 the bot would not recognise newer xkcd comics, if it was running for an extended
 period of time.
 

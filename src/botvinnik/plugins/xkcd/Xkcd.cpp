@@ -29,7 +29,7 @@ namespace bvn
 {
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2566),
+: mLatestNum(2567),
   mLastUpdate(std::chrono::steady_clock::now() - std::chrono::hours(24)),
   theMatrix(mat)
 {
@@ -125,8 +125,8 @@ Message Xkcd::handleCommand(const std::string_view& command, const std::string_v
     return Message();
   }
 
-  // Check for newer comic id, if it is older than 24 hours.
-  if (mLastUpdate + std::chrono::hours(24) < std::chrono::steady_clock::now())
+  // Check for newer comic id, if it is older than 12 hours.
+  if (mLastUpdate + std::chrono::hours(12) < std::chrono::steady_clock::now())
   {
     updateLatestNum();
   }
