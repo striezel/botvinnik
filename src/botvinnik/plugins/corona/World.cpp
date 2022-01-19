@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2021  Dirk Stolle
+    Copyright (C) 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -160,6 +160,7 @@ std::vector<Country> World::all()
     { 126, "Mauritania", "MR", 4525698 },
     { 127, "Mauritius", "MU", 1269670 },
     { 128, "Mexico", "MX", 127575529 },
+    { 215, "Micronesia", "FM", 115021 },
     { 129, "Moldova", "MD", 4043258 },
     { 130, "Monaco", "MC", 33085 },
     { 131, "Mongolia", "MN", 3225166 },
@@ -181,6 +182,7 @@ std::vector<Country> World::all()
     { 147, "Norway", "NO", 5328212 },
     { 148, "Oman", "OM", 4974992 },
     { 149, "Pakistan", "PK", 216565317 },
+    { 216, "Palau", "PW", 18092 },
     { 150, "Palestine", "PS", 4981422 },
     { 151, "Panama", "PA", 4246440 },
     { 152, "Papua New Guinea", "PG", 8776119 },
@@ -225,6 +227,7 @@ std::vector<Country> World::all()
     { 191, "Thailand", "TH", 69625581 },
     { 192, "Timor Leste", "TL", 1293120 },
     { 193, "Togo", "TG", 8082359 },
+    { 217, "Tonga", "TO", 105697 },
     { 194, "Trinidad and Tobago", "TT", 1394969 },
     { 195, "Tunisia", "TN", 11694721 },
     { 196, "Turkey", "TR", 82003882 },

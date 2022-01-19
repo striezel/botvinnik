@@ -4,6 +4,11 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2022-01-??)
+
+Case numbers for Federated States of Micronesia, Palau and Tonga can now be
+queried via the `!corona` command, too.
+
 ## Version 0.3.14 (2022-01-13)
 
 The library that does the JSON serialization (nlohmann/json) has been updated
