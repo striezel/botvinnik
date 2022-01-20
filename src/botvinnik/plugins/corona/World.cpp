@@ -139,6 +139,7 @@ std::vector<Country> World::all()
     { 104, "Jordan", "JO", 10101697 },
     { 105, "Kazakhstan", "KZ", 18551428 },
     { 106, "Kenya", "KE", 52573967 },
+    { 220, "Kiribati", "KI", 119940 },
     { 107, "Kosovo", "XK", 1798506 },
     { 108, "Kuwait", "KW", 4207077 },
     { 109, "Kyrgyzstan", "KG", 6415851 },

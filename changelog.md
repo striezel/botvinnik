@@ -6,8 +6,8 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2022-01-??)
 
-Case numbers for American Samoa, Federated States of Micronesia, Palau, Samoa
-and Tonga can now be queried via the `!corona` command, too.
+Case numbers for American Samoa, Federated States of Micronesia, Kiribati,
+Palau, Samoa and Tonga can now be queried via the `!corona` command, too.
 
 ## Version 0.3.14 (2022-01-13)
 
