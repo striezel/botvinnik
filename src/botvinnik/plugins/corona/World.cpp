@@ -34,6 +34,7 @@ std::vector<Country> World::all()
     { 1, "Afghanistan", "AF", 38041757 },
     { 2, "Albania", "AL", 2862427 },
     { 3, "Algeria", "DZ", 43053054 },
+    { 218, "American Samoa", "AS", 55197 },
     { 4, "Andorra", "AD", 76177 },
     { 5, "Angola", "AO", 31825299 },
     { 6, "Anguilla", "AI", 14872 },
@@ -199,6 +200,7 @@ std::vector<Country> World::all()
     { 163, "Saint Kitts and Nevis", "KN", 52834 },
     { 164, "Saint Lucia", "LC", 182795 },
     { 165, "Saint Vincent and the Grenadines", "VC", 110593 },
+    { 219, "Samoa", "WS", 198410 },
     { 166, "San Marino", "SM", 34453 },
     { 167, "Sao Tome and Principe", "ST", 215048 },
     { 168, "Saudi Arabia", "SA", 34268529 },
@@ -270,6 +272,8 @@ std::optional<Country> World::find(const std::string& nameOrGeoId)
 const std::unordered_map<std::string, std::function<CovidNumbers(const Country&)>> data_functions = {
   // Anguilla
   { "AI", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "Anguilla", false); } },
+  // American Samoa
+  { "AS", [] (const Country& c) { return disease_sh::requestHistoricalApiUsaCounties("american%20samoa", false); } },
   // Aruba
   { "AW", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "Aruba", false); } },
   // Bermuda
