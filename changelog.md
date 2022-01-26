@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2022-01-??)
+## Version 0.3.15 (2022-01-26)
 
 Case numbers for American Samoa, Federated States of Micronesia, Kiribati,
 Palau, Samoa and Tonga can now be queried via the `!corona` command, too.
