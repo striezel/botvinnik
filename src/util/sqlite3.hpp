@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 #ifndef BVN_UTIL_SQLITE3_HPP
 #define BVN_UTIL_SQLITE3_HPP
 
-#include <functional>
 #include <memory>
 #include <sqlite3.h>
 
@@ -35,8 +34,6 @@ typedef std::unique_ptr<sqlite3, decltype(&sqlite3_close)> database;
 
 /// alias for database statement handle
 typedef std::unique_ptr<sqlite3_stmt, decltype(&sqlite3_finalize)> statement;
-
-typedef std::function<bool(sqlite3_stmt*)> callback;
 
 /** \brief Opens a new SQLite 3 database connection.
  *
