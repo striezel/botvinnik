@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ std::string quote(const std::string& str)
   while ((found = result.find('\'', pos)) != std::string::npos)
   {
     result.replace(found, 1, "''");
-    pos += 2;
+    pos = found + 2;
   }
 
   return std::string("'").append(result).append("'");
