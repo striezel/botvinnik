@@ -52,7 +52,7 @@ database open(const std::string& fileName);
 /** \brief Executes an SQL statement.
  *
  * \param db    open database connection
- * \param sql   SQ statement to execute
+ * \param sql   SQL statement to execute
  * \return Returns true, if execution of the statement was successful.
  *         Returns false otherwise.
  */
