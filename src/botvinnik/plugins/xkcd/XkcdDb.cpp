@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -74,7 +74,7 @@ bool createDbStructure(sql::database& db)
         )SQL";
   if (!sql::exec(db, statement))
   {
-    std::cerr << "Error: Could not create table in sqlite3 database for xkcd comics!" << std::endl;
+    std::cerr << "Error: Could not create table in SQLite 3 database for xkcd comics!" << std::endl;
     return false;
   }
 
@@ -86,7 +86,7 @@ std::optional<std::string> getMxcUri(sql::database& db, const unsigned int num)
   sql::statement stmt = sql::prepare(db, "SELECT mxcUri FROM xkcd WHERE comicId=@id LIMIT 1;");
   if (!stmt)
   {
-    std::cerr << "Error: Failed to prepare select statement for comid id!" << std::endl;
+    std::cerr << "Error: Failed to prepare select statement for comic id!" << std::endl;
     return std::optional<std::string>();
   }
   if (!sql::bind(stmt, 1, num))

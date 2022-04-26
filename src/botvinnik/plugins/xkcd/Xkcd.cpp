@@ -29,7 +29,7 @@ namespace bvn
 {
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2567),
+: mLatestNum(2611),
   mLastUpdate(std::chrono::steady_clock::now() - std::chrono::hours(24)),
   theMatrix(mat)
 {
