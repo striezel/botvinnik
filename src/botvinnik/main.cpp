@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 */
 
 #include <iostream>
+#include <sqlite3.h>
 #include "../../third-party/nlohmann/json.hpp"
 #include "../../third-party/simdjson/simdjson.h"
 #include "../conf/Configuration.hpp"
@@ -73,7 +74,7 @@ void showVersion()
   {
     std::cout << "  * curl: unknown version" << std::endl;
   }
-
+  std::cout << "  * SQLite " << sqlite3_libversion() << std::endl;
 }
 
 void showHelp()

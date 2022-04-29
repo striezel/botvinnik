@@ -4,6 +4,12 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.3.? (2022-04-??)
+
+The `!version` command does now contain information about the version of the
+SQLite 3 library, too. The same information is included when invoking the
+executable with the `--version` parameter on the command line.
+
 ## Version 0.3.15 (2022-01-26)
 
 Case numbers for American Samoa, Federated States of Micronesia, Kiribati,

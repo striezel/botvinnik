@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 */
 
 #include "Basic.hpp"
+#include <sqlite3.h>
 #include "../../../../third-party/nlohmann/json.hpp"
 #include "../../../../third-party/simdjson/simdjson.h"
 #include "../../../net/Curly.hpp"
@@ -96,6 +97,7 @@ Message Basic::handleCommand(const std::string_view& command, const std::string_
     {
       txt.append("  * curl: unknown version");
     }
+    txt.append("\n  * SQLite ").append(sqlite3_libversion());
     return Message(txt);
   }
   else if (command == "whoami")
