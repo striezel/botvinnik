@@ -27,6 +27,25 @@
 namespace bvn
 {
 
+LibreTranslate::LibreTranslate(const std::string_view server, const std::string_view apiKey)
+: url(server),
+  key(apiKey)
+{
+  if (!url.empty())
+  {
+    // Add protocol, if it is missing.
+    if ((url.find("https://") != 0) && (url.find("http://") != 0))
+    {
+      url = "https://" + url;
+    }
+    // Remove trailing slash, if it is present.
+    if (url[url.size() - 1] == '/')
+    {
+      url.erase(url.size() - 1, 1);
+    }
+  }
+}
+
 std::vector<std::string> LibreTranslate::commands() const
 {
   return { "tr", "tr-lang" };
@@ -34,6 +53,24 @@ std::vector<std::string> LibreTranslate::commands() const
 
 Message LibreTranslate::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
 {
+  if (url.empty())
+  {
+    Message msg;
+    msg.body = std::string("No URL for LibreTranslate has been configured, so ")
+      + std::string("no translations can be performed.\n")
+      + std::string("Contact the person who set up the bot, if you want to change that.\n")
+      + "(If you are that person, add a line like `libretranslate.server="
+      + "https://server.example.com` to the bot's configuration file and "
+      + "restart the bot.)";
+    msg.formatted_body = std::string("No URL for LibreTranslate has been configured, so ")
+      + std::string("no translations can be performed.<br />\n")
+      + std::string("Contact the person who set up the bot, if you want to change that.<br />\n")
+      + "<em>(If you are that person, add a line like</em> <code>libretranslate.server="
+      + "https://server.example.com</code> <em>to the bot's configuration file and "
+      + "restart the bot.)</em>";
+    return msg;
+  }
+
   if ((command == "tr-lang") || (command == "tr-langs"))
   {
     return getLanguages();
@@ -48,15 +85,15 @@ Message LibreTranslate::handleCommand(const std::string_view& command, const std
   return Message();
 }
 
-Message LibreTranslate::getLanguages()
+Message LibreTranslate::getLanguages() const
 {
   Curly curl;
-  curl.setURL("https://libretranslate.com/languages");
+  curl.setURL(url + "/languages");
   curl.addHeader("Accept: application/json");
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Request to libretranslate.com failed!" << std::endl
+    std::cerr << "Error: Request to " + url + " failed!" << std::endl
               << "HTTP status code: " << curl.getResponseCode() << std::endl
               << "Response: " << response << std::endl;
     return Message("The request to get a list of available languages failed. Server returned unexpected response.");
@@ -103,7 +140,7 @@ Message LibreTranslate::getLanguages()
   return result;
 }
 
-Message LibreTranslate::getTranslation(const std::string_view& command, const std::string_view& message)
+Message LibreTranslate::getTranslation(const std::string_view& command, const std::string_view& message) const
 {
   std::string input(message.substr(command.size()));
   trim(input);
@@ -122,7 +159,7 @@ Message LibreTranslate::getTranslation(const std::string_view& command, const st
 
   Curly curl;
   curl.addHeader("Accept: application/json");
-  curl.setURL("https://libretranslate.com/translate");
+  curl.setURL(url + "/translate");
   if (!curl.addPostField("source", source_language)
     || !curl.addPostField("target", destination_language)
     || !curl.addPostField("q", input.substr(6)))
@@ -131,10 +168,19 @@ Message LibreTranslate::getTranslation(const std::string_view& command, const st
               << "LibreTranslate!" << std::endl;
     return Message("Could not perform request to translation server!");
   }
+  if (!key.empty())
+  {
+    if (!curl.addPostField("api_key", key))
+    {
+      std::cerr << "Error: Could not add API key to Curly request for "
+                << "LibreTranslate!" << std::endl;
+      return Message("Could not perform request to translation server!");
+    }
+  }
   std::string response;
   if (!curl.perform(response))
   {
-    std::cerr << "Error: Request to libretranslate.com failed!" << std::endl
+    std::cerr << "Error: Request to " + url + " failed!" << std::endl
               << "HTTP status code: " << curl.getResponseCode() << std::endl
               << "Response: " << response << std::endl;
     return Message("The request to get a translation failed. Server returned unexpected response.");

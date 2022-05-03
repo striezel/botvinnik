@@ -32,8 +32,13 @@ class LibreTranslate: public Plugin
 {
   public:
     /** \brief Constructor.
+     *
+     * \param server  URL of the translation server,
+     *                e.g. "https://libretranslate.com/"
+     * \param apiKey  API key for use with the server;
+     *                leave empty, if no key is required for that server
      */
-    LibreTranslate() = default;
+    LibreTranslate(const std::string_view server, const std::string_view apiKey);
 
 
     /** \brief Gets a list of commands that are provided by this plugin.
@@ -63,11 +68,15 @@ class LibreTranslate: public Plugin
      */
     virtual std::string helpOneLine(const std::string_view& command) const;
   private:
+    std::string url; /**< server URL */
+    std::string key; /**< API key for the server */
+
+
     /** \brief Gets a message containing the supported languages and their codes.
      *
      * \return Returns a message containing the supported languages and their codes.
      */
-    static Message getLanguages();
+    Message getLanguages() const;
 
 
     /** \brief Handles translation for the corresponding command.
@@ -77,7 +86,7 @@ class LibreTranslate: public Plugin
      * \return Returns a message to send as reply to the command.
      *         If the return value is empty, no message will be sent.
      */
-    static Message getTranslation(const std::string_view& command, const std::string_view& message);
+    Message getTranslation(const std::string_view& command, const std::string_view& message) const;
 }; // class
 
 } // namespace

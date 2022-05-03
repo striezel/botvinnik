@@ -92,10 +92,20 @@ create a separate Matrix user that is just used by the bot.
   0.2.0. However, a value of zero means that the bot stops whenever there is a
   small, short network downtime, so this is not advisable.
 
+## Translation server settings
+
+* **libretranslate.server** - _(since 0.4.0, optional)_ URL of the
+  LibreTranslate server to use for translation commands. If this is omitted,
+  then it is assumed to be empty. Empty server URL means no translation will be
+  available.
+**libretranslate.apikey** - _(since 0.4.0, optional)_ API key for the
+  LibreTranslate server. If this is empty, then no API key will be used in
+  requests to the translation server.
+
 # Example of a complete configuration file
 
 The following example is a complete core configuration file for the
-botvinnik program (as of version 0.2.0):
+botvinnik program (as of version 0.4.0):
 
     # This line is a comment and will be ignored by the program.
     #And so is this line.
@@ -108,3 +118,6 @@ botvinnik program (as of version 0.2.0):
     command.prefix=!
     bot.stop.allowed.userid=@bob:matrix.example.tld
     bot.sync.allowed_failures=12
+    # translation server settings
+    libretranslate.server=https://libretranslate.com
+    libretranslate.apikey=abcdef1234567890

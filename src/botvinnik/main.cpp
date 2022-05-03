@@ -249,7 +249,7 @@ int main(int argc, char** argv)
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }
-  bvn::LibreTranslate translate;
+  bvn::LibreTranslate translate(config.translationServer(), config.translationApiKey());
   if (!bot.registerPlugin(translate))
   {
     // Should never happen!

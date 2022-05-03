@@ -28,13 +28,20 @@
 		<Unit filename="../../src/botvinnik/FailCounter.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.hpp" />
+		<Unit filename="../../src/conf/Configuration.cpp" />
+		<Unit filename="../../src/conf/Configuration.hpp" />
 		<Unit filename="../../src/matrix/events/PowerLevels.cpp" />
 		<Unit filename="../../src/matrix/events/PowerLevels.hpp" />
 		<Unit filename="../../src/net/htmlspecialchars.cpp" />
 		<Unit filename="../../src/net/htmlspecialchars.hpp" />
+		<Unit filename="../../src/util/Directories.cpp" />
+		<Unit filename="../../src/util/Directories.hpp" />
+		<Unit filename="../../src/util/Strings.cpp" />
+		<Unit filename="../../src/util/Strings.hpp" />
 		<Unit filename="FailCounter.cpp" />
 		<Unit filename="PowerLevels.cpp" />
 		<Unit filename="calculate_incidence.cpp" />
+		<Unit filename="conf/Configuration.cpp" />
 		<Unit filename="htmlspecialchars.cpp" />
 		<Unit filename="main.cpp" />
 		<Extensions>

@@ -30,7 +30,7 @@ TEST_CASE("plugin LibreTranslate")
   using namespace std::chrono;
   Configuration conf;
   Bot bot(conf);
-  LibreTranslate plugin;
+  LibreTranslate plugin("https://libretranslate.com", "");
 
   const auto commands = plugin.commands();
 

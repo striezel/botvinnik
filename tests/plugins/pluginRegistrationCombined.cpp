@@ -51,7 +51,7 @@ TEST_CASE("plugin registration for all known plugins")
   Corona cov;
   Debian deb;
   Fortune fortune;
-  LibreTranslate translate;
+  LibreTranslate translate("https://libretranslate.com", "");
   Ping ping;
   Wikipedia wiki;
   Xkcd xkcd(bot.matrix());

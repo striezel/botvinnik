@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,7 +50,9 @@ Configuration::Configuration()
   mPassword(""),
   mPrefix(""),
   mStopUsers(std::unordered_set<std::string>()),
-  mAllowedFailsIn32(-1)
+  mAllowedFailsIn32(-1),
+  mLibreTranslateServer(""),
+  mLibreTranslateApiKey("")
 {
 }
 
@@ -107,6 +109,16 @@ bool Configuration::isAdminUser(const std::string& userId) const
 int Configuration::allowedFailures() const
 {
   return mAllowedFailsIn32;
+}
+
+const std::string& Configuration::translationServer() const
+{
+  return mLibreTranslateServer;
+}
+
+const std::string& Configuration::translationApiKey() const
+{
+  return mLibreTranslateApiKey;
 }
 
 void Configuration::findConfigurationFile(std::string& realName)
@@ -284,6 +296,26 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
         return false;
       }
     } // if bot.sync.allowed_failures
+    else if (name == "libretranslate.server")
+    {
+      if (!mLibreTranslateServer.empty())
+      {
+        std::cerr << "Error: Server URL for LibreTranslate is specified more than once in file "
+                  << fileName << "!" << std::endl;
+        return false;
+      }
+      mLibreTranslateServer = value;
+    } // if libretranslate.server
+    else if (name == "libretranslate.apikey")
+    {
+      if (!mLibreTranslateApiKey.empty())
+      {
+        std::cerr << "Error: API key for LibreTranslate is specified more than once in file "
+                  << fileName << "!" << std::endl;
+        return false;
+      }
+      mLibreTranslateApiKey = value;
+    } // if libretranslate.apikey
     else
     {
       std::cerr << "Error while reading configuration file " << fileName
@@ -375,6 +407,8 @@ void Configuration::clear()
   mPassword.clear();
   mStopUsers.clear();
   mAllowedFailsIn32 = -1;
+  mLibreTranslateServer.clear();
+  mLibreTranslateApiKey.clear();
 }
 
 } // namespace

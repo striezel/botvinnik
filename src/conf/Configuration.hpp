@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -103,6 +103,22 @@ class Configuration
     int allowedFailures() const;
 
 
+    /** \brief Gets the URL of the translation server.
+     *
+     * \return Returns the URL of the translation server.
+     * \remarks This may be empty, if no URL was set.
+     */
+    const std::string& translationServer() const;
+
+
+    /** \brief Gets the API key of the translation server.
+     *
+     * \return Returns the API key of the translation server.
+     * \remarks This may be empty, if no key was set.
+     */
+    const std::string& translationApiKey() const;
+
+
     /** \brief Loads the configuration from a file.
      *
      * \param  fileName   file name of the configuration file
@@ -136,6 +152,10 @@ class Configuration
     std::string mPrefix; /**< prefix for commands */
     std::unordered_set<std::string> mStopUsers; /**< users that may stop the bot */
     int mAllowedFailsIn32; /**< allowed sync failures in 32 attempts */
+
+    // plugin-related settings
+    std::string mLibreTranslateServer; /**< URL of the LibreTranslate server */
+    std::string mLibreTranslateApiKey; /**< API key for the LibreTranslate server */
 }; // class
 
 } // namespace
