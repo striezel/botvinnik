@@ -3,41 +3,31 @@ name: GitHub CI with GCC 8, 9, 10
 on: push
 
 jobs:
-  build_ubuntu_20_04_gcc11:
+  build_ubuntu_gcc:
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        version: [8, 9, 10, 11]
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE.
       - uses: actions/checkout@v2
       - name: Install Debian packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y catch cmake fortune-mod fortunes-min g++-11 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
-      - name: Build with GNU GCC 11
+          sudo apt-get install -y catch cmake fortune-mod fortunes-min g++-${{ matrix.version }} git libcurl4-gnutls-dev libsqlite3-dev pkg-config
+      - name: Build with GNU GCC ${{ matrix.version }}
         run: |
-          export CXX=g++-11
-          export CC=gcc-11
+          export CXX=g++-${{ matrix.version }}
+          export CC=gcc-${{ matrix.version }}
           cd $GITHUB_WORKSPACE
           mkdir build
           cd build
           cmake ../
           make -j4
-      - name: Tests
+      - name: Build with GNU GCC ${{ matrix.version }} with User-Agent
         run: |
-          cd "$GITHUB_WORKSPACE"/build
-          ctest -V
-  build_ubuntu_20_04_gcc10:
-    runs-on: ubuntu-20.04
-    steps:
-      # Checks-out the repository under $GITHUB_WORKSPACE.
-      - uses: actions/checkout@v2
-      - name: Install Debian packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y catch cmake fortune-mod fortunes-min g++-10 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
-      - name: Build with GNU GCC 10
-        run: |
-          export CXX=g++-10
-          export CC=gcc-10
+          export CXX=g++-${{ matrix.version }}
+          export CC=gcc-${{ matrix.version }}
           cd $GITHUB_WORKSPACE
           # Build with User-Agent header.
           mkdir ./build-with-ua
@@ -45,55 +35,7 @@ jobs:
           cmake -DUSER_AGENT=ON ../
           make -j4
           cd ..
-          # Build without User-Agent (default).
-          mkdir build
-          cd build
-          cmake ../
-          make -j4
-      - name: Tests
-        run: |
-          cd "$GITHUB_WORKSPACE"/build
-          ctest -V
-  build_ubuntu_20_04_gcc9:
-    runs-on: ubuntu-20.04
-    steps:
-      # Checks-out the repository under $GITHUB_WORKSPACE.
-      - uses: actions/checkout@v2
-      - name: Install Debian packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y catch cmake fortune-mod fortunes-min g++-9 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
-      - name: Build with GNU GCC 9
-        run: |
-          export CXX=g++-9
-          export CC=gcc-9
-          cd $GITHUB_WORKSPACE
-          mkdir build
-          cd build
-          cmake ../
-          make -j4
-      - name: Tests
-        run: |
-          cd "$GITHUB_WORKSPACE"/build
-          ctest -V
-  build_ubuntu_18_04_gcc8:
-    runs-on: ubuntu-18.04
-    steps:
-      # Checks-out the repository under $GITHUB_WORKSPACE.
-      - uses: actions/checkout@v2
-      - name: Install Debian packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y catch cmake fortune-mod fortunes-min g++-8 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
-      - name: Build with GNU GCC 8
-        run: |
-          export CXX=g++-8
-          export CC=gcc-8
-          cd $GITHUB_WORKSPACE
-          mkdir build
-          cd build
-          cmake ../
-          make -j4
+        if: matrix.version == 10
       - name: Tests
         run: |
           cd "$GITHUB_WORKSPACE"/build

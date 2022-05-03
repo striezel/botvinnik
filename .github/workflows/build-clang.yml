@@ -3,41 +3,35 @@ name: GitHub CI with Clang 8, 9, 10
 on: push
 
 jobs:
-  build_ubuntu_20_04_clang11:
+  build_ubuntu_clang:
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        version: [7, 8, 9, 10, 11]
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE.
       - uses: actions/checkout@v2
       - name: Install Debian packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y catch cmake fortune-mod fortunes-min clang-11 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
-      - name: Build with Clang 11
+          sudo apt-get install -y catch cmake fortune-mod fortunes-min clang-${{ matrix.version }} git libcurl4-gnutls-dev libsqlite3-dev pkg-config
+      - name: Install LLVM C++ Standard Library
         run: |
-          export CXX=clang++-11
-          export CC=clang-11
+          sudo apt-get install -y libc++-${{ matrix.version }}-dev
+        if: matrix.version == 8
+      - name: Build with Clang ${{ matrix.version }}
+        run: |
+          export CXX=clang++-${{ matrix.version }}
+          export CC=clang-${{ matrix.version }}
           cd $GITHUB_WORKSPACE
           mkdir build
           cd build
           cmake ../
           make -j4
-      - name: Tests
+      - name: Build with Clang ${{ matrix.version }} with User-Agent
         run: |
-          cd "$GITHUB_WORKSPACE"/build
-          ctest -V
-  build_ubuntu_20_04_clang10:
-    runs-on: ubuntu-20.04
-    steps:
-      # Checks-out the repository under $GITHUB_WORKSPACE.
-      - uses: actions/checkout@v2
-      - name: Install Debian packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y catch cmake fortune-mod fortunes-min clang-10 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
-      - name: Build with Clang 10
-        run: |
-          export CXX=clang++-10
-          export CC=clang-10
+          export CXX=clang++-${{ matrix.version }}
+          export CC=clang-${{ matrix.version }}
           cd $GITHUB_WORKSPACE
           # Build with User-Agent header.
           mkdir ./build-with-ua
@@ -45,77 +39,7 @@ jobs:
           cmake -DUSER_AGENT=ON ../
           make -j4
           cd ..
-          # Build without User-Agent (default).
-          mkdir build
-          cd build
-          cmake ../
-          make -j4
-      - name: Tests
-        run: |
-          cd "$GITHUB_WORKSPACE"/build
-          ctest -V
-  build_ubuntu_20_04_clang9:
-    runs-on: ubuntu-20.04
-    steps:
-      # Checks-out the repository under $GITHUB_WORKSPACE.
-      - uses: actions/checkout@v2
-      - name: Install Debian packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y catch cmake fortune-mod fortunes-min clang-9 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
-      - name: Build with Clang 9
-        run: |
-          export CXX=clang++-9
-          export CC=clang-9
-          cd $GITHUB_WORKSPACE
-          mkdir build
-          cd build
-          cmake ../
-          make -j4
-      - name: Tests
-        run: |
-          cd "$GITHUB_WORKSPACE"/build
-          ctest -V
-  build_ubuntu_18_04_clang8:
-    runs-on: ubuntu-18.04
-    steps:
-      # Checks-out the repository under $GITHUB_WORKSPACE.
-      - uses: actions/checkout@v2
-      - name: Install Debian packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y catch cmake fortune-mod fortunes-min clang-8 git libc++-8-dev libcurl4-gnutls-dev libsqlite3-dev pkg-config
-      - name: Build with Clang 8
-        run: |
-          export CXX=clang++-8
-          export CC=clang-8
-          cd $GITHUB_WORKSPACE
-          mkdir build
-          cd build
-          cmake ../
-          make -j4
-      - name: Tests
-        run: |
-          cd "$GITHUB_WORKSPACE"/build
-          ctest -V
-  build_ubuntu_20_04_clang7:
-    runs-on: ubuntu-20.04
-    steps:
-      # Checks-out the repository under $GITHUB_WORKSPACE.
-      - uses: actions/checkout@v2
-      - name: Install Debian packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y catch cmake fortune-mod fortunes-min clang-7 git libcurl4-gnutls-dev libsqlite3-dev pkg-config
-      - name: Build with Clang 7
-        run: |
-          export CXX=clang++-7
-          export CC=clang-7
-          cd $GITHUB_WORKSPACE
-          mkdir build
-          cd build
-          cmake ../
-          make -j4
+        if: matrix.version == 10
       - name: Tests
         run: |
           cd "$GITHUB_WORKSPACE"/build
