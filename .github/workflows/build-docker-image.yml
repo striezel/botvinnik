@@ -1,0 +1,14 @@
+name: Build Dockerfile
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      # Checks-out the repository under $GITHUB_WORKSPACE.
+      - uses: actions/checkout@v2
+      - name: Build image from Dockerfile
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          docker build . -t botvinnik
