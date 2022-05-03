@@ -112,6 +112,9 @@ The following commands allow text translation between different languages:
 * `!tr-lang` - _(since version 0.4.0)_ shows a list of available languages and
   their corresponding language codes.
 
+Note that these commands only work, if a translation server (and possibly an API
+key) has been set in botvinnik's configuration file.
+
 ### Debian package search
 
 The following commands search for available [Debian](https://www.debian.org/)

@@ -12,6 +12,16 @@ will translate the text "Hello world!" from English ("en") to French ("fr").
 The command `!tr-lang` will show a list of available languages and their
 corresponding language codes.
 
+To enable the translation one has to add the URL to a LibreTranslate server as
+well as an API key (only if the server requires a key) to the bot's
+configuration file, e. g.
+
+    libretranslate.server=https://libretranslate.example.com
+    libretranslate.apikey=your-key-here
+
+A list of some possible servers is available at
+<https://github.com/LibreTranslate/LibreTranslate#mirrors>.
+
 ## Version 0.3.16 (2022-05-03)
 
 The `!version` command does now contain information about the version of the

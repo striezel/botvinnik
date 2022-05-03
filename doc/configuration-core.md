@@ -94,13 +94,24 @@ create a separate Matrix user that is just used by the bot.
 
 ## Translation server settings
 
+The following settings control how the text translation commands work:
+
 * **libretranslate.server** - _(since 0.4.0, optional)_ URL of the
   LibreTranslate server to use for translation commands. If this is omitted,
   then it is assumed to be empty. Empty server URL means no translation will be
   available.
 **libretranslate.apikey** - _(since 0.4.0, optional)_ API key for the
-  LibreTranslate server. If this is empty, then no API key will be used in
-  requests to the translation server.
+  LibreTranslate server. If this setting is omitted, then it is assumed to be
+  empty. If this is empty, then no API key will be used in requests to the
+  translation server. Some LibreTranslate instances will not work without an API
+  key.
+
+Note that at least a translation server URL has to be set, if you want the users
+of the bot to be able to use the translation feature. Some servers also require
+an API key, while other servers work without one.
+
+A list of some possible LibreTranslate servers is available at
+<https://github.com/LibreTranslate/LibreTranslate#mirrors>.
 
 # Example of a complete configuration file
 
