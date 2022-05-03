@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include "../../src/botvinnik/plugins/CheatSheet.hpp"
 #include "../../src/botvinnik/plugins/Debian.hpp"
 #include "../../src/botvinnik/plugins/Fortune.hpp"
+#include "../../src/botvinnik/plugins/LibreTranslate.hpp"
 #include "../../src/botvinnik/plugins/Ping.hpp"
 #include "../../src/botvinnik/plugins/Wikipedia.hpp"
 #include "../../src/botvinnik/plugins/xkcd/Xkcd.hpp"
@@ -50,6 +51,7 @@ TEST_CASE("plugin registration for all known plugins")
   Corona cov;
   Debian deb;
   Fortune fortune;
+  LibreTranslate translate;
   Ping ping;
   Wikipedia wiki;
   Xkcd xkcd(bot.matrix());
@@ -65,6 +67,7 @@ TEST_CASE("plugin registration for all known plugins")
     REQUIRE( bot.registerPlugin(cov) );
     REQUIRE( bot.registerPlugin(deb) );
     REQUIRE( bot.registerPlugin(fortune) );
+    REQUIRE( bot.registerPlugin(translate) );
     REQUIRE( bot.registerPlugin(ping) );
     REQUIRE( bot.registerPlugin(wiki) );
     REQUIRE( bot.registerPlugin(xkcd) );

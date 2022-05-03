@@ -4,6 +4,14 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2022-05-??)
+
+A new feature for text translation and two corresponding commands are added.
+The command `!tr` does the translation, e. g. typing `!tr en fr Hello world!`
+will translate the text "Hello world!" from English ("en") to French ("fr").
+The command `!tr-lang` will show a list of available languages and their
+corresponding language codes.
+
 ## Version 0.3.16 (2022-05-03)
 
 The `!version` command does now contain information about the version of the

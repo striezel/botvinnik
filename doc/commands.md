@@ -102,6 +102,16 @@ These commands are merely for entertainment purposes.
 A fortune command version that uses the popular `cowsay` to display messages may
 (or may not) be added in the future.
 
+### Translation
+
+The following commands allow text translation between different languages:
+
+* `!tr` - _(since version 0.4.0)_ translates text from one language to another,
+  e. g. `!tr en de Hello world!` will translate the text "Hello world!" from
+  English (`en`) to German (`de`).
+* `!tr-lang` - _(since version 0.4.0)_ shows a list of available languages and
+  their corresponding language codes.
+
 ### Debian package search
 
 The following commands search for available [Debian](https://www.debian.org/)

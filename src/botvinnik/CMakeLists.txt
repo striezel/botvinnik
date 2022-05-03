@@ -32,6 +32,7 @@ set(botvinnik_sources
     plugins/CheatSheet.cpp
     plugins/Debian.cpp
     plugins/Fortune.cpp
+    plugins/LibreTranslate.cpp
     plugins/Ping.cpp
     plugins/Wikipedia.cpp
     plugins/xkcd/Xkcd.cpp

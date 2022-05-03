@@ -37,6 +37,7 @@
 #include "plugins/CheatSheet.hpp"
 #include "plugins/Debian.hpp"
 #include "plugins/Fortune.hpp"
+#include "plugins/LibreTranslate.hpp"
 #include "plugins/Ping.hpp"
 #include "plugins/Wikipedia.hpp"
 #include "plugins/xkcd/Xkcd.hpp"
@@ -245,6 +246,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of cheat sheet plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::LibreTranslate translate;
+  if (!bot.registerPlugin(translate))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of translate plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }
