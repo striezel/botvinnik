@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.3.? (2022-05-??)
+## Version 0.3.16 (2022-05-03)
 
 The `!version` command does now contain information about the version of the
 SQLite 3 library, too. The same information is included when invoking the
