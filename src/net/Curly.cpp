@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of scan-tool.
-    Copyright (C) 2015, 2016, 2017, 2021  Dirk Stolle
+    Copyright (C) 2015, 2016, 2017, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ size_t writeCallbackString(char *ptr, size_t size, size_t nmemb, void *userdata)
 struct StringData
 {
   // size_type should be an unsigned integer, because that way the check for
-  // negative values at runtime can be eliminated.
+  // negative values at run time can be eliminated.
   static_assert(std::is_integral_v<std::string::size_type>
              && std::is_unsigned_v<std::string::size_type>);
   std::string::size_type dataOffset;
@@ -186,8 +186,11 @@ bool Curly::setPutData(const std::string& data)
 
 bool Curly::limitUpstreamSpeed(const unsigned int maxBytesPerSecond)
 {
-  if (maxBytesPerSecond > std::numeric_limits<curl_off_t>::max())
-    return false;
+  if constexpr(std::numeric_limits<decltype(maxBytesPerSecond)>::max() > std::numeric_limits<curl_off_t>::max())
+  {
+    if (maxBytesPerSecond > std::numeric_limits<curl_off_t>::max())
+      return false;
+  }
   m_MaxUpstreamSpeed = maxBytesPerSecond;
   return true;
 }
