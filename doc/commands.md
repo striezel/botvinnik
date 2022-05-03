@@ -107,7 +107,13 @@ A fortune command version that uses the popular `cowsay` to display messages may
 The following commands search for available [Debian](https://www.debian.org/)
 packages:
 
-* `!deb` - _(since version 0.1.3)_ alias for `!deb10`
+* `!deb` - _(since version 0.1.3)_ alias for `!deb11`
+* `!deb12` - _(since version 0.3.16)_ searches for packages for Debian 12
+  ("bookworm"), e.g. `!deb10 grep` will find Debian 12 packages where "grep" is
+  part of the name
+* `!deb11` - _(since version 0.1.3)_ searches for packages for Debian 11
+  ("bullseye"), e.g. `!deb11 grep` will find Debian 11 packages where "grep" is
+  part of the name
 * `!deb10` - _(since version 0.1.3)_ searches for packages for Debian 10
   ("buster"), e.g. `!deb10 grep` will find Debian 10 packages where "grep" is
   part of the name

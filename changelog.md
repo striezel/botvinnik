@@ -4,11 +4,16 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.3.? (2022-04-??)
+## Version 0.3.? (2022-05-??)
 
 The `!version` command does now contain information about the version of the
 SQLite 3 library, too. The same information is included when invoking the
 executable with the `--version` parameter on the command line.
+
+The Debian package search is extended by adding the `!deb12` command to search
+for packages in Debian 12 (a.k.a. "bookworm"). Furthermore, the `!deb` command
+is now an alias for `!deb11` instead for `!deb10`. In other words: `!deb` does
+now search packages of Debian 11 instead of Debian 10 as before.
 
 ## Version 0.3.15 (2022-01-26)
 

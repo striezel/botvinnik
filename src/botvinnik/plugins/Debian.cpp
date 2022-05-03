@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ Debian::Debian()
 
 std::vector<std::string> Debian::commands() const
 {
-  return { "deb", "deb11", "deb10", "deb9", "deb8" };
+  return { "deb", "deb12", "deb11", "deb10", "deb9", "deb8" };
 }
 
 void Debian::getVersion(Packages::nameVersion& pack, const std::string& suite)
@@ -282,13 +282,17 @@ Message Debian::handleCommand(const std::string_view& command, const std::string
         .append(command).append("' command."));
   }
 
-  if (command == "deb" || command == "deb10")
-  {
-    return packageSearch(command, message, "buster");
-  }
-  if (command == "deb11")
+  if (command == "deb" || command == "deb11")
   {
     return packageSearch(command, message, "bullseye");
+  }
+  if (command == "deb12")
+  {
+    return packageSearch(command, message, "bookworm");
+  }
+  if (command == "deb10")
+  {
+    return packageSearch(command, message, "buster");
   }
   if (command == "deb9")
   {
@@ -307,19 +311,23 @@ std::string Debian::helpOneLine(const std::string_view& command) const
 {
   if (command == "deb")
   {
-    return "alias for deb10";
+    return "alias for deb11";
+  }
+  if (command == "deb12")
+  {
+    return "gets a list of available packages in Debian 12 (a.k.a \"bookworm\"), the future stable release";
   }
   if (command == "deb11")
   {
-    return "gets a list of available packages in Debian 11 (a.k.a \"bullseye\"), the future stable release";
+    return "gets a list of available packages in Debian 11 (a.k.a \"bullseye\"), the current stable release";
   }
   if (command == "deb10")
   {
-    return "gets a list of available packages in Debian 10 (a.k.a \"buster\"), the current stable release";
+    return "gets a list of available packages in Debian 10 (a.k.a \"buster\"), the old stable release";
   }
   if (command == "deb9")
   {
-    return "gets a list of available packages in Debian 9 (a.k.a \"stretch\"), the old stable release";
+    return "gets a list of available packages in Debian 9 (a.k.a \"stretch\"), the twice old stable release";
   }
   if (command == "deb8")
   {
