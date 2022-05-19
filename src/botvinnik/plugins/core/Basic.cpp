@@ -73,10 +73,10 @@ Message Basic::handleCommand(const std::string_view& command, const std::string_
              + "Version control commit: " + info.commit() + "\n"
              + "Version control date:   " + info.date() + "\n\n"
              + "Libraries:\n"
-             + "  * simdjson " + STRINGIFY(SIMDJSON_VERSION)
+             + "  * simdjson " + SIMDJSON_STRINGIFY(SIMDJSON_VERSION)
              + ", using implementation "
-             + simdjson::active_implementation->name() + " ("
-             + simdjson::active_implementation->description() + ")\n"
+             + simdjson::get_active_implementation()->name() + " ("
+             + simdjson::get_active_implementation()->description() + ")\n"
              + "  * nlohmann/json " + std::to_string(NLOHMANN_JSON_VERSION_MAJOR)
              + "." + std::to_string(NLOHMANN_JSON_VERSION_MINOR) + "."
              + std::to_string(NLOHMANN_JSON_VERSION_PATCH) + "\n";

@@ -50,10 +50,10 @@ void showVersion()
             << "Version control commit: " << info.commit() << "\n"
             << "Version control date:   " << info.date() << "\n\n"
             << "Libraries:" << std::endl
-            << "  * simdjson " << STRINGIFY(SIMDJSON_VERSION)
+            << "  * simdjson " << SIMDJSON_STRINGIFY(SIMDJSON_VERSION)
             << ", using implementation "
-            << simdjson::active_implementation->name() << " ("
-            << simdjson::active_implementation->description() << ")" << std::endl
+            << simdjson::get_active_implementation()->name() << " ("
+            << simdjson::get_active_implementation()->description() << ")" << std::endl
             << "  * nlohmann/json "
             << NLOHMANN_JSON_VERSION_MAJOR << "." << NLOHMANN_JSON_VERSION_MINOR
             << "." << NLOHMANN_JSON_VERSION_PATCH << std::endl;
