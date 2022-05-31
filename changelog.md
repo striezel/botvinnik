@@ -9,6 +9,10 @@ improvements may be omitted.)_
 The library that does the JSON parsing (simdjson) has been updated from version
 1.0.2 to version 2.0.1.
 
+The base image for the Docker build is updated from `debian:10-slim` to
+`debian:11-slim`, i. e. from Debian 10 (codename "buster") to Debian 11
+(codename "bullseye").
+
 ## Version 0.4.0 (2022-05-03)
 
 A new feature for text translation and two corresponding commands are added.

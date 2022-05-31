@@ -7,7 +7,7 @@
 #       server side of Docker.
 
 # build stage
-FROM debian:10-slim AS builder
+FROM debian:11-slim AS builder
 LABEL maintainer="Dirk Stolle <striezel-dev@web.de>"
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y catch cmake g++ git libcurl4-gnutls-dev libsqlite3-dev pkg-config
@@ -17,7 +17,7 @@ WORKDIR /opt/bvn
 RUN mkdir build && cd build && cmake .. && make -j4 && ctest
 
 # runtime stage
-FROM debian:10-slim AS runner
+FROM debian:11-slim AS runner
 LABEL maintainer="Dirk Stolle <striezel-dev@web.de>"
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y --no-install-recommends --no-install-suggests \
