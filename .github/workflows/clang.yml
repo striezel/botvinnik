@@ -41,6 +41,18 @@ jobs:
           make -j4
           cd ..
         if: matrix.version == 10
+      - name: Build statically linked binaries with Clang ${{ matrix.version }}
+        run: |
+          export CXX=clang++-${{ matrix.version }}
+          export CC=clang-${{ matrix.version }}
+          cd $GITHUB_WORKSPACE
+          # Build statically linked and with LTO.
+          mkdir ./build-static
+          cd ./build-static
+          cmake -DEnABLE_LTO=ON -DENABLE_STATIC_LINKING=ON ../
+          make -j4
+          cd ..
+        if: matrix.version == 11
       - name: Tests
         run: |
           cd "$GITHUB_WORKSPACE"/build
