@@ -63,13 +63,13 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clan
     else ()
         add_definitions (-O3)
     endif ()
+
+    set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -s" )
 endif ()
 
 if (USER_AGENT)
   add_definitions (-DBVN_USER_AGENT)
 endif(USER_AGENT)
-
-set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -s" )
 
 add_executable(plugin_tests ${plugin_tests_sources})
 
