@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 */
 
 #include "chrono.hpp"
+#include <ctime>
 
 namespace bvn
 {
@@ -26,9 +27,10 @@ namespace bvn
 std::string timePointToString(const std::chrono::time_point<std::chrono::system_clock>& dateTime)
 {
   const std::time_t tt = std::chrono::system_clock::to_time_t(dateTime);
+  struct tm tm;
+  #if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__)
   // Note: localtime() is NOT thread-safe. Therefore we use localtime_r(), which
   // is thread-safe but may not be available on all platforms or compilers.
-  struct tm tm;
   struct tm* ptr = localtime_r(&tt, &tm);
   if (ptr == nullptr)
   {
@@ -38,6 +40,18 @@ std::string timePointToString(const std::chrono::time_point<std::chrono::system_
                .count()
            ).append(" ms since epoch");
   }
+  #else
+  // MSVC does not have localtime_r, so we use localtime_s instead.
+  const errno_t error = localtime_s(&tm, &tt);
+  if (error != 0)
+  {
+    // Fallback: Milliseconds since epoch.
+    return std::to_string(
+               std::chrono::duration_cast<std::chrono::milliseconds>(dateTime.time_since_epoch())
+               .count()
+           ).append(" ms since epoch");
+  }
+  #endif
   const int realYear = tm.tm_year + 1900;
   const int realMonth = tm.tm_mon + 1;
   return
