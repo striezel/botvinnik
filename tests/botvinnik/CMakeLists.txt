@@ -15,8 +15,10 @@ add_test(NAME botvinnik_help_question_mark
          COMMAND $<TARGET_FILE:botvinnik> -?)
 
 # Windows-style help parameter "/?"
-add_test(NAME botvinnik_help_question_mark_windows
-         COMMAND $<TARGET_FILE:botvinnik> /?)
+if (NOT DEFINED ENV{GITHUB_ACTIONS} OR NOT MINGW)
+    add_test(NAME botvinnik_help_question_mark_windows
+             COMMAND $<TARGET_FILE:botvinnik> /?)
+endif ()
 
 # parameter to show version number
 add_test(NAME botvinnik_version
