@@ -33,6 +33,8 @@ endif (ENABLE_LTO)
 #
 # Static linking increases the size of the binaries, but those binaries do not
 # need the libraries to be present on the system.
+#
+# WARNING: This option is still experimental and may not work completely.
 option(ENABLE_STATIC_LINKING "Links all libraries statically" OFF)
 if (ENABLE_STATIC_LINKING)
   set(CMAKE_LINK_SEARCH_START_STATIC 1)
