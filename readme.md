@@ -19,6 +19,7 @@ may not work with other homeserver implementations such as
 * GitHub workflows:
   * [![GitHub CI Clang status](https://github.com/striezel/botvinnik/workflows/Clang/badge.svg)](https://github.com/striezel/botvinnik/actions)
   * [![GitHub CI GCC status](https://github.com/striezel/botvinnik/workflows/GCC/badge.svg)](https://github.com/striezel/botvinnik/actions)
+  * [![GitHub CI MSYS2 status](https://github.com/striezel/botvinnik/workflows/MSYS2/badge.svg)](https://github.com/striezel/botvinnik/actions)
 * GitLab CI:
 [![GitLab pipeline status](https://gitlab.com/striezel/botvinnik/badges/master/pipeline.svg)](https://gitlab.com/striezel/botvinnik/)
 
