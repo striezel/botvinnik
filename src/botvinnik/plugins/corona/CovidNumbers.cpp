@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ std::vector<CovidNumbersElem> calculate_incidence(const std::vector<CovidNumbers
   const auto len = numbers.size();
   std::vector<CovidNumbersElem> result;
   result.reserve(len);
-  const int max_len = std::min(6ul, len);
+  const int max_len = std::min(static_cast<std::vector<CovidNumbersElem>::size_type>(6), len);
   for (int i = 0; i < max_len; ++i)
   {
     CovidNumbersElem elem = numbers[i];
