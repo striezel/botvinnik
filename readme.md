@@ -72,6 +72,11 @@ If you want to run the test suite, too, then there is one more step:
 
     ctest -V
 
+## Building from source on Windows
+
+For information how to build botvinnik on Windows, see the
+[MSYS2 build instructions](./doc/msys2-build.md).
+
 ## Building in Docker
 
 This repository contains a `Dockerfile` that does a multistage build.
