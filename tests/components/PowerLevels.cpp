@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include <catch.hpp>
+#include "../locate_catch.hpp"
 #include "../../src/matrix/events/PowerLevels.hpp"
 
 TEST_CASE("PowerLevels constructor")

@@ -29,6 +29,7 @@
 		</Linker>
 		<Unit filename="../../src/net/url_encode.cpp" />
 		<Unit filename="../../src/net/url_encode.hpp" />
+		<Unit filename="../locate_catch.hpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="urlencode.cpp" />
 		<Extensions>

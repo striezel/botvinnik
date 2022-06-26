@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include <catch.hpp>
+#include "../locate_catch.hpp"
 #include <unordered_map>
 #include "../../src/net/url_encode.hpp"
 

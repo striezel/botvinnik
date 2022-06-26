@@ -38,6 +38,7 @@
 		<Unit filename="../../src/util/Directories.hpp" />
 		<Unit filename="../../src/util/Strings.cpp" />
 		<Unit filename="../../src/util/Strings.hpp" />
+		<Unit filename="../locate_catch.hpp" />
 		<Unit filename="FailCounter.cpp" />
 		<Unit filename="PowerLevels.cpp" />
 		<Unit filename="calculate_incidence.cpp" />

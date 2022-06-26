@@ -35,6 +35,7 @@
 		<Unit filename="../../src/net/Curly.hpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.h" />
+		<Unit filename="../locate_catch.hpp" />
 		<Unit filename="disease.sh.cpp" />
 		<Unit filename="main.cpp" />
 		<Extensions>

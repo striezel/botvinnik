@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include <catch.hpp>
+#include "../locate_catch.hpp"
 #include <cmath>
 #include <limits>
 #include "../../src/botvinnik/plugins/corona/CovidNumbers.hpp"

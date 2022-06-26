@@ -100,6 +100,7 @@
 		<Unit filename="../../third-party/nlohmann/json.hpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.h" />
+		<Unit filename="../locate_catch.hpp" />
 		<Unit filename="CheatSheet.cpp" />
 		<Unit filename="Conversion.cpp" />
 		<Unit filename="Corona.cpp" />

@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include <catch.hpp>
+#include "../locate_catch.hpp"
 #include "../../src/botvinnik/FailCounter.hpp"
 
 TEST_CASE("FailCounter constructor")

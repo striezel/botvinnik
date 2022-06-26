@@ -19,7 +19,7 @@
 */
 
 #include <algorithm> // std::find
-#include <catch.hpp>
+#include "../locate_catch.hpp"
 #include "../../src/matrix/json/Sync.hpp"
 
 TEST_CASE("parsing sync events")

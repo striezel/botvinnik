@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include <catch.hpp>
+#include "../locate_catch.hpp"
 #include "../../src/net/htmlspecialchars.hpp"
 
 TEST_CASE("htmlspecialchars")

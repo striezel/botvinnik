@@ -27,6 +27,7 @@
 		</Compiler>
 		<Unit filename="../../src/util/Strings.cpp" />
 		<Unit filename="../../src/util/Strings.hpp" />
+		<Unit filename="../locate_catch.hpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="split.cpp" />
 		<Extensions>

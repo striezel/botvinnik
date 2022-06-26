@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include <catch.hpp>
+#include "../locate_catch.hpp"
 #include "../../src/botvinnik/plugins/xkcd/XkcdData.hpp"
 
 TEST_CASE("plugin Xkcd: XkcdData retrieval")

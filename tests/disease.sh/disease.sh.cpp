@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include <catch.hpp>
+#include "../locate_catch.hpp"
 #include "../../src/botvinnik/plugins/corona/disease.sh.hpp"
 
 TEST_CASE("disease.sh API")

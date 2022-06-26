@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include <catch.hpp>
+#include "../locate_catch.hpp"
 #include <algorithm>
 #include <regex>
 #include "../../src/botvinnik/Bot.hpp"

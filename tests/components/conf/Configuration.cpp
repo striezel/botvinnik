@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include <catch.hpp>
+#include "../../locate_catch.hpp"
 #include <cctype>
 #include <type_traits>
 #include "../../../src/conf/Configuration.hpp"
