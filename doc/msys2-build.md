@@ -36,7 +36,6 @@ All of that can usually be installed be typing
 
 ```bash
 pacman -S git mingw-w64-x86_64-catch mingw-w64-x86_64-cmake mingw-w64-x86_64-curl-winssl mingw-w64-x86_64-gcc mingw-w64-x86_64-ninja mingw-w64-x86_64-pkg-config mingw-w64-x86_64-sqlite3
-
 ```
 
 into the MSYS2 command prompt.
