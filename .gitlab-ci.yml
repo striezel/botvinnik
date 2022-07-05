@@ -1,10 +1,27 @@
-image: debian:10-slim
+docker_image_gcc:
+  image: docker:20
+  stage: build
+  services:
+    - docker:20-dind
+  script:
+    - cd ci/
+    - docker build -t $CI_REGISTRY/striezel/botvinnik/gcc:deb10 . -f Dockerfile_gcc
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $CI_REGISTRY/striezel/botvinnik/gcc:deb10
+    - docker logout $CI_REGISTRY
+  # Only build new image when the Dockerfile or the GitLab CI configuration
+  # changes.
+  only:
+    changes:
+      - ci/Dockerfile_gcc
+      - .gitlab-ci.yml
 
 # Build with GCC / G++.
 build_gcc:
-  stage: build
+  image: registry.gitlab.com/striezel/botvinnik/gcc:deb10
+  stage: test
   before_script:
-    - apt-get update && apt-get -y install catch cmake fortune-mod fortunes-min g++ libcurl4-gnutls-dev libsqlite3-dev pkg-config
+    - apt-get update && apt-get -y upgrade
     - export CC=gcc && export CXX=g++
   script:
     # Build with User-Agent header.
@@ -20,11 +37,30 @@ build_gcc:
     - make -j4
     - ctest -V
 
+docker_image_clang:
+  image: docker:20
+  stage: build
+  services:
+    - docker:20-dind
+  script:
+    - cd ci/
+    - docker build -t $CI_REGISTRY/striezel/botvinnik/clang:deb10 . -f Dockerfile_clang
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $CI_REGISTRY/striezel/botvinnik/clang:deb10
+    - docker logout $CI_REGISTRY
+  # Only build new image when the Dockerfile or the GitLab CI configuration
+  # changes.
+  only:
+    changes:
+      - ci/Dockerfile_clang
+      - .gitlab-ci.yml
+
 # Build with Clang / Clang++.
 build_clang:
-  stage: build
+  image: registry.gitlab.com/striezel/botvinnik/clang:deb10
+  stage: test
   before_script:
-    - apt-get update && apt-get -y install catch clang cmake fortune-mod fortunes-min libc++-7-dev libcurl4-gnutls-dev libsqlite3-dev pkg-config
+    - apt-get update && apt-get -y upgrade
     - export CC=clang && export CXX=clang++
   script:
     # Build with User-Agent header.
@@ -40,12 +76,29 @@ build_clang:
     - make -j4
     - ctest -V
 
+docker_image_coverage:
+  image: docker:20
+  stage: build
+  services:
+    - docker:20-dind
+  script:
+    - cd ci/
+    - docker build -t $CI_REGISTRY/striezel/botvinnik/coverage:latest . -f Dockerfile_coverage
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $CI_REGISTRY/striezel/botvinnik/coverage:latest
+    - docker logout $CI_REGISTRY
+  # Only build new image when the Dockerfile or the GitLab CI configuration
+  # changes.
+  only:
+    changes:
+      - ci/Dockerfile_coverage
+      - .gitlab-ci.yml
+
 coverage:
-  image: debian:11-slim
+  image: registry.gitlab.com/striezel/botvinnik/coverage:latest
   stage: test
   before_script:
     - apt-get update && apt-get -y upgrade
-    - apt-get install -y catch cmake g++ lcov fortune-mod fortunes-min libcurl4-gnutls-dev libsqlite3-dev pkg-config
   script:
     # build
     - export CXX=g++

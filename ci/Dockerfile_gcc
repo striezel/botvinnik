@@ -1,0 +1,12 @@
+# This Dockerfile builds the image used during the GCC build job on GitLab.
+FROM debian:10-slim
+LABEL maintainer="Dirk Stolle"
+# Always update any existing packages first.
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get upgrade -y
+# Install build toolchain and dependencies.
+RUN apt-get install -y catch cmake fortune-mod fortunes-min g++ libcurl4-gnutls-dev libsqlite3-dev pkg-config
+ENV CXX=g++
+ENV CC=gcc
+RUN export CXX=g++
+RUN export CC=gcc
