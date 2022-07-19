@@ -33,6 +33,11 @@ else ()
   message ( FATAL_ERROR "cURL was not found!" )
 endif (CURL_FOUND)
 
+if (HAS_CATCH_V3)
+    find_package(Catch2 3 REQUIRED)
+    target_link_libraries(test_urlencode Catch2::Catch2WithMain)
+endif ()
+
 
 # add test for urlencoding
 add_test(NAME test_urlencode_with_curl

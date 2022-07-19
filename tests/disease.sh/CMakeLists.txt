@@ -36,6 +36,12 @@ else ()
   message ( FATAL_ERROR "cURL was not found!" )
 endif (CURL_FOUND)
 
+# MSYS2 / MinGW uses Catch 3.x.
+if (HAS_CATCH_V3)
+    find_package(Catch2 3 REQUIRED)
+    target_link_libraries(test_disease_sh Catch2::Catch2WithMain)
+endif ()
+
 
 # add test for disease.sh API
 add_test(NAME test_disease.sh_api

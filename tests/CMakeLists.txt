@@ -1,5 +1,11 @@
-# We might support earlier versions, too, but try to use a more recent one.
 cmake_minimum_required (VERSION 3.8)
+
+# MSYS2 / MinGW uses Catch 3.x.
+if (MINGW)
+  set(HAS_CATCH_V3 ON)
+else ()
+  set(HAS_CATCH_V3 OFF)
+endif ()
 
 # Recurse into subdirectory for executable tests.
 add_subdirectory (botvinnik)

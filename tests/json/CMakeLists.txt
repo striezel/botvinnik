@@ -28,6 +28,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(json_tests ${json_tests_sources})
 
+if (HAS_CATCH_V3)
+    find_package(Catch2 3 REQUIRED)
+    target_link_libraries(json_tests Catch2::Catch2WithMain)
+endif ()
+
 
 # add test for JSON parsing
 add_test(NAME test_json_parsing

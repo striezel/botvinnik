@@ -24,6 +24,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(test_split ${test_split_sources})
 
+if (HAS_CATCH_V3)
+    find_package(Catch2 3 REQUIRED)
+    target_link_libraries(test_split Catch2::Catch2WithMain)
+endif ()
+
 
 # add test for line splitting
 add_test(NAME test_split_line

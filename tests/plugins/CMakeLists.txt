@@ -96,6 +96,11 @@ else ()
   message ( FATAL_ERROR "SQLite3 was not found!" )
 endif (SQLite3_FOUND)
 
+if (HAS_CATCH_V3)
+    find_package(Catch2 3 REQUIRED)
+    target_link_libraries(plugin_tests Catch2::Catch2WithMain)
+endif ()
+
 # GNU GCC before 9.1.0 needs to link to libstdc++fs explicitly.
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.1.0")
   target_link_libraries(plugin_tests stdc++fs)
