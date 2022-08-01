@@ -100,7 +100,7 @@ The following settings control how the text translation commands work:
   LibreTranslate server to use for translation commands. If this is omitted,
   then it is assumed to be empty. Empty server URL means no translation will be
   available.
-**libretranslate.apikey** - _(since 0.4.0, optional)_ API key for the
+* **libretranslate.apikey** - _(since 0.4.0, optional)_ API key for the
   LibreTranslate server. If this setting is omitted, then it is assumed to be
   empty. If this is empty, then no API key will be used in requests to the
   translation server. Some LibreTranslate instances will not work without an API
