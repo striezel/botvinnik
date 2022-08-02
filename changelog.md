@@ -9,6 +9,9 @@ improvements may be omitted.)_
 The library that does the JSON parsing (simdjson) has been updated from version
 1.0.2 to version 2.2.2.
 
+The library that does the JSON serialization (nlohmann/json) has been updated
+from version 3.10.5 to version 3.11.1.
+
 The base image for the Docker build is updated from `debian:10-slim` to
 `debian:11-slim`, i. e. from Debian 10 (codename "buster") to Debian 11
 (codename "bullseye").
