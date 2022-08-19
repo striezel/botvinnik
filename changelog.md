@@ -4,6 +4,11 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2022-08-??)
+
+The library that does the JSON serialization (nlohmann/json) has been updated
+from version 3.11.2 to version 3.11.2.
+
 ## Version 0.4.1 (2022-08-06)
 
 The library that does the JSON parsing (simdjson) has been updated from version

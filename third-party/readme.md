@@ -7,7 +7,7 @@ the GPL v3.
 
 Currently, the following libraries are here:
 
-* **nlohmann/json.hpp**: JSON for Modern C++, version 3.11.1,
+* **nlohmann/json.hpp**: JSON for Modern C++, version 3.11.2,
   by Niels Lohmann <http://nlohmann.me>,
   licensed under the MIT License <http://opensource.org/licenses/MIT>
 
