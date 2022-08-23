@@ -232,7 +232,7 @@ bool Curly::perform(std::string& response)
   if (nullptr == handle)
   {
     //cURL error
-    std::cerr << "cURL easy init failed!" << std::endl;;
+    std::cerr << "cURL easy init failed!" << std::endl;
     return false;
   }
 
