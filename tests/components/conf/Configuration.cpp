@@ -23,11 +23,11 @@
 #include <type_traits>
 #include "../../../src/conf/Configuration.hpp"
 
-TEST_CASE("Configuration constructor")
+TEST_CASE("Configuration")
 {
   using namespace bvn;
 
-  SECTION("empty values after construction")
+  SECTION("constructor: empty values after construction")
   {
     Configuration conf;
     REQUIRE( conf.homeServer().empty() );
@@ -40,11 +40,6 @@ TEST_CASE("Configuration constructor")
     REQUIRE( conf.translationServer().empty() );
     REQUIRE( conf.translationApiKey().empty() );
   }
-}
-
-TEST_CASE("Configuration::commentCharacter")
-{
-  using namespace bvn;
 
   SECTION("comment character must be a printable non-space character")
   {
@@ -53,11 +48,6 @@ TEST_CASE("Configuration::commentCharacter")
     REQUIRE_FALSE( std::isspace(cc_as_uchar) );
     REQUIRE( std::isprint(cc_as_uchar) );
   }
-}
-
-TEST_CASE("Configuration::min_sync_delay and Configuration::max_sync_delay")
-{
-  using namespace bvn;
 
   SECTION("minimum delay must be above zero, maximum delay must be above minimum")
   {
@@ -66,34 +56,32 @@ TEST_CASE("Configuration::min_sync_delay and Configuration::max_sync_delay")
     // One minute is already too much time here.
     REQUIRE( std::chrono::minutes(1) > Configuration::max_sync_delay );
   }
-}
 
-TEST_CASE("Configuration::potentialFileNames")
-{
-  using namespace bvn;
-
-  SECTION("values must not be empty")
+  SECTION("potentialFileNames()")
   {
-    const auto names = Configuration::potentialFileNames();
-
-    REQUIRE_FALSE( names.empty() );
-    for (const auto& name: names)
+    SECTION("values must not be empty")
     {
-      REQUIRE_FALSE( name.empty() );
-    }
-  }
+      const auto names = Configuration::potentialFileNames();
 
-  SECTION("values are pairwise distinct")
-  {
-    const auto names = Configuration::potentialFileNames();
-    const auto size = names.size();
-
-    REQUIRE_FALSE( names.empty() );
-    for (std::remove_const<decltype(size)>::type i = 0; i < size; ++i)
-    {
-      for (std::remove_const<decltype(size)>::type j = i + 1; j < size; ++j)
+      REQUIRE_FALSE( names.empty() );
+      for (const auto& name: names)
       {
-        REQUIRE_FALSE( names[i] == names[j] );
+        REQUIRE_FALSE( name.empty() );
+      }
+    }
+
+    SECTION("values are pairwise distinct")
+    {
+      const auto names = Configuration::potentialFileNames();
+      const auto size = names.size();
+
+      REQUIRE_FALSE( names.empty() );
+      for (std::remove_const<decltype(size)>::type i = 0; i < size; ++i)
+      {
+        for (std::remove_const<decltype(size)>::type j = i + 1; j < size; ++j)
+        {
+          REQUIRE_FALSE( names[i] == names[j] );
+        }
       }
     }
   }
