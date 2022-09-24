@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -138,9 +138,9 @@ void Bot::start()
 
   while (!stopRequested())
   {
-    // Sleep a few seconds to avoid DOS-ing the server.
+    // Sleep a moment to avoid DOS-ing the server.
     // The sync endpoint is not rate-limited, but we do not have to overdo it.
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    std::this_thread::sleep_for(mat.configuration().syncDelay());
 
     const bool syncSuccess = mat.sync(next_batch, rooms, invites, next_batch);
     counter.next(syncSuccess);

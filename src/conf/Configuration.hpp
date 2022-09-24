@@ -21,6 +21,7 @@
 #ifndef BVN_CONFIGURATION_HPP
 #define BVN_CONFIGURATION_HPP
 
+#include <chrono>
 #include <map>
 #include <string>
 #include <unordered_set>
@@ -103,6 +104,24 @@ class Configuration
     int allowedFailures() const;
 
 
+    /** \brief Gets the delay between two consecutive sync requests.
+     *
+     * \return Returns the delay between two consecutive sync requests.
+     *         If no delay has been set yet, it returns zero.
+     */
+    std::chrono::milliseconds syncDelay() const;
+
+
+    /** \brief minimal allowed synchronization delay
+     */
+    static const std::chrono::milliseconds min_sync_delay;
+
+
+    /** \brief maximal allowed synchronization delay
+     */
+    static const std::chrono::milliseconds max_sync_delay;
+
+
     /** \brief Gets the URL of the translation server.
      *
      * \return Returns the URL of the translation server.
@@ -152,6 +171,7 @@ class Configuration
     std::string mPrefix; /**< prefix for commands */
     std::unordered_set<std::string> mStopUsers; /**< users that may stop the bot */
     int mAllowedFailsIn32; /**< allowed sync failures in 32 attempts */
+    std::chrono::milliseconds mSyncDelay; /**< delay between two consecutive sync requests */
 
     // plugin-related settings
     std::string mLibreTranslateServer; /**< URL of the LibreTranslate server */

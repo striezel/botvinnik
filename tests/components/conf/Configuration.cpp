@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ TEST_CASE("Configuration constructor")
     REQUIRE( conf.prefix().empty() );
     REQUIRE( conf.stopUsers().empty() );
     REQUIRE( conf.allowedFailures() == -1 );
+    REQUIRE( conf.syncDelay() == std::chrono::milliseconds::zero() );
     REQUIRE( conf.translationServer().empty() );
     REQUIRE( conf.translationApiKey().empty() );
   }
@@ -51,6 +52,19 @@ TEST_CASE("Configuration::commentCharacter")
 
     REQUIRE_FALSE( std::isspace(cc_as_uchar) );
     REQUIRE( std::isprint(cc_as_uchar) );
+  }
+}
+
+TEST_CASE("Configuration::min_sync_delay and Configuration::max_sync_delay")
+{
+  using namespace bvn;
+
+  SECTION("minimum delay must be above zero, maximum delay must be above minimum")
+  {
+    REQUIRE( Configuration::min_sync_delay > std::chrono::milliseconds::zero() );
+    REQUIRE( Configuration::max_sync_delay > Configuration::min_sync_delay );
+    // One minute is already too much time here.
+    REQUIRE( std::chrono::minutes(1) > Configuration::max_sync_delay );
   }
 }
 

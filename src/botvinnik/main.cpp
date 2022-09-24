@@ -193,7 +193,7 @@ int main(int argc, char** argv)
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }
-  bvn::Ping ping;
+  bvn::Ping ping(config.syncDelay());
   if (!bot.registerPlugin(ping))
   {
     // Should never happen!

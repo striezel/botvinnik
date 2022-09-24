@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ TEST_CASE("plugin Ping")
   using namespace std::chrono;
   Configuration conf;
   Bot bot(conf);
-  Ping plugin;
+  Ping plugin(std::chrono::milliseconds(5000));
 
   const auto commands = plugin.commands();
 

@@ -52,7 +52,7 @@ TEST_CASE("plugin registration for all known plugins")
   Debian deb;
   Fortune fortune;
   LibreTranslate translate("https://libretranslate.com", "");
-  Ping ping;
+  Ping ping(std::chrono::milliseconds(2345));
   Wikipedia wiki;
   Xkcd xkcd(bot.matrix());
 

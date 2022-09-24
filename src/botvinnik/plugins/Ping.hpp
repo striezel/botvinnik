@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,8 +32,10 @@ class Ping: public Plugin
 {
   public:
     /** \brief Constructor.
+     *
+     * \param bot_sync_delay   the configured synchronization delay of the bot
      */
-    Ping();
+    Ping(const std::chrono::milliseconds& bot_sync_delay);
 
 
     /** \brief Gets a list of commands that are provided by this plugin.
@@ -62,6 +64,8 @@ class Ping: public Plugin
      * \return Returns a short, one line help text for the command.
      */
     virtual std::string helpOneLine(const std::string_view& command) const;
+  private:
+    std::chrono::milliseconds sync_delay; /**< bot's synchronization delay */
 }; // class
 
 } // namespace

@@ -43,6 +43,13 @@ bool looksLikeUserId(const std::string& str)
 // use same comment character as in task files: '#'
 const char Configuration::commentCharacter = '#';
 
+// Anything below 100 ms is awfully close to a DoS attempt.
+const std::chrono::milliseconds Configuration::min_sync_delay = std::chrono::milliseconds(100);
+
+// Anything above 30 seconds (=30000 ms) is too slow to be recognized as a
+// timely response.
+const std::chrono::milliseconds Configuration::max_sync_delay = std::chrono::milliseconds(30000);
+
 Configuration::Configuration()
 :
   mHomeServer(""),
@@ -51,6 +58,7 @@ Configuration::Configuration()
   mPrefix(""),
   mStopUsers(std::unordered_set<std::string>()),
   mAllowedFailsIn32(-1),
+  mSyncDelay(std::chrono::milliseconds::zero()),
   mLibreTranslateServer(""),
   mLibreTranslateApiKey("")
 {
@@ -109,6 +117,11 @@ bool Configuration::isAdminUser(const std::string& userId) const
 int Configuration::allowedFailures() const
 {
   return mAllowedFailsIn32;
+}
+
+std::chrono::milliseconds Configuration::syncDelay() const
+{
+  return mSyncDelay;
 }
 
 const std::string& Configuration::translationServer() const
@@ -296,6 +309,41 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
         return false;
       }
     } // if bot.sync.allowed_failures
+    else if ((name == "bot.sync.delay_milliseconds") || (name == "bot.delay_milliseconds"))
+    {
+      if (mSyncDelay != std::chrono::milliseconds::zero())
+      {
+        std::cerr << "Error: Synchronization delay is specified more than once"
+                  << " in file " << fileName << "!" << std::endl;
+        return false;
+      }
+      int amount_of_ms = 0;
+      if (!stringToInt(value, amount_of_ms))
+      {
+        std::cerr << "Error: Synchronization delay in file " << fileName
+                  << " must be a non-negative integer!" << std::endl;
+        return false;
+      }
+      // If it is outside of the allowed minimum or maximum, the value is
+      // invalid and will be clamped.
+      if (amount_of_ms < min_sync_delay.count())
+      {
+        std::clog << "Warning: Synchronization delay in file " << fileName
+                  << " is lower than allowed and will be raised to the allowed"
+                  << " minimum of " << min_sync_delay.count()
+                  << " milliseconds!" << std::endl;
+        amount_of_ms = min_sync_delay.count();
+      }
+      else if (amount_of_ms > max_sync_delay.count())
+      {
+        std::clog << "Warning: Synchronization delay in file " << fileName
+                  << " is higher than allowed and will be lowered to the "
+                  << " allowed maximum of " << max_sync_delay.count()
+                  << " milliseconds!" << std::endl;
+        amount_of_ms = max_sync_delay.count();
+      }
+      mSyncDelay = std::chrono::milliseconds(amount_of_ms);
+    } // if bot.sync.delay_milliseconds
     else if (name == "libretranslate.server")
     {
       if (!mLibreTranslateServer.empty())
@@ -361,6 +409,11 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
     std::clog << "Info: Setting number of allowed sync failures to " << mAllowedFailsIn32
               << ", because none is given in the configuration file." << std::endl;
   }
+  // Synchronization delay may be missing. Set it to the default in that case.
+  if (mSyncDelay == std::chrono::milliseconds::zero())
+  {
+    mSyncDelay = std::chrono::milliseconds(5000);
+  }
 
   // Everything is good, so far.
   return true;
@@ -407,6 +460,7 @@ void Configuration::clear()
   mPassword.clear();
   mStopUsers.clear();
   mAllowedFailsIn32 = -1;
+  mSyncDelay = std::chrono::milliseconds::zero();
   mLibreTranslateServer.clear();
   mLibreTranslateApiKey.clear();
 }

@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,12 +19,12 @@
 */
 
 #include "Ping.hpp"
-#include <chrono>
 
 namespace bvn
 {
 
-Ping::Ping()
+Ping::Ping(const std::chrono::milliseconds& bot_sync_delay)
+: sync_delay(std::max(std::chrono::milliseconds(100), bot_sync_delay))
 {
 }
 
@@ -57,10 +57,18 @@ Message Ping::handleCommand(const std::string_view& command, const std::string_v
     const auto now = std::chrono::system_clock::now().time_since_epoch();
     const std::chrono::milliseconds diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - server_ts);
     const auto diffStr = humanReadableDuration(diff);
+    // Everything between 2000 ms may possibly get eaten by network latency, so
+    // let's be a bit generous with the estimate here.
+    const auto delay = sync_delay.count() <= 2000 ? "two"
+                         : std::to_string(std::chrono::ceil<std::chrono::seconds>(sync_delay).count());
     return Message(std::string(userId).append(": Ping took ").append(diffStr).append(" to arrive.")
-                  .append("\nNote that the bot only queries new events every five seconds, so a \"ping\" of up to five seconds is not unusual."),
+                  .append("\nNote that the bot only queries new events approx. every "
+                          + delay + " seconds, so a \"ping\" of up to " + delay
+                          + " seconds is not unusual."),
                    std::string(userId).append(": Ping took ").append(diffStr).append(" to arrive.<br />\n")
-                  .append("<em>Note that the bot only queries new events every five seconds, so a \"ping\" of up to five seconds is not unusual.</em>"));
+                  .append("<em>Note that the bot only queries new events approx. every "
+                          + delay + " seconds, so a \"ping\" of up to " + delay
+                          + " seconds is not unusual.</em>"));
   }
 
   // unknown command

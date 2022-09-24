@@ -85,12 +85,24 @@ create a separate Matrix user that is just used by the bot.
   attempts before the bot exits. Allowed range is from 0 (zero) to 31. This
   setting can be used to avoid that the bot stops when the network connection
   may occasionally be down for a few seconds. One allowed failure is approx. the
-  equivalent of five seconds network downtime. Default value is twelve, if it is
-  not set explicitly.
+  equivalent of five seconds network downtime. (This time may change, if the
+  setting **bot.sync.delay_milliseconds** is set to something else than 5000.)
+  Default value of allowed failures is twelve, if it is not set explicitly.
 
   Set this to zero, if you want to restore the behaviour used in versions before
   0.2.0. However, a value of zero means that the bot stops whenever there is a
   small, short network downtime, so this is not advisable.
+* **bot.sync.delay_milliseconds** - _(since 0.5.0, optional)_ the delay between
+  two consecutive Matrix synchronization requests in milliseconds. (One second
+  consists of 1000 milliseconds, e. g. 5000 milliseconds are 5 seconds.)
+  Allowed range is from 100 (0.1 seconds) to 30000 (30 seconds). Values outside
+  of this range will be replaced by the allowed minimum or maximum - whatever is
+  closer. Default value is 5000, if it is not set explicitly.
+
+  Primary purpose of this setting is to allow a balance between too high load on
+  the Matrix server due to too many synchronization requests from the bot on the
+  one side and a bot that is responding to commands too slowly on the other
+  side.
 
 ## Translation server settings
 
@@ -116,7 +128,7 @@ A list of some possible LibreTranslate servers is available at
 # Example of a complete configuration file
 
 The following example is a complete core configuration file for the
-botvinnik program (as of version 0.4.0):
+botvinnik program (as of version 0.5.0):
 
     # This line is a comment and will be ignored by the program.
     #And so is this line.
@@ -129,6 +141,7 @@ botvinnik program (as of version 0.4.0):
     command.prefix=!
     bot.stop.allowed.userid=@bob:matrix.example.tld
     bot.sync.allowed_failures=12
+    bot.sync.delay_milliseconds=5000
     # translation server settings
     libretranslate.server=https://libretranslate.com
     libretranslate.apikey=abcdef1234567890
