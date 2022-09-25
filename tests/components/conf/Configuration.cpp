@@ -541,6 +541,75 @@ TEST_CASE("Configuration")
       REQUIRE( conf.translationApiKey().empty() );
     }
 
+    SECTION("invalid: same stop user id is listed twice")
+    {
+      const std::filesystem::path path{"same-stop-user-id-twice.conf"};
+      const std::string content = R"conf(
+      # Matrix server login settings
+      matrix.homeserver=https://matrix.example.tld/
+      matrix.userid=@alice:matrix.example.tld
+      matrix.password=secret, secret, top(!) secret
+      # bot management settings
+      command.prefix=!
+      bot.stop.allowed.userid=@johndoe:matrix.example.tld
+      bot.stop.allowed.userid=@johndoe:matrix.example.tld
+      bot.sync.allowed_failures=12
+      bot.sync.delay_milliseconds=5000
+      # translation server settings
+      libretranslate.server=https://libretranslate.com
+      libretranslate.apikey=abcdef1234567890
+      )conf";
+      REQUIRE( writeConfiguration(path, content) );
+      FileGuard guard{path};
+
+      Configuration conf;
+      REQUIRE_FALSE( conf.load(path.string()) );
+    }
+
+    SECTION("invalid: stop user id is not a matrix id, part 1")
+    {
+      const std::filesystem::path path{"stop-user-not-a-matrix-id-1.conf"};
+      const std::string content = R"conf(
+      # Matrix server login settings
+      matrix.homeserver=https://matrix.example.tld/
+      matrix.userid=@alice:matrix.example.tld
+      matrix.password=secret
+      # bot management settings
+      command.prefix=!
+      bot.stop.allowed.userid=bob:matrix.example.tld
+      bot.sync.allowed_failures=15
+      bot.sync.delay_milliseconds=4000
+      # no translation server settings
+      )conf";
+      REQUIRE( writeConfiguration(path, content) );
+      FileGuard guard{path};
+
+      Configuration conf;
+      REQUIRE_FALSE( conf.load(path.string()) );
+    }
+
+    SECTION("invalid: stop user id is not a matrix id, part 2")
+    {
+      const std::filesystem::path path{"stop-user-not-a-matrix-id-2.conf"};
+      const std::string content = R"conf(
+      # Matrix server login settings
+      matrix.homeserver=https://matrix.example.tld/
+      matrix.userid=@alice:matrix.example.tld
+      matrix.password=secret
+      # bot management settings
+      command.prefix=!
+      bot.stop.allowed.userid=@bob
+      bot.sync.allowed_failures=15
+      bot.sync.delay_milliseconds=4000
+      # no translation server settings
+      )conf";
+      REQUIRE( writeConfiguration(path, content) );
+      FileGuard guard{path};
+
+      Configuration conf;
+      REQUIRE_FALSE( conf.load(path.string()) );
+    }
+
     SECTION("invalid: missing stop user id")
     {
       const std::filesystem::path path{"missing-stop-user-id.conf"};
