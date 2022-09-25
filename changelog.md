@@ -6,6 +6,16 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2022-08-??)
 
+An new configuration option, `bot.sync.delay_milliseconds`, can now be used to
+specify the delay between two consecutive Matrix synchronization requests. In
+previous versions that value was hard-coded to 5000 ms (i. e. 5 seconds), and
+that is its default value, if it is not specified in the configuration file.
+
+Primary purpose of the new setting is to allow a balance between too high load
+on the Matrix server due to too many synchronization requests from the bot on
+the one side and a bot that is responding to commands too slowly on the other
+side.
+
 The library that does the JSON serialization (nlohmann/json) has been updated
 from version 3.11.1 to version 3.11.2.
 
