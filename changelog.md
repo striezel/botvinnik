@@ -6,8 +6,9 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2022-08-??)
 
-* Bot command can now be deactivated selectively via the configuration file. For
-  that purpose the new configuration option `command.deactivate` is introduced.
+* Bot commands can now be deactivated selectively via the configuration file.
+  For that purpose the new configuration option `command.deactivate` is
+  introduced.
   For example, the line `command.deactivate=ping` in the configuration file
   would deactivate the `!ping` command. This option can be given multiple times
   to deactivate more than one command.
