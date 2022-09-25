@@ -74,6 +74,15 @@ create a separate Matrix user that is just used by the bot.
 * **command.prefix** - _(since 0.0.5, optional)_ prefix for text commands (e. g.
   if you have a hypothetical command `foo` and the prefix is set to `!`, then
   the text message `!foo` will trigger that command); defaults to `!` if not set
+* **command.deactivate** - _(since 0.5.0, optional)_ specifies a bot command
+  that will be deactivated, i. e. it will not be available when the bot is
+  running. For example, the line `command.deactivate=ping` would deactivate the
+  `!ping` command. This option can be given multiple times to deactivate more
+  than one command.
+
+  _Note:_ Some commands like `!help`, `!stop` and others that are essential to
+  operate the bot cannot be deactivated. The bot will not start if you attempt
+  to deactivate such a command.
 * **bot.stop.allowed.userid** - _(since 0.0.11, required)_ user id of a Matrix
   user that is allowed to stop the bot (e. g. `@alice:example.tld`). This
   setting may occur multiple times with different user ids to allow more users
@@ -142,6 +151,8 @@ botvinnik program (as of version 0.5.0):
     bot.stop.allowed.userid=@bob:matrix.example.tld
     bot.sync.allowed_failures=12
     bot.sync.delay_milliseconds=5000
+    # deactivate the !ping command
+    command.deactivate=ping
     # translation server settings
     libretranslate.server=https://libretranslate.com
     libretranslate.apikey=abcdef1234567890

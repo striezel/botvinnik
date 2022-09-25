@@ -56,6 +56,7 @@ Configuration::Configuration()
   mUserId(""),
   mPassword(""),
   mPrefix(""),
+  mDeactivatedCommands(std::unordered_set<std::string>()),
   mStopUsers(std::unordered_set<std::string>()),
   mAllowedFailsIn32(-1),
   mSyncDelay(std::chrono::milliseconds::zero()),
@@ -102,6 +103,11 @@ const std::string& Configuration::password() const
 const std::string& Configuration::prefix() const
 {
   return mPrefix;
+}
+
+const std::unordered_set<std::string>& Configuration::deactivatedCommands() const
+{
+  return mDeactivatedCommands;
 }
 
 const std::unordered_set<std::string>& Configuration::stopUsers() const
@@ -264,6 +270,23 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       }
       mPrefix = value;
     } // if command.prefix
+    else if ((name == "command.deactivate") || (name == "command.deactivated"))
+    {
+      if (mDeactivatedCommands.find(value) != mDeactivatedCommands.end())
+      {
+        std::cerr << "Error: The command '" << value << "' is deactivated more"
+                  << " than once in file " << fileName << "!" << std::endl;
+        return false;
+      }
+      // Avoid adding non-existent commands over and over again.
+      if (mDeactivatedCommands.size() >= 100)
+      {
+        std::cerr << "Error: There are too many deactivated commands in file "
+                  << fileName << "!" << std::endl;
+        return false;
+      }
+      mDeactivatedCommands.insert(value);
+    } // if command.deactivate
     else if ((name == "bot.stop.allowed.userid") || (name == "stop.allowed.userid"))
     {
       if (mStopUsers.find(value) != mStopUsers.end())

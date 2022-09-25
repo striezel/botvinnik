@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -46,9 +46,6 @@ class Bot
      */
     Bot(const Configuration& conf);
 
-    /** \brief Destructor.
-     */
-    ~Bot();
 
     /** \brief Registers a plugin for use with the bot.
      *
@@ -61,15 +58,14 @@ class Bot
     bool registerPlugin(Plugin& plug);
 
 
-    /** \brief Deregisters a plugin command.
+    /** \brief Handles all configured command deactivations.
      *
-     * A deregistered command will become inactive and the bot will no longer
-     * process incoming requests for it.
-     *
-     * \param cmd  the plugin command to deregister
-     * \return Returns whether the deregistration was successful.
+     * \return Returns whether the deactivations were successful.
+     * \remarks Only call this once, and only after all plugins have been
+     *          registered. Otherwise this method might fail, because only the
+     *          commands of registered plugins can be deactivated.
      */
-    bool deregisterPluginCommand(const std::string& cmd);
+    bool handleCommandDeactivations();
 
 
     /** \brief Starts the bot.

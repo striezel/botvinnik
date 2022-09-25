@@ -21,14 +21,14 @@
 #ifndef BVN_PLUGIN_LIBRETRANSLATE_HPP
 #define BVN_PLUGIN_LIBRETRANSLATE_HPP
 
-#include "Plugin.hpp"
+#include "DeactivatablePlugin.hpp"
 
 namespace bvn
 {
 
 /** \brief Translates text from one language to another.
  */
-class LibreTranslate: public Plugin
+class LibreTranslate: public DeactivatablePlugin
 {
   public:
     /** \brief Constructor.

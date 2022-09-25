@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,14 +24,14 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "Plugin.hpp"
+#include "DeactivatablePlugin.hpp"
 
 namespace bvn
 {
 
 /** \brief Plugin providing extracts from Wikipedia.
  */
-class Wikipedia: public Plugin
+class Wikipedia: public DeactivatablePlugin
 {
   public:
     /** \brief Constructor.

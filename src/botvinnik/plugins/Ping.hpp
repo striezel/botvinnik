@@ -21,14 +21,14 @@
 #ifndef BVN_PLUGIN_PING_HPP
 #define BVN_PLUGIN_PING_HPP
 
-#include "Plugin.hpp"
+#include "DeactivatablePlugin.hpp"
 
 namespace bvn
 {
 
 /** \brief Replies with the time it took to reach the bot.
  */
-class Ping: public Plugin
+class Ping: public DeactivatablePlugin
 {
   public:
     /** \brief Constructor.

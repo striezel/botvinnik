@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,14 +22,14 @@
 #define BVN_PLUGIN_DEBIAN_HPP
 
 #include <utility>
-#include "Plugin.hpp"
+#include "DeactivatablePlugin.hpp"
 
 namespace bvn
 {
 
 /** \brief Replies with a list of available Debian packages.
  */
-class Debian: public Plugin
+class Debian: public DeactivatablePlugin
 {
   public:
     /** \brief Constructor.

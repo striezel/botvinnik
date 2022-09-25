@@ -128,4 +128,10 @@ std::string Basic::helpOneLine(const std::string_view& command) const
     return std::string("No help available for command '").append(command) + "'!";
 }
 
+bool Basic::allowDeactivation(const std::string_view& command) const
+{
+  // This is a core command plugin. Commands may not be disabled.
+  return false;
+}
+
 } // namespace

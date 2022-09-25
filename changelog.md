@@ -6,18 +6,28 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2022-08-??)
 
-An new configuration option, `bot.sync.delay_milliseconds`, can now be used to
-specify the delay between two consecutive Matrix synchronization requests. In
-previous versions that value was hard-coded to 5000 ms (i. e. 5 seconds), and
-that is its default value, if it is not specified in the configuration file.
+* Bot command can now be deactivated selectively via the configuration file. For
+  that purpose the new configuration option `command.deactivate` is introduced.
+  For example, the line `command.deactivate=ping` in the configuration file
+  would deactivate the `!ping` command. This option can be given multiple times
+  to deactivate more than one command.
 
-Primary purpose of the new setting is to allow a balance between too high load
-on the Matrix server due to too many synchronization requests from the bot on
-the one side and a bot that is responding to commands too slowly on the other
-side.
+  _Note:_ Some commands like `!help`, `!stop` and others that are essential to
+  operate the bot cannot be deactivated. The bot will not start if you attempt
+  to deactivate such a command via the configuration file.
 
-The library that does the JSON serialization (nlohmann/json) has been updated
-from version 3.11.1 to version 3.11.2.
+* A new configuration option, `bot.sync.delay_milliseconds`, can now be used to
+  specify the delay between two consecutive Matrix synchronization requests. In
+  previous versions that value was hard-coded to 5000 ms (i. e. 5 seconds), and
+  that is its default value, if it is not specified in the configuration file.
+
+  Primary purpose of the new setting is to allow a balance between too high load
+  on the Matrix server due to too many synchronization requests from the bot on
+  the one side and a bot that is responding to commands too slowly on the other
+  side.
+
+* The library that does the JSON serialization (nlohmann/json) has been updated
+  from version 3.11.1 to version 3.11.2.
 
 ## Version 0.4.1 (2022-08-06)
 

@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -163,6 +163,12 @@ std::string Rooms::helpOneLine(const std::string_view& command) const
   }
 
   return std::string();
+}
+
+bool Rooms::allowDeactivation(const std::string_view& command) const
+{
+  // This is a core command plugin. Commands may not be disabled.
+  return false;
 }
 
 } // namespace

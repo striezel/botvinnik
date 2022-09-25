@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -59,12 +59,21 @@ class Plugin
     virtual Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) = 0;
 
 
-    /** \brief Gets a short, one line help text for a command
+    /** \brief Gets a short, one line help text for a command.
      *
      * \param command  name of the command where help is requested
      * \return Returns a short, one line help text for the command.
      */
     virtual std::string helpOneLine(const std::string_view& command) const = 0;
+
+
+    /** \brief Determines whether a command of the plugin can be deactivated.
+     *
+     * \param command  name of the command to deactivate
+     * \return Returns true, if the command can be deactivated.
+     *         Returns false, if deactivation is forbidden.
+     */
+    virtual bool allowDeactivation(const std::string_view& command) const = 0;
 }; // class
 
 } // namespace

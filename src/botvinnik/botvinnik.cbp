@@ -82,6 +82,8 @@
 		<Unit filename="main.cpp" />
 		<Unit filename="plugins/CheatSheet.cpp" />
 		<Unit filename="plugins/CheatSheet.hpp" />
+		<Unit filename="plugins/DeactivatablePlugin.cpp" />
+		<Unit filename="plugins/DeactivatablePlugin.hpp" />
 		<Unit filename="plugins/Debian.cpp" />
 		<Unit filename="plugins/Debian.hpp" />
 		<Unit filename="plugins/Fortune.cpp" />

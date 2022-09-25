@@ -35,10 +35,6 @@ Bot::Bot(const Configuration& conf)
 {
 }
 
-Bot::~Bot()
-{
-}
-
 bool Bot::registerPlugin(Plugin& plug)
 {
   const auto pluginCommands = plug.commands();
@@ -70,19 +66,31 @@ bool Bot::registerPlugin(Plugin& plug)
   return true;
 }
 
-bool Bot::deregisterPluginCommand(const std::string& cmd)
+bool Bot::handleCommandDeactivations()
 {
-  if (cmd.empty())
-    return false;
-
-  const auto iter = commands.find(cmd);
-  if (iter != commands.end())
+  const auto& to_deactivate = mat.configuration().deactivatedCommands();
+  for(const auto cmd: to_deactivate)
   {
+    const auto iter = commands.find(cmd);
+    if (iter == commands.end())
+    {
+      std::cerr << "Error: No command by the name '" << cmd << "' is active. "
+                << "Therefore, it cannot be deactivated." << std::endl;
+      return false;
+    }
+    if (!iter->second.get().allowDeactivation(cmd))
+    {
+      std::cerr << "Error: Deactivating the command '" << cmd << "' is not "
+                << "allowed. This may be due to the fact that this command is "
+                << "a core command which is essential to operate the bot "
+                << "properly." << std::endl;
+      return false;
+    }
+    std::clog << "Info: Command '" << cmd << "' is deactivated." << std::endl;
     commands.erase(iter);
-    return true;
   }
 
-  return false;
+  return true;
 }
 
 void Bot::start()

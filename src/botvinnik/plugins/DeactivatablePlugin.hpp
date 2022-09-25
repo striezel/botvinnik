@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022  Dirk Stolle
+    Copyright (C) 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,27 +18,28 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_RETURNCODES_HPP
-#define BVN_RETURNCODES_HPP
+#ifndef BVN_PLUGIN_DEACTIVATABLEPLUGIN_HPP
+#define BVN_PLUGIN_DEACTIVATABLEPLUGIN_HPP
+
+#include "Plugin.hpp"
 
 namespace bvn
 {
 
-/** \brief exit code for invalid command line parameters */
-const int rcInvalidParameter = 1;
-
-/** \brief exit code for invalid configuration data */
-const int rcConfigurationError = 2;
-
-/** \brief exit code for problems with plugin registration */
-const int rcPluginRegistrationError = 3;
-
-/** \brief exit code for problems with command deactivation */
-const int rcCommandDeactivationError = 4;
-
-/** \brief exit code for I/O-related errors */
-const int rcInputOutputError = 7;
+/** \brief Abstract plugin that allows command deactivation of all commands.
+ */
+class DeactivatablePlugin: public Plugin
+{
+  public:
+    /** \brief Determines whether a command of the plugin can be deactivated.
+     *
+     * \param command  name of the command to deactivate
+     * \return Returns true, if the command can be deactivated.
+     *         Returns false, if deactivation is forbidden.
+     */
+    bool allowDeactivation(const std::string_view& command) const override;
+}; // class
 
 } // namespace
 
-#endif // BVN_RETURNCODES_HPP
+#endif // BVN_PLUGIN_DEACTIVATABLEPLUGIN_HPP

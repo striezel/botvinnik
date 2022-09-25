@@ -22,7 +22,7 @@
 #define BVN_PLUGIN_XKCD_HPP
 
 #include <chrono>
-#include "../Plugin.hpp"
+#include "../DeactivatablePlugin.hpp"
 #include "../../../matrix/Matrix.hpp"
 #include "XkcdData.hpp"
 
@@ -31,7 +31,7 @@ namespace bvn
 
 /** \brief Replies with a random comic from xkcd.com.
  */
-class Xkcd: public Plugin
+class Xkcd: public DeactivatablePlugin
 {
   public:
     /** \brief Constructor.

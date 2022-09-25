@@ -20,41 +20,9 @@
 
 #include "../../locate_catch.hpp"
 #include <cctype>
-#include <filesystem>
-#include <fstream>
 #include <type_traits>
+#include "../../FileGuard.hpp"
 #include "../../../src/conf/Configuration.hpp"
-
-// utility function to write a configuration file for testing
-bool writeConfiguration(const std::filesystem::path& path, const std::string& content)
-{
-  std::ofstream stream(path, std::ios::out | std::ios::binary);
-  if (!stream.good())
-    return false;
-  if (!stream.write(content.c_str(), content.size()).good())
-    return false;
-  stream.close();
-  return stream.good();
-}
-
-// guard to ensure file deletion when it goes out of scope
-class FileGuard
-{
-  private:
-    std::filesystem::path path;
-  public:
-    FileGuard(const std::filesystem::path& filePath)
-    : path(filePath)
-    { }
-
-    FileGuard(const FileGuard& op) = delete;
-    FileGuard(FileGuard&& op) = delete;
-
-    ~FileGuard()
-    {
-      std::filesystem::remove(path);
-    }
-};
 
 TEST_CASE("Configuration")
 {
@@ -67,6 +35,7 @@ TEST_CASE("Configuration")
     REQUIRE( conf.userId().empty() );
     REQUIRE( conf.password().empty() );
     REQUIRE( conf.prefix().empty() );
+    REQUIRE( conf.deactivatedCommands().empty() );
     REQUIRE( conf.stopUsers().empty() );
     REQUIRE( conf.allowedFailures() == -1 );
     REQUIRE( conf.syncDelay() == std::chrono::milliseconds::zero() );
@@ -143,6 +112,8 @@ TEST_CASE("Configuration")
       bot.stop.allowed.userid=@bob:matrix.example.tld
       bot.sync.allowed_failures=12
       bot.sync.delay_milliseconds=5000
+      # deactivate the !ping command
+      command.deactivate=ping
       # translation server settings
       libretranslate.server=https://libretranslate.com
       libretranslate.apikey=abcdef1234567890
@@ -157,6 +128,7 @@ TEST_CASE("Configuration")
       REQUIRE( conf.userId() == "@alice:matrix.example.tld" );
       REQUIRE( conf.password() == "secret, secret, top(!) secret" );
       REQUIRE( conf.prefix() == "!" );
+      REQUIRE( conf.deactivatedCommands().find("ping") != conf.stopUsers().end() );
       REQUIRE( conf.stopUsers().find("@alice:matrix.example.tld") != conf.stopUsers().end() );
       REQUIRE( conf.stopUsers().find("@bob:matrix.example.tld") != conf.stopUsers().end() );
       REQUIRE( conf.allowedFailures() == 12 );
@@ -237,7 +209,7 @@ TEST_CASE("Configuration")
       REQUIRE_FALSE( conf.load(path.string()) );
     }
 
-    SECTION("homeserver URL wit HTTP (instead of HTTPS)")
+    SECTION("homeserver URL with HTTP (instead of HTTPS)")
     {
       const std::filesystem::path path{"http-only-homeserver.conf"};
       const std::string content = R"conf(
@@ -262,6 +234,7 @@ TEST_CASE("Configuration")
       REQUIRE( conf.userId() == "@bertie:matrix.domain.tld" );
       REQUIRE( conf.password() == "very secret indeed, old chap!" );
       REQUIRE( conf.prefix() == "?" );
+      REQUIRE( conf.deactivatedCommands().empty() );
       REQUIRE( conf.stopUsers().find("@bertie:matrix.domain.tld") != conf.stopUsers().end() );
       REQUIRE( conf.stopUsers().find("@jeeves:matrix.domain.tld") != conf.stopUsers().end() );
       REQUIRE( conf.allowedFailures() == 10 );
@@ -295,6 +268,7 @@ TEST_CASE("Configuration")
       REQUIRE( conf.userId() == "@bertram:matrix.domain.tld" );
       REQUIRE( conf.password() == "nothing really here" );
       REQUIRE( conf.prefix() == "/" );
+      REQUIRE( conf.deactivatedCommands().empty() );
       REQUIRE( conf.stopUsers().find("@bertram:matrix.domain.tld") != conf.stopUsers().end() );
       REQUIRE( conf.stopUsers().find("@jeeves:matrix.domain.tld") != conf.stopUsers().end() );
       REQUIRE( conf.allowedFailures() == 5 );
@@ -496,11 +470,208 @@ TEST_CASE("Configuration")
       REQUIRE( conf.userId() == "@alice:matrix.example.tld" );
       REQUIRE( conf.password() == "top(!) secret" );
       REQUIRE( conf.prefix() == "!" );
+      REQUIRE( conf.deactivatedCommands().empty() );
       REQUIRE( conf.stopUsers().find("@alice:matrix.example.tld") != conf.stopUsers().end() );
       REQUIRE( conf.allowedFailures() == 2 );
       REQUIRE( conf.syncDelay() == std::chrono::milliseconds(5000) );
       REQUIRE( conf.translationServer().empty() );
       REQUIRE( conf.translationApiKey().empty() );
+    }
+
+    SECTION("multiple deactivated commands are possible")
+    {
+      const std::filesystem::path path{"multiple-commands-deactivated.conf"};
+      const std::string content = R"conf(
+      # Matrix server login settings
+      matrix.homeserver=https://matrix.example.tld/
+      matrix.userid=@alice:matrix.example.tld
+      matrix.password=secret
+      # bot management settings
+      command.prefix=!
+      command.deactivate=ping
+      command.deactivate=fortune
+      command.deactivate=fortunes
+      command.deactivate=xkcd
+      bot.stop.allowed.userid=@alice:matrix.example.tld
+      bot.sync.allowed_failures=15
+      bot.sync.delay_milliseconds=3000
+      # no translation server settings
+      )conf";
+      REQUIRE( writeConfiguration(path, content) );
+      FileGuard guard{path};
+
+      Configuration conf;
+      REQUIRE( conf.load(path.string()) );
+
+      REQUIRE( conf.homeServer() == "https://matrix.example.tld" );
+      REQUIRE( conf.userId() == "@alice:matrix.example.tld" );
+      REQUIRE( conf.password() == "secret" );
+      REQUIRE( conf.prefix() == "!" );
+      REQUIRE( conf.deactivatedCommands().size() == 4 );
+      REQUIRE( conf.deactivatedCommands().find("ping") != conf.deactivatedCommands().end() );
+      REQUIRE( conf.deactivatedCommands().find("fortune") != conf.deactivatedCommands().end() );
+      REQUIRE( conf.deactivatedCommands().find("fortunes") != conf.deactivatedCommands().end() );
+      REQUIRE( conf.deactivatedCommands().find("xkcd") != conf.deactivatedCommands().end() );
+      REQUIRE( conf.stopUsers().find("@alice:matrix.example.tld") != conf.stopUsers().end() );
+      REQUIRE( conf.allowedFailures() == 15 );
+      REQUIRE( conf.syncDelay() == std::chrono::milliseconds(3000) );
+      REQUIRE( conf.translationServer().empty() );
+      REQUIRE( conf.translationApiKey().empty() );
+    }
+
+    SECTION("invalid: same command deactivated multiple times")
+    {
+      const std::filesystem::path path{"multiple-deactivate-attempts-for-same-command.conf"};
+      const std::string content = R"conf(
+      # Matrix server login settings
+      matrix.homeserver=https://matrix.example.tld/
+      matrix.userid=@alice:matrix.example.tld
+      matrix.password=secret, secret, top(!) secret
+      # bot management settings
+      command.prefix=!
+      command.deactivate=ping
+      command.deactivate=ping
+      bot.stop.allowed.userid=@bob:matrix.example.tld
+      bot.sync.allowed_failures=12
+      bot.sync.delay_milliseconds=5000
+      # translation server settings
+      libretranslate.server=https://libretranslate.com
+      libretranslate.apikey=abcdef1234567890
+      )conf";
+      REQUIRE( writeConfiguration(path, content) );
+      FileGuard guard{path};
+
+      Configuration conf;
+      REQUIRE_FALSE( conf.load(path.string()) );
+    }
+
+    SECTION("invalid: excessive command deactivation")
+    {
+      const std::filesystem::path path{"excessive-command-deactivation.conf"};
+      const std::string content = R"conf(
+      # Matrix server login settings
+      matrix.homeserver=https://matrix.example.tld/
+      matrix.userid=@alice:matrix.example.tld
+      matrix.password=secret, secret, top(!) secret
+      # bot management settings
+      command.prefix=!
+      command.deactivate=ping
+      # Those commands do not exist, but the configuration does not know that.
+      # It just tries to load them. To avoid that a veeeeeery long deactivation
+      # list causes mayhem, the number of deactivated commands should be limited
+      # to a reasonable amount.
+      command.deactivate=ping001
+      command.deactivate=ping002
+      command.deactivate=ping003
+      command.deactivate=ping004
+      command.deactivate=ping005
+      command.deactivate=ping006
+      command.deactivate=ping007
+      command.deactivate=ping008
+      command.deactivate=ping009
+      command.deactivate=ping010
+      command.deactivate=ping011
+      command.deactivate=ping012
+      command.deactivate=ping013
+      command.deactivate=ping014
+      command.deactivate=ping015
+      command.deactivate=ping016
+      command.deactivate=ping017
+      command.deactivate=ping018
+      command.deactivate=ping019
+      command.deactivate=ping020
+      command.deactivate=ping021
+      command.deactivate=ping022
+      command.deactivate=ping023
+      command.deactivate=ping024
+      command.deactivate=ping025
+      command.deactivate=ping026
+      command.deactivate=ping027
+      command.deactivate=ping028
+      command.deactivate=ping029
+      command.deactivate=ping030
+      command.deactivate=ping031
+      command.deactivate=ping032
+      command.deactivate=ping033
+      command.deactivate=ping034
+      command.deactivate=ping035
+      command.deactivate=ping036
+      command.deactivate=ping037
+      command.deactivate=ping038
+      command.deactivate=ping039
+      command.deactivate=ping040
+      command.deactivate=ping041
+      command.deactivate=ping042
+      command.deactivate=ping043
+      command.deactivate=ping044
+      command.deactivate=ping045
+      command.deactivate=ping046
+      command.deactivate=ping047
+      command.deactivate=ping048
+      command.deactivate=ping049
+      command.deactivate=ping050
+      command.deactivate=ping051
+      command.deactivate=ping052
+      command.deactivate=ping053
+      command.deactivate=ping054
+      command.deactivate=ping055
+      command.deactivate=ping056
+      command.deactivate=ping057
+      command.deactivate=ping058
+      command.deactivate=ping059
+      command.deactivate=ping060
+      command.deactivate=ping061
+      command.deactivate=ping062
+      command.deactivate=ping063
+      command.deactivate=ping064
+      command.deactivate=ping065
+      command.deactivate=ping066
+      command.deactivate=ping067
+      command.deactivate=ping068
+      command.deactivate=ping069
+      command.deactivate=ping070
+      command.deactivate=ping071
+      command.deactivate=ping072
+      command.deactivate=ping073
+      command.deactivate=ping074
+      command.deactivate=ping075
+      command.deactivate=ping076
+      command.deactivate=ping077
+      command.deactivate=ping078
+      command.deactivate=ping079
+      command.deactivate=ping080
+      command.deactivate=ping081
+      command.deactivate=ping082
+      command.deactivate=ping083
+      command.deactivate=ping084
+      command.deactivate=ping085
+      command.deactivate=ping086
+      command.deactivate=ping087
+      command.deactivate=ping088
+      command.deactivate=ping089
+      command.deactivate=ping090
+      command.deactivate=ping091
+      command.deactivate=ping092
+      command.deactivate=ping093
+      command.deactivate=ping094
+      command.deactivate=ping095
+      command.deactivate=ping096
+      command.deactivate=ping097
+      command.deactivate=ping098
+      command.deactivate=ping099
+      command.deactivate=ping100
+      bot.stop.allowed.userid=@bob:matrix.example.tld
+      bot.sync.allowed_failures=12
+      bot.sync.delay_milliseconds=5000
+      # translation server settings
+      libretranslate.server=https://libretranslate.com
+      libretranslate.apikey=abcdef1234567890
+      )conf";
+      REQUIRE( writeConfiguration(path, content) );
+      FileGuard guard{path};
+
+      Configuration conf;
+      REQUIRE_FALSE( conf.load(path.string()) );
     }
 
     SECTION("multiple stop user ids are possible")
@@ -531,6 +702,7 @@ TEST_CASE("Configuration")
       REQUIRE( conf.userId() == "@alice:matrix.example.tld" );
       REQUIRE( conf.password() == "secret" );
       REQUIRE( conf.prefix() == "!" );
+      REQUIRE( conf.deactivatedCommands().empty() );
       REQUIRE( conf.stopUsers().find("@alice:matrix.example.tld") != conf.stopUsers().end() );
       REQUIRE( conf.stopUsers().find("@bob:matrix.example.tld") != conf.stopUsers().end() );
       REQUIRE( conf.stopUsers().find("@charlie:matrix.example.tld") != conf.stopUsers().end() );
@@ -854,6 +1026,7 @@ TEST_CASE("Configuration")
       REQUIRE( conf.userId() == "@alice:matrix.example.tld" );
       REQUIRE( conf.password() == "secret, secret, top(!) secret" );
       REQUIRE( conf.prefix() == "!" );
+      REQUIRE( conf.deactivatedCommands().empty() );
       REQUIRE( conf.stopUsers().find("@alice:matrix.example.tld") != conf.stopUsers().end() );
       REQUIRE( conf.stopUsers().find("@bob:matrix.example.tld") != conf.stopUsers().end() );
       REQUIRE( conf.allowedFailures() == 12 );
@@ -889,6 +1062,7 @@ TEST_CASE("Configuration")
       REQUIRE( conf.userId() == "@alice:matrix.example.tld" );
       REQUIRE( conf.password() == "secret, secret, top(!) secret" );
       REQUIRE( conf.prefix() == "!" );
+      REQUIRE( conf.deactivatedCommands().empty() );
       REQUIRE( conf.stopUsers().find("@alice:matrix.example.tld") != conf.stopUsers().end() );
       REQUIRE( conf.stopUsers().find("@bob:matrix.example.tld") != conf.stopUsers().end() );
       REQUIRE( conf.allowedFailures() == 15 );

@@ -258,6 +258,11 @@ int main(int argc, char** argv)
     return bvn::rcPluginRegistrationError;
   }
 
+  if (!bot.handleCommandDeactivations())
+  {
+    return bvn::rcCommandDeactivationError;
+  }
+
   bot.start();
   std::cout << "Done." << std::endl;
   return 0;

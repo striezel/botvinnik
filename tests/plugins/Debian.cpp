@@ -74,4 +74,22 @@ TEST_CASE("plugin Debian")
     // Plugin registration must be successful.
     REQUIRE( bot.registerPlugin(plugin) );
   }
+
+  SECTION("allowDeactivation()")
+  {
+    SECTION("non-core plugin commands can always be deactivated")
+    {
+      for (const auto& cmd : commands)
+      {
+        REQUIRE( plugin.allowDeactivation(cmd) );
+      }
+    }
+
+    SECTION("unknown commands / commands of other plugins cannot be deactivated")
+    {
+      REQUIRE_FALSE( plugin.allowDeactivation("foo") );
+      REQUIRE_FALSE( plugin.allowDeactivation("not-a-command") );
+      REQUIRE_FALSE( plugin.allowDeactivation("ping") );
+    }
+  }
 }

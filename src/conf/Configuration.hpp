@@ -80,6 +80,13 @@ class Configuration
     const std::string& prefix() const;
 
 
+    /** \brief Gets a set of commands that will be deactivated.
+     *
+     * \return Returns a set of bot commands that will be deactivated.
+     */
+    const std::unordered_set<std::string>& deactivatedCommands() const;
+
+
     /** \brief Gets a set of user ids that may stop the bot.
      *
      * \return Returns a set of user ids for users that are allowed to stop the
@@ -169,6 +176,7 @@ class Configuration
     std::string mUserId; /**< Matrix user id used for login */
     std::string mPassword; /**< password used for login */
     std::string mPrefix; /**< prefix for commands */
+    std::unordered_set<std::string> mDeactivatedCommands; /**< commands that will be deactivated */
     std::unordered_set<std::string> mStopUsers; /**< users that may stop the bot */
     int mAllowedFailsIn32; /**< allowed sync failures in 32 attempts */
     std::chrono::milliseconds mSyncDelay; /**< delay between two consecutive sync requests */
