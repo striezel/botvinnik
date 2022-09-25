@@ -7,7 +7,7 @@ improvements may be omitted.)_
 ## Version 0.?.? (2022-08-??)
 
 The library that does the JSON serialization (nlohmann/json) has been updated
-from version 3.11.2 to version 3.11.2.
+from version 3.11.1 to version 3.11.2.
 
 ## Version 0.4.1 (2022-08-06)
 
