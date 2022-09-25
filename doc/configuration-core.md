@@ -80,9 +80,10 @@ create a separate Matrix user that is just used by the bot.
   `!ping` command. This option can be given multiple times to deactivate more
   than one command.
 
-  _Note:_ Some commands like `!help`, `!stop` and others that are essential to
-  operate the bot cannot be deactivated. The bot will not start if you attempt
-  to deactivate such a command.
+  _Note:_ Some commands that are essential to operate the bot cannot be
+  deactivated. The bot will not start if you attempt to deactivate such a
+  command. Those commands are: `!help`, `!leave`, `!rooms`, `!stop`, `!version`,
+  and `!whoami`.
 * **bot.stop.allowed.userid** - _(since 0.0.11, required)_ user id of a Matrix
   user that is allowed to stop the bot (e. g. `@alice:example.tld`). This
   setting may occur multiple times with different user ids to allow more users
