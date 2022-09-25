@@ -331,7 +331,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       else if (amount_of_ms > max_sync_delay.count())
       {
         std::clog << "Warning: Synchronization delay in file " << fileName
-                  << " is higher than allowed and will be lowered to the "
+                  << " is higher than allowed and will be lowered to the"
                   << " allowed maximum of " << max_sync_delay.count()
                   << " milliseconds!" << std::endl;
         amount_of_ms = max_sync_delay.count();
