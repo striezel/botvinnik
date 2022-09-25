@@ -216,12 +216,6 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (value.size() > 0 && value.at(value.size() - 1) == '/')
         value.erase(value.size() - 1);
 
-      if (value.empty())
-      {
-        std::cerr << "Error: Host name of Matrix home server must not be empty!" << std::endl;
-        return false;
-      }
-
       if (value.substr(0, 7) == "http://")
       {
         std::clog << "Warning: Home server URL does not use HTTPS!" << std::endl;
