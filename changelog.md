@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2022-08-??)
+## Version 0.5.0 (2022-09-26)
 
 * __[new feature]__
   Bot commands can now be deactivated selectively via the configuration file.
