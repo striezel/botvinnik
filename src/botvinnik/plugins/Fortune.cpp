@@ -91,7 +91,7 @@ std::string Fortune::helpOneLine(const std::string_view& command) const
   }
   if (command == "fortunes")
   {
-    return "alias for the fortune command";
+    return "displays a random epigram / fortune cookie / quote (alias for the fortune command)";
   }
 
   return std::string();

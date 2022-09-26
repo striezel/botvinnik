@@ -69,7 +69,7 @@ bool Bot::registerPlugin(Plugin& plug)
 bool Bot::handleCommandDeactivations()
 {
   const auto& to_deactivate = mat.configuration().deactivatedCommands();
-  for(const auto cmd: to_deactivate)
+  for(const auto& cmd: to_deactivate)
   {
     const auto iter = commands.find(cmd);
     if (iter == commands.end())

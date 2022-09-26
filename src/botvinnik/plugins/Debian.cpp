@@ -311,7 +311,7 @@ std::string Debian::helpOneLine(const std::string_view& command) const
 {
   if (command == "deb")
   {
-    return "alias for deb11";
+    return "gets a list of available packages in Debian 11 (a.k.a \"bullseye\"), the current stable release (alias for deb11)";
   }
   if (command == "deb12")
   {

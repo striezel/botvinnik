@@ -92,7 +92,7 @@ std::string CheatSheet::helpOneLine(const std::string_view& command) const
   }
   if (command == "cheats")
   {
-    return "alias for the cheat command";
+    return "displays a cheat sheet for the given Unix program / command (alias for the cheat command)";
   }
 
   return std::string();

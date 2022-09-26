@@ -42,7 +42,7 @@ class Ping: public DeactivatablePlugin
      *
      * \return Returns a vector of command names implemented by this plugin.
      */
-    virtual std::vector<std::string> commands() const;
+    std::vector<std::string> commands() const override;
 
 
     /** \brief Reacts to a given command.
@@ -55,7 +55,7 @@ class Ping: public DeactivatablePlugin
      * \return Returns a message to send as reply to the command.
      *         If the return value is empty, no message will be sent.
      */
-    virtual Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts);
+    Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override;
 
 
     /** \brief Gets a short, one line help text for a command
@@ -63,7 +63,7 @@ class Ping: public DeactivatablePlugin
      * \param command  name of the command where help is requested
      * \return Returns a short, one line help text for the command.
      */
-    virtual std::string helpOneLine(const std::string_view& command) const;
+    std::string helpOneLine(const std::string_view& command) const override;
   private:
     std::chrono::milliseconds sync_delay; /**< bot's synchronization delay */
 }; // class
