@@ -1,5 +1,5 @@
 # This Dockerfile builds the image used during the GCC build job on GitLab.
-FROM debian:10-slim
+FROM debian:11-slim
 LABEL maintainer="Dirk Stolle"
 # Always update any existing packages first.
 ENV DEBIAN_FRONTEND=noninteractive
