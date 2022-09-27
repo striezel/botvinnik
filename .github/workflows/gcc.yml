@@ -4,11 +4,19 @@ on: push
 
 jobs:
   build_ubuntu_gcc:
-    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
-        version: [8, 9, 10, 11]
+        include:
+          - version: 8
+            os: ubuntu-20.04
+          - version: 9
+            os: ubuntu-22.04
+          - version: 10
+            os: ubuntu-22.04
+          - version: 11
+            os: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE.
       - uses: actions/checkout@v3
