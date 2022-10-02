@@ -119,7 +119,7 @@
 		<Unit filename="core/Help.cpp" />
 		<Unit filename="core/Rooms.cpp" />
 		<Unit filename="main.cpp" />
-		<Unit filename="pluginRegistrationCombined.cpp" />
+		<Unit filename="pluginRegistration.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

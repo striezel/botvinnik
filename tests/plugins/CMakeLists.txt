@@ -53,7 +53,7 @@ set(plugin_tests_sources
     Wikipedia.cpp
     Xkcd.cpp
     XkcdData.cpp
-    pluginRegistrationCombined.cpp
+    pluginRegistration.cpp
     main.cpp)
 
 set(CMAKE_CXX_STANDARD 17)

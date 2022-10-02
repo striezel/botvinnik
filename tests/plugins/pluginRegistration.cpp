@@ -73,3 +73,92 @@ TEST_CASE("plugin registration for all known plugins")
     REQUIRE( bot.registerPlugin(xkcd) );
   }
 }
+
+TEST_CASE("plugin registration failures")
+{
+  using namespace bvn;
+  Configuration conf;
+
+  SECTION("plugin without commands cannot be registered")
+  {
+    class NoCommands : public DeactivatablePlugin
+    {
+      std::vector<std::string> commands() const override
+      {
+        return { };
+      }
+
+      Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override
+      {
+        return Message();
+      }
+
+      std::string helpOneLine(const std::string_view& command) const override
+      {
+        return std::string();
+      }
+    };
+
+    NoCommands no_cmd;
+
+    // Plugin registration must fail.
+    Bot bot(conf);
+    REQUIRE_FALSE( bot.registerPlugin(no_cmd) );
+  }
+
+  SECTION("plugin with empty command name cannot be registered")
+  {
+    class EmptyCommand : public DeactivatablePlugin
+    {
+      std::vector<std::string> commands() const override
+      {
+        return { "" };
+      }
+
+      Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override
+      {
+        return Message();
+      }
+
+      std::string helpOneLine(const std::string_view& command) const override
+      {
+        return std::string();
+      }
+    };
+
+    EmptyCommand empty_cmd;
+
+    // Plugin registration must fail.
+    Bot bot(conf);
+    REQUIRE_FALSE( bot.registerPlugin(empty_cmd) );
+  }
+
+  SECTION("same command name cannot be registered by two plugins")
+  {
+    class DoubleCommand : public DeactivatablePlugin
+    {
+      std::vector<std::string> commands() const override
+      {
+        return { "foo", "bar" };
+      }
+
+      Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override
+      {
+        return Message();
+      }
+
+      std::string helpOneLine(const std::string_view& command) const override
+      {
+        return std::string();
+      }
+    };
+
+    DoubleCommand plugin_one;
+    DoubleCommand plugin_two;
+
+    // Plugin registration must fail.
+    Bot bot(conf);
+    REQUIRE( bot.registerPlugin(plugin_one) );
+    REQUIRE_FALSE( bot.registerPlugin(plugin_two) );
+  }
+}
