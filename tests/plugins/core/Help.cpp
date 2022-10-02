@@ -49,6 +49,11 @@ TEST_CASE("plugin Help")
     }
   } // one line help section
 
+  SECTION("one line help for non-existent command returns no text")
+  {
+    REQUIRE( plugin.helpOneLine("plonk").empty() );
+  }
+
   SECTION("command handlers must return text")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
@@ -59,6 +64,17 @@ TEST_CASE("plugin Help")
       // Answer to commands must not be empty.
       REQUIRE_FALSE( plugin.handleCommand(cmd, cmd, mockUserId, mockRoomId, ts).body.empty() );
     }
+  }
+
+  SECTION("handler returns empty message for non-existent command")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+
+    // Answer to commands must be empty.
+    REQUIRE( plugin.handleCommand("plonk", "plonk", mockUserId, mockRoomId, ts).body.empty() );
+    REQUIRE( plugin.handleCommand("plonk", "plonk", mockUserId, mockRoomId, ts).formatted_body.empty() );
   }
 
   SECTION("plugin registration")

@@ -125,7 +125,7 @@ std::string Basic::helpOneLine(const std::string_view& command) const
     return "shows the Matrix user id of the user who issued the command";
   }
   else
-    return std::string("No help available for command '").append(command) + "'!";
+    return "";
 }
 
 bool Basic::allowDeactivation(const std::string_view& command) const

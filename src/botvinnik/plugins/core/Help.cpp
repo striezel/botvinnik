@@ -76,7 +76,7 @@ std::string Help::helpOneLine(const std::string_view& command) const
     return "shows short help for available commands";
   }
   else
-    return std::string("No help available for command '").append(command) + "'!";
+    return "";
 }
 
 bool Help::allowDeactivation(const std::string_view& command) const
