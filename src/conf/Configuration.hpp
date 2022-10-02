@@ -124,6 +124,11 @@ class Configuration
     static const std::chrono::milliseconds min_sync_delay;
 
 
+    /** \brief default synchronization delay
+     */
+    static const std::chrono::milliseconds default_sync_delay;
+
+
     /** \brief maximal allowed synchronization delay
      */
     static const std::chrono::milliseconds max_sync_delay;

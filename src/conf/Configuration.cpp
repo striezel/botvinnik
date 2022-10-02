@@ -46,6 +46,9 @@ const char Configuration::commentCharacter = '#';
 // Anything below 100 ms is awfully close to a DoS attempt.
 const std::chrono::milliseconds Configuration::min_sync_delay = std::chrono::milliseconds(100);
 
+// Default synchronization delay.
+const std::chrono::milliseconds Configuration::default_sync_delay = std::chrono::milliseconds(2500);
+
 // Anything above 30 seconds (=30000 ms) is too slow to be recognized as a
 // timely response.
 const std::chrono::milliseconds Configuration::max_sync_delay = std::chrono::milliseconds(30000);
@@ -429,7 +432,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
   // Synchronization delay may be missing. Set it to the default in that case.
   if (mSyncDelay == std::chrono::milliseconds::zero())
   {
-    mSyncDelay = std::chrono::milliseconds(5000);
+    mSyncDelay = default_sync_delay;
   }
 
   // Everything is good, so far.

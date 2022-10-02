@@ -4,6 +4,14 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2022-10-??)
+
+__[change]__
+The default value for the configuration setting `bot.sync.delay_milliseconds`
+is changed from 5000 to 2500, i. e. the bot will now try to perform a
+synchronization request every 2.5 seconds instead of every five seconds, if
+that value is not set explicitly in the configuration file.
+
 ## Version 0.5.0 (2022-09-26)
 
 * __[new feature]__

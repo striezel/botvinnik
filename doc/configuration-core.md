@@ -95,8 +95,8 @@ create a separate Matrix user that is just used by the bot.
   attempts before the bot exits. Allowed range is from 0 (zero) to 31. This
   setting can be used to avoid that the bot stops when the network connection
   may occasionally be down for a few seconds. One allowed failure is approx. the
-  equivalent of five seconds network downtime. (This time may change, if the
-  setting **bot.sync.delay_milliseconds** is set to something else than 5000.)
+  equivalent of 2.5 seconds network downtime. (This time may change, if the
+  setting **bot.sync.delay_milliseconds** is set to something else than 2500.)
   Default value of allowed failures is twelve, if it is not set explicitly.
 
   Set this to zero, if you want to restore the behaviour used in versions before
@@ -107,7 +107,7 @@ create a separate Matrix user that is just used by the bot.
   consists of 1000 milliseconds, e. g. 5000 milliseconds are 5 seconds.)
   Allowed range is from 100 (0.1 seconds) to 30000 (30 seconds). Values outside
   of this range will be replaced by the allowed minimum or maximum - whatever is
-  closer. Default value is 5000, if it is not set explicitly.
+  closer. Default value is 2500, if it is not set explicitly.
 
   Primary purpose of this setting is to allow a balance between too high load on
   the Matrix server due to too many synchronization requests from the bot on the

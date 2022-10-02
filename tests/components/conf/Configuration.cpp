@@ -59,6 +59,12 @@ TEST_CASE("Configuration")
     REQUIRE( std::chrono::minutes(1) > Configuration::max_sync_delay );
   }
 
+  SECTION("default delay must be above minimum and below maximum allowed delay")
+  {
+    REQUIRE( Configuration::min_sync_delay < Configuration::default_sync_delay );
+    REQUIRE( Configuration::default_sync_delay < Configuration::max_sync_delay );
+  }
+
   SECTION("potentialFileNames()")
   {
     SECTION("values must not be empty")
@@ -972,7 +978,7 @@ TEST_CASE("Configuration")
 
       Configuration conf;
       REQUIRE( conf.load(path.string()) );
-      REQUIRE( conf.syncDelay() == std::chrono::milliseconds(5000) );
+      REQUIRE( conf.syncDelay() == Configuration::default_sync_delay );
     }
 
     SECTION("invalid: sync delay is not an int")
