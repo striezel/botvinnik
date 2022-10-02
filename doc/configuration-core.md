@@ -91,13 +91,13 @@ create a separate Matrix user that is just used by the bot.
   id from the setting **matrix.userid** will be added to this list
   automatically, if it has not been specified as user allowed to stop the bot.
 * **bot.sync.allowed_failures** - _(since 0.2.0, optional)_ the number of
-  allowed Matrix synchronization failures within the last 32 synchronization
-  attempts before the bot exits. Allowed range is from 0 (zero) to 31. This
+  allowed Matrix synchronization failures within the last 64 synchronization
+  attempts before the bot exits. Allowed range is from 0 (zero) to 63. This
   setting can be used to avoid that the bot stops when the network connection
   may occasionally be down for a few seconds. One allowed failure is approx. the
   equivalent of 2.5 seconds network downtime. (This time may change, if the
   setting **bot.sync.delay_milliseconds** is set to something else than 2500.)
-  Default value of allowed failures is twelve, if it is not set explicitly.
+  Default value of allowed failures is 24, if it is not set explicitly.
 
   Set this to zero, if you want to restore the behaviour used in versions before
   0.2.0. However, a value of zero means that the bot stops whenever there is a

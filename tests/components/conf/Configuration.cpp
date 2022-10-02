@@ -832,7 +832,7 @@ TEST_CASE("Configuration")
 
       Configuration conf;
       REQUIRE( conf.load(path.string()) );
-      REQUIRE( conf.allowedFailures() == 12 );
+      REQUIRE( conf.allowedFailures() == 24 );
     }
 
     SECTION("invalid: multiple allowed failures")
@@ -908,7 +908,7 @@ TEST_CASE("Configuration")
       REQUIRE_FALSE( conf.load(path.string()) );
     }
 
-    SECTION("invalid: allowed failures is above 31")
+    SECTION("invalid: allowed failures is above 63")
     {
       const std::filesystem::path path{"allowed-fail-above-range.conf"};
       const std::string content = R"conf(
@@ -919,7 +919,7 @@ TEST_CASE("Configuration")
       # bot management settings
       command.prefix=!
       bot.stop.allowed.userid=@bob:matrix.example.tld
-      bot.sync.allowed_failures=32
+      bot.sync.allowed_failures=64
       bot.sync.delay_milliseconds=5000
       # translation server settings
       libretranslate.server=https://libretranslate.com

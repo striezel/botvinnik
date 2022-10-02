@@ -61,7 +61,7 @@ Configuration::Configuration()
   mPrefix(""),
   mDeactivatedCommands(std::unordered_set<std::string>()),
   mStopUsers(std::unordered_set<std::string>()),
-  mAllowedFailsIn32(-1),
+  mAllowedFailsIn64(-1),
   mSyncDelay(std::chrono::milliseconds::zero()),
   mLibreTranslateServer(""),
   mLibreTranslateApiKey("")
@@ -125,7 +125,7 @@ bool Configuration::isAdminUser(const std::string& userId) const
 
 int Configuration::allowedFailures() const
 {
-  return mAllowedFailsIn32;
+  return mAllowedFailsIn64;
 }
 
 std::chrono::milliseconds Configuration::syncDelay() const
@@ -309,23 +309,23 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
     } // if bot.stop.allowed.userid
     else if ((name == "bot.sync.allowed_failures") || (name == "bot.allowed_failures"))
     {
-      if (mAllowedFailsIn32 >= 0)
+      if (mAllowedFailsIn64 >= 0)
       {
         std::cerr << "Error: Number of allowed sync failures is specified more than once in file "
                   << fileName << "!" << std::endl;
         return false;
       }
-      if (!stringToInt(value, mAllowedFailsIn32))
+      if (!stringToInt(value, mAllowedFailsIn64))
       {
         std::cerr << "Error: Number of allowed sync failures in file "
                   << fileName << " must be a non-negative integer!" << std::endl;
         return false;
       }
-      // If it is still below zero or above 31, the value is invalid.
-      if (mAllowedFailsIn32 < 0 || mAllowedFailsIn32 > 31)
+      // If it is still below zero or above 63, the value is invalid.
+      if (mAllowedFailsIn64 < 0 || mAllowedFailsIn64 > 63)
       {
         std::cerr << "Error: Number of allowed sync failures in file "
-                  << fileName << " must be between 0 and 31 (inclusive)!" << std::endl;
+                  << fileName << " must be between 0 and 63 (inclusive)!" << std::endl;
         return false;
       }
     } // if bot.sync.allowed_failures
@@ -422,11 +422,11 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
     std::clog << "Info: Setting command prefix to '" << mPrefix
               << "', because none is given in the configuration file." << std::endl;
   }
-  // Sync fail count may be missing. Set it to 12 in that case.
-  if (mAllowedFailsIn32 < 0)
+  // Sync fail count may be missing. Set it to 24 in that case.
+  if (mAllowedFailsIn64 < 0)
   {
-    mAllowedFailsIn32 = 12;
-    std::clog << "Info: Setting number of allowed sync failures to " << mAllowedFailsIn32
+    mAllowedFailsIn64 = 24;
+    std::clog << "Info: Setting number of allowed sync failures to " << mAllowedFailsIn64
               << ", because none is given in the configuration file." << std::endl;
   }
   // Synchronization delay may be missing. Set it to the default in that case.
@@ -479,7 +479,7 @@ void Configuration::clear()
   mUserId.clear();
   mPassword.clear();
   mStopUsers.clear();
-  mAllowedFailsIn32 = -1;
+  mAllowedFailsIn64 = -1;
   mSyncDelay = std::chrono::milliseconds::zero();
   mLibreTranslateServer.clear();
   mLibreTranslateApiKey.clear();

@@ -6,11 +6,19 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2022-10-??)
 
-__[change]__
-The default value for the configuration setting `bot.sync.delay_milliseconds`
-is changed from 5000 to 2500, i. e. the bot will now try to perform a
-synchronization request every 2.5 seconds instead of every five seconds, if
-that value is not set explicitly in the configuration file.
+* __[change]__
+  The default value for the configuration setting `bot.sync.delay_milliseconds`
+  is changed from 5000 to 2500, i. e. the bot will now try to perform a
+  synchronization request every 2.5 seconds instead of every five seconds, if
+  that value is not set explicitly in the configuration file.
+
+* __[change]__
+  The upper limit for the `bot.sync.allowed_failures` configuration setting is
+  is increased from 31 to 63. Its default value is also changed from twelve to
+  24. That way a bot instance that uses default values for both the
+  `bot.sync.allowed_failures` and the `bot.sync.delay_milliseconds` settings
+  will still be able to endure a network downtime of approx. one minute before
+  it fails, as in previous versions.
 
 ## Version 0.5.0 (2022-09-26)
 

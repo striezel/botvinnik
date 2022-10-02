@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ class FailCounter
   public:
     /** \brief number of operations that are kept before they are discarded
      */
-    static constexpr unsigned int N = 32;
+    static constexpr unsigned int N = 64;
 
 
     /** \brief Constructor.

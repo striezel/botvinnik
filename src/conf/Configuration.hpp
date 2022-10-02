@@ -183,7 +183,7 @@ class Configuration
     std::string mPrefix; /**< prefix for commands */
     std::unordered_set<std::string> mDeactivatedCommands; /**< commands that will be deactivated */
     std::unordered_set<std::string> mStopUsers; /**< users that may stop the bot */
-    int mAllowedFailsIn32; /**< allowed sync failures in 32 attempts */
+    int mAllowedFailsIn64; /**< allowed sync failures in 64 attempts */
     std::chrono::milliseconds mSyncDelay; /**< delay between two consecutive sync requests */
 
     // plugin-related settings
