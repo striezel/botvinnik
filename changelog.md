@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2022-10-??)
+## Version 0.5.1 (2022-10-03)
 
 * __[change]__
   The default value for the configuration setting `bot.sync.delay_milliseconds`

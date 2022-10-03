@@ -27,14 +27,14 @@ namespace bvn
 {
 
 /** \brief version information */
-const std::string version = "version 0.5.0, 2022-09-26";
+const std::string version = "version 0.5.1, 2022-10-03";
 
 #ifdef BVN_USER_AGENT
 /** \brief the User-Agent to use when sending requests to the Matrix server
  *
  * \remark User-Agent is disabled by default.
  */
-const std::string userAgent = "botvinnik/0.5.0";
+const std::string userAgent = "botvinnik/0.5.1";
 #endif
 
 } // namespace
