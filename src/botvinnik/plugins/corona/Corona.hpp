@@ -28,12 +28,12 @@ namespace bvn
 
 /** \brief Show current case numbers for corona virus.
  */
-class Corona: public DeactivatablePlugin
+class Corona final: public DeactivatablePlugin
 {
   public:
     /** \brief Constructor.
      */
-    Corona();
+    Corona() = default;
 
 
     /** \brief Gets a list of commands that are provided by this plugin.
@@ -56,7 +56,7 @@ class Corona: public DeactivatablePlugin
     Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override;
 
 
-    /** \brief Gets a short, one line help text for a command
+    /** \brief Gets a short, one line help text for a command.
      *
      * \param command  name of the command where help is requested
      * \return Returns a short, one line help text for the command.

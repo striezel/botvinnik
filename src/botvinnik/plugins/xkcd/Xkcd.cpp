@@ -29,7 +29,7 @@ namespace bvn
 {
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2611),
+: mLatestNum(2706),
   mLastUpdate(std::chrono::steady_clock::now() - std::chrono::hours(24)),
   theMatrix(mat)
 {
@@ -117,7 +117,10 @@ std::optional<std::string> Xkcd::uploadComic(const XkcdData& data)
   return mxcUri;
 }
 
-Message Xkcd::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
+Message Xkcd::handleCommand(const std::string_view& command, const std::string_view& message,
+                            [[maybe_unused]] const std::string_view& userId,
+                            [[maybe_unused]] const std::string_view& roomId,
+                            [[maybe_unused]] const std::chrono::milliseconds& server_ts)
 {
   if (command != "xkcd")
   {

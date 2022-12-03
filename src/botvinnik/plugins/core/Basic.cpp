@@ -39,7 +39,11 @@ std::vector<std::string> Basic::commands() const
   return { "stop", "version", "whoami" };
 }
 
-Message Basic::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
+Message Basic::handleCommand(const std::string_view& command,
+                             [[maybe_unused]] const std::string_view& message,
+                             const std::string_view& userId,
+                             [[maybe_unused]] const std::string_view& roomId,
+                             [[maybe_unused]] const std::chrono::milliseconds& server_ts)
 {
   if (command == "stop")
   {
@@ -128,7 +132,7 @@ std::string Basic::helpOneLine(const std::string_view& command) const
     return "";
 }
 
-bool Basic::allowDeactivation(const std::string_view& command) const
+bool Basic::allowDeactivation([[maybe_unused]] const std::string_view& command) const
 {
   // This is a core command plugin. Commands may not be disabled.
   return false;

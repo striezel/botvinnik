@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -51,7 +51,10 @@ std::vector<std::string> Wikipedia::commands() const
          };
 }
 
-Message Wikipedia::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
+Message Wikipedia::handleCommand(const std::string_view& command, const std::string_view& message,
+                                 [[maybe_unused]] const std::string_view& userId,
+                                 [[maybe_unused]] const std::string_view& roomId,
+                                 [[maybe_unused]] const std::chrono::milliseconds& server_ts)
 {
   if (command == "wiki" || command == "wikien")
   {

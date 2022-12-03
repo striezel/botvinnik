@@ -34,7 +34,9 @@ std::vector<std::string> Rooms::commands() const
   return { "rooms", "leave" };
 }
 
-Message Rooms::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
+Message Rooms::handleCommand(const std::string_view& command, const std::string_view& message,
+                             const std::string_view& userId, const std::string_view& roomId,
+                             [[maybe_unused]] const std::chrono::milliseconds& server_ts)
 {
   if (command == "rooms")
   {
@@ -165,7 +167,7 @@ std::string Rooms::helpOneLine(const std::string_view& command) const
   return std::string();
 }
 
-bool Rooms::allowDeactivation(const std::string_view& command) const
+bool Rooms::allowDeactivation([[maybe_unused]] const std::string_view& command) const
 {
   // This is a core command plugin. Commands may not be disabled.
   return false;

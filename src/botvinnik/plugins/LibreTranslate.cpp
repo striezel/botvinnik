@@ -51,7 +51,10 @@ std::vector<std::string> LibreTranslate::commands() const
   return { "tr", "tr-lang" };
 }
 
-Message LibreTranslate::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
+Message LibreTranslate::handleCommand(const std::string_view& command, const std::string_view& message,
+                                      [[maybe_unused]] const std::string_view& userId,
+                                      [[maybe_unused]] const std::string_view& roomId,
+                                      [[maybe_unused]] const std::chrono::milliseconds& server_ts)
 {
   if (url.empty())
   {

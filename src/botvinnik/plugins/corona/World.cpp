@@ -269,70 +269,70 @@ std::optional<Country> World::find(const std::string& nameOrGeoId)
   return std::optional<Country>();
 }
 
-// std::function<CovidNumbers(const Country&)>
-const std::unordered_map<std::string, std::function<CovidNumbers(const Country&)>> data_functions = {
+// std::function<CovidNumbers()> to handle non-standard cases
+const std::unordered_map<std::string, std::function<CovidNumbers()>> data_functions = {
   // Anguilla
-  { "AI", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "Anguilla", false); } },
+  { "AI", [] { return disease_sh::requestHistoricalApiProvince("UK", "Anguilla", false); } },
   // American Samoa
-  { "AS", [] (const Country& c) { return disease_sh::requestHistoricalApiUsaCounties("american%20samoa", false); } },
+  { "AS", [] { return disease_sh::requestHistoricalApiUsaCounties("american%20samoa", false); } },
   // Aruba
-  { "AW", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "Aruba", false); } },
+  { "AW", [] { return disease_sh::requestHistoricalApiProvince("NL", "Aruba", false); } },
   // Bermuda
-  { "BM", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "Bermuda", false); } },
+  { "BM", [] { return disease_sh::requestHistoricalApiProvince("UK", "Bermuda", false); } },
   // Bonaire, Saint Eustatius and Saba
-  { "BQ", [] (const Country& c) { return disease_sh::requestHistoricalApiFirstOfMultipleProvinces("NL", "bonaire%2C%20sint%20eustatius%20and%20saba%7C", false); } },
+  { "BQ", [] { return disease_sh::requestHistoricalApiFirstOfMultipleProvinces("NL", "bonaire%2C%20sint%20eustatius%20and%20saba%7C", false); } },
   // Cook Islands
-  { "CK", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NZ", "cook%20islands", false); } },
+  { "CK", [] { return disease_sh::requestHistoricalApiProvince("NZ", "cook%20islands", false); } },
   // Curacao
-  { "CW", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "Curacao", false); } },
+  { "CW", [] { return disease_sh::requestHistoricalApiProvince("NL", "Curacao", false); } },
   // Denmark
-  { "DK", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("DK", "mainland", false); } },
+  { "DK", [] { return disease_sh::requestHistoricalApiProvince("DK", "mainland", false); } },
   // Falkland Islands
-  { "FK", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "falkland%20islands%20(malvinas)", false); } },
+  { "FK", [] { return disease_sh::requestHistoricalApiProvince("UK", "falkland%20islands%20(malvinas)", false); } },
   // Faroe Islands
-  { "FO", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("DK", "faroe%20islands", false); } },
+  { "FO", [] { return disease_sh::requestHistoricalApiProvince("DK", "faroe%20islands", false); } },
   // France
-  { "FR", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "mainland", false); } },
+  { "FR", [] { return disease_sh::requestHistoricalApiProvince("FR", "mainland", false); } },
   // Gibraltar
-  { "GI", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "gibraltar", false); } },
+  { "GI", [] { return disease_sh::requestHistoricalApiProvince("UK", "gibraltar", false); } },
   // Greenland
-  { "GL", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("DK", "Greenland", false); } },
+  { "GL", [] { return disease_sh::requestHistoricalApiProvince("DK", "Greenland", false); } },
   // Guam
-  { "GU", [] (const Country& c) { return disease_sh::requestHistoricalApiUsaCounties("guam", false); } },
+  { "GU", [] { return disease_sh::requestHistoricalApiUsaCounties("guam", false); } },
   // Isle of Man
-  { "IM", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "isle%20of%20man", false); } },
+  { "IM", [] { return disease_sh::requestHistoricalApiProvince("UK", "isle%20of%20man", false); } },
   // Cayman Islands
-  { "KY", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "Cayman%20Islands", false); } },
+  { "KY", [] { return disease_sh::requestHistoricalApiProvince("UK", "Cayman%20Islands", false); } },
   // Myanmar
-  { "MM", [] (const Country& c) { return disease_sh::requestHistoricalApi("BU", false); } },
+  { "MM", [] { return disease_sh::requestHistoricalApi("BU", false); } },
   // Montserrat
-  { "MS", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "Montserrat", false); } },
+  { "MS", [] { return disease_sh::requestHistoricalApiProvince("UK", "Montserrat", false); } },
   // New Caledonia
-  { "NC", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "new%20caledonia", false); } },
+  { "NC", [] { return disease_sh::requestHistoricalApiProvince("FR", "new%20caledonia", false); } },
   // Netherlands
-  { "NL", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "mainland", false); } },
+  { "NL", [] { return disease_sh::requestHistoricalApiProvince("NL", "mainland", false); } },
   // New Zealand
-  { "NZ", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NZ", "mainland", false); } },
+  { "NZ", [] { return disease_sh::requestHistoricalApiProvince("NZ", "mainland", false); } },
   // French Polynesia
-  { "PF", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "french%20polynesia", false); } },
+  { "PF", [] { return disease_sh::requestHistoricalApiProvince("FR", "french%20polynesia", false); } },
   // Puerto Rico
-  { "PR", [] (const Country& c) { return disease_sh::requestHistoricalApiUsaCounties("puerto%20rico", false); } },
+  { "PR", [] { return disease_sh::requestHistoricalApiUsaCounties("puerto%20rico", false); } },
   // Palestine
-  { "PS", [] (const Country& c) { return disease_sh::requestHistoricalApi("West%20Bank%20and%20Gaza", false); } },
+  { "PS", [] { return disease_sh::requestHistoricalApi("West%20Bank%20and%20Gaza", false); } },
   // Sint Maarten
-  { "SX", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("NL", "sint%20maarten", false); } },
+  { "SX", [] { return disease_sh::requestHistoricalApiProvince("NL", "sint%20maarten", false); } },
   // Turks and Caicos Islands
-  { "TC", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "turks%20and%20caicos%20islands", false); } },
+  { "TC", [] { return disease_sh::requestHistoricalApiProvince("UK", "turks%20and%20caicos%20islands", false); } },
   // United Kingdom
-  { "UK", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "mainland", false); } },
+  { "UK", [] { return disease_sh::requestHistoricalApiProvince("UK", "mainland", false); } },
   // Vatican City
-  { "VA", [] (const Country& c) { return disease_sh::requestHistoricalApi("Holy%20See", false); } },
+  { "VA", [] { return disease_sh::requestHistoricalApi("Holy%20See", false); } },
   // British Virgin Islands
-  { "VG", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("UK", "British%20Virgin%20Islands", false); } },
+  { "VG", [] { return disease_sh::requestHistoricalApiProvince("UK", "British%20Virgin%20Islands", false); } },
   // United States Virgin Islands
-  { "VI", [] (const Country& c) { return disease_sh::requestHistoricalApiUsaCounties("virgin%20islands", false); } },
+  { "VI", [] { return disease_sh::requestHistoricalApiUsaCounties("virgin%20islands", false); } },
   // Wallis and Futuna
-  { "WF", [] (const Country& c) { return disease_sh::requestHistoricalApiProvince("FR", "wallis%20and%20futuna", false); } }
+  { "WF", [] { return disease_sh::requestHistoricalApiProvince("FR", "wallis%20and%20futuna", false); } }
 };
 
 CovidNumbers World::getCountryData(const Country& country)
@@ -340,7 +340,7 @@ CovidNumbers World::getCountryData(const Country& country)
   const auto iter = data_functions.find(country.geoId);
   if (iter != data_functions.end())
   {
-    return iter->second(country);
+    return iter->second();
   }
   // Default method: Just call API with geo id of country.
   return disease_sh::requestHistoricalApi(country.geoId, false);

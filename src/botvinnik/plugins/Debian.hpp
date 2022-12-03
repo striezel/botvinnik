@@ -29,7 +29,7 @@ namespace bvn
 
 /** \brief Replies with a list of available Debian packages.
  */
-class Debian: public DeactivatablePlugin
+class Debian final: public DeactivatablePlugin
 {
   public:
     /** \brief Constructor.
@@ -57,7 +57,7 @@ class Debian: public DeactivatablePlugin
     Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override;
 
 
-    /** \brief Gets a short, one line help text for a command
+    /** \brief Gets a short, one line help text for a command.
      *
      * \param command  name of the command where help is requested
      * \return Returns a short, one line help text for the command.
@@ -68,7 +68,7 @@ class Debian: public DeactivatablePlugin
     struct Packages
     {
       /** type alias for name-version pair */
-      typedef std::pair<std::string, std::string> nameVersion;
+      using nameVersion = std::pair<std::string, std::string>;
 
       nameVersion exact; /**< exact match by name */
       std::vector<nameVersion > others; /**< partial matches */

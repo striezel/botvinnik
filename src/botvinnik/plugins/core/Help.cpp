@@ -35,7 +35,11 @@ std::vector<std::string> Help::commands() const
   return { "help" };
 }
 
-Message Help::handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts)
+Message Help::handleCommand(const std::string_view& command,
+                            [[maybe_unused]] const std::string_view& message,
+                            [[maybe_unused]] const std::string_view& userId,
+                            [[maybe_unused]] const std::string_view& roomId,
+                            [[maybe_unused]] const std::chrono::milliseconds& server_ts)
 {
   if (command == "help")
   {
@@ -79,7 +83,7 @@ std::string Help::helpOneLine(const std::string_view& command) const
     return "";
 }
 
-bool Help::allowDeactivation(const std::string_view& command) const
+bool Help::allowDeactivation([[maybe_unused]] const std::string_view& command) const
 {
   // This is a core command plugin. Commands may not be disabled.
   return false;

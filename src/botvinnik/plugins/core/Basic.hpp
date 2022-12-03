@@ -32,7 +32,7 @@ namespace bvn
 
 /** \brief Plugin providing some basic commands for the bot.
  */
-class Basic: public Plugin
+class Basic final: public Plugin
 {
   public:
     /** \brief Constructor.
@@ -62,7 +62,7 @@ class Basic: public Plugin
     Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override;
 
 
-    /** \brief Gets a short, one line help text for a command
+    /** \brief Gets a short, one line help text for a command.
      *
      * \param command  name of the command where help is requested
      * \return Returns a short, one line help text for the command.

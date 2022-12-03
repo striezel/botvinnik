@@ -28,7 +28,7 @@ namespace bvn
 
 /** \brief Converts hexadecimal numbers.
  */
-class Conversion: public DeactivatablePlugin
+class Conversion final: public DeactivatablePlugin
 {
   public:
     /** \brief Constructor.
@@ -56,7 +56,7 @@ class Conversion: public DeactivatablePlugin
     Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override;
 
 
-    /** \brief Gets a short, one line help text for a command
+    /** \brief Gets a short, one line help text for a command.
      *
      * \param command  name of the command where help is requested
      * \return Returns a short, one line help text for the command.
