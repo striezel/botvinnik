@@ -109,7 +109,7 @@ TEST_CASE("FailCounter::count()")
     {
       counter.next(true);
       // count gets reduced by one on every iteration.
-      REQUIRE( counter.count() == i );
+      REQUIRE( counter.count() == static_cast<unsigned int>(i) );
     }
   }
 }
