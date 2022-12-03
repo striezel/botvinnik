@@ -37,7 +37,6 @@
 			<Add option="-Wall" />
 			<Add option="-std=c++17" />
 			<Add option="-fexceptions" />
-			<Add option="-Wconversion" />
 		</Compiler>
 		<Linker>
 			<Add library="curl" />
