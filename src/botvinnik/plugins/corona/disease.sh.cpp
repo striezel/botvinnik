@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2021  Dirk Stolle
+    Copyright (C) 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,10 +26,7 @@
 #include "../../../net/Curly.hpp"
 #include "../../../../third-party/simdjson/simdjson.h"
 
-namespace bvn
-{
-
-namespace disease_sh
+namespace bvn::disease_sh
 {
 
 /**
@@ -211,8 +208,8 @@ CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
     const auto isoDate = std::string("20").append(yearStr) + "-"
                        + std::string(monthStr.size() == 1, '0') + monthStr + "-"
                        + std::string(dayStr.size() == 1, '0') + dayStr;
-    int64_t deaths;
-    const auto error_i64 = keyValue.value.get<int64_t>().get(deaths);
+    int64_t death_count;
+    const auto error_i64 = keyValue.value.get<int64_t>().get(death_count);
     if (error_i64)
     {
       std::cerr << "Error: JSON from API contains a non-number as number of deaths!" << std::endl;
@@ -224,7 +221,7 @@ CovidNumbers parseJsonTimeline(const simdjson::dom::element& json)
       std::cerr << "Date '" << isoDate << "' is not present in both timelines!" << std::endl;
       return CovidNumbers();
     }
-    iter->second.deaths = deaths;
+    iter->second.deaths = death_count;
   }
 
   // Get it out of the map ...
@@ -413,7 +410,5 @@ CovidNumbers requestHistoricalApiFirstOfMultipleProvinces(const std::string& geo
   }
   return parseJsonTimeline(vec.at(0).value());
 }
-
-} // namespace
 
 } // namespace

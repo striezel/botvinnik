@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2021  Dirk Stolle
+    Copyright (C) 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,10 +23,7 @@
 
 #include "CovidNumbers.hpp"
 
-namespace bvn
-{
-
-namespace disease_sh
+namespace bvn::disease_sh
 {
 
 /**
@@ -73,8 +70,6 @@ CovidNumbers requestHistoricalApiUsaCounties(const std::string& county, const bo
  *         If an error occurred, an empty CovidNumbers struct is returned.
  */
 CovidNumbers requestHistoricalApiFirstOfMultipleProvinces(const std::string& geoId, const std::string& provinces, const bool all);
-
-} // namespace
 
 } // namespace
 
