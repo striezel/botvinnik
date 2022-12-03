@@ -81,19 +81,23 @@ TEST_CASE("plugin registration failures")
 
   SECTION("plugin without commands cannot be registered")
   {
-    class NoCommands : public DeactivatablePlugin
+    class NoCommands final : public DeactivatablePlugin
     {
       std::vector<std::string> commands() const override
       {
         return { };
       }
 
-      Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override
+      Message handleCommand([[maybe_unused]] const std::string_view& command,
+                            [[maybe_unused]] const std::string_view& message,
+                            [[maybe_unused]] const std::string_view& userId,
+                            [[maybe_unused]] const std::string_view& roomId,
+                            [[maybe_unused]] const std::chrono::milliseconds& server_ts) override
       {
         return Message();
       }
 
-      std::string helpOneLine(const std::string_view& command) const override
+      std::string helpOneLine([[maybe_unused]] const std::string_view& command) const override
       {
         return std::string();
       }
@@ -115,12 +119,16 @@ TEST_CASE("plugin registration failures")
         return { "" };
       }
 
-      Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override
+      Message handleCommand([[maybe_unused]] const std::string_view& command,
+                            [[maybe_unused]] const std::string_view& message,
+                            [[maybe_unused]] const std::string_view& userId,
+                            [[maybe_unused]] const std::string_view& roomId,
+                            [[maybe_unused]] const std::chrono::milliseconds& server_ts) override
       {
         return Message();
       }
 
-      std::string helpOneLine(const std::string_view& command) const override
+      std::string helpOneLine([[maybe_unused]] const std::string_view& command) const override
       {
         return std::string();
       }
@@ -135,19 +143,23 @@ TEST_CASE("plugin registration failures")
 
   SECTION("same command name cannot be registered by two plugins")
   {
-    class DoubleCommand : public DeactivatablePlugin
+    class DoubleCommand final : public DeactivatablePlugin
     {
       std::vector<std::string> commands() const override
       {
         return { "foo", "bar" };
       }
 
-      Message handleCommand(const std::string_view& command, const std::string_view& message, const std::string_view& userId, const std::string_view& roomId, const std::chrono::milliseconds& server_ts) override
+      Message handleCommand([[maybe_unused]] const std::string_view& command,
+                            [[maybe_unused]] const std::string_view& message,
+                            [[maybe_unused]] const std::string_view& userId,
+                            [[maybe_unused]] const std::string_view& roomId,
+                            [[maybe_unused]] const std::chrono::milliseconds& server_ts) override
       {
         return Message();
       }
 
-      std::string helpOneLine(const std::string_view& command) const override
+      std::string helpOneLine([[maybe_unused]] const std::string_view& command) const override
       {
         return std::string();
       }
