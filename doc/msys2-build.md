@@ -23,8 +23,8 @@ into the prompt, then press enter.
 
 ### Build tools
 
-To build the botvinnik from source you need a C++ compiler, CMake, the Ninja
-build system, the cURL library, and the SQLite 3 library.
+To build botvinnik from source you need a C++ compiler, CMake, the Ninja build
+system, the cURL library, and the SQLite 3 library.
 pkg-config is required to make it easier to find compiler options for the
 installed libraries. Additionally, the program uses Catch (C++ Automated Test
 Cases in Headers) to perform some tests.
