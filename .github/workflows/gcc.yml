@@ -34,7 +34,7 @@ jobs:
           mkdir build
           cd build
           cmake ../
-          make -j4
+          make -j2
       - name: Build with GNU GCC ${{ matrix.version }} with User-Agent
         run: |
           export CXX=g++-${{ matrix.version }}
@@ -44,7 +44,7 @@ jobs:
           mkdir ./build-with-ua
           cd ./build-with-ua
           cmake -DUSER_AGENT=ON ../
-          make -j4
+          make -j2
           cd ..
         if: matrix.version == 10
       - name: Tests
