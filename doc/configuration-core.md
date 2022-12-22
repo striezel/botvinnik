@@ -1,7 +1,7 @@
 # botvinnik: core configuration file
 
 The configuration file of botvinnik is the place where the core settings like
-the Matrix home server or the user id and password for login are stored.
+the Matrix homeserver or the user id and password for login are stored.
 **Since this is sensitive information, take precaution that no other
 users or only users who you trust can access the configuration file.** This can
 usually be achieved by setting proper file permissions and file ownership for

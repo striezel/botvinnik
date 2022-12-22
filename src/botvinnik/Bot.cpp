@@ -198,12 +198,12 @@ void Bot::checkServerVersion()
   }
   if (version.value() >= "1.62.0")
   {
-    std::clog << "Warning: Matrix home server is Synapse 1.62.0 or later.\n"
+    std::clog << "Warning: Matrix homeserver is Synapse 1.62.0 or later.\n"
               << "This versions may possibly cache requests for two minutes by"
               << " default, making the bot very slow to respond. If that is "
               << "the case, the server administrator should lower the setting\n\n"
               << "    sync_response_cache_duration\n\n"
-              << "in the home server configuration." << std::endl;
+              << "in the homeserver configuration." << std::endl;
   }
 }
 

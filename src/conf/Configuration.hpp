@@ -52,9 +52,9 @@ class Configuration
     static std::vector<std::string> potentialFileNames();
 
 
-    /** \brief Gets the current home server.
+    /** \brief Gets the current homeserver.
      *
-     * \return Returns the current home server.
+     * \return Returns the current homeserver.
      */
     const std::string& homeServer() const;
 
@@ -177,7 +177,7 @@ class Configuration
      */
     bool loadCoreConfiguration(const std::string& fileName);
 
-    std::string mHomeServer; /**< Matrix home server */
+    std::string mHomeServer; /**< Matrix homeserver */
     std::string mUserId; /**< Matrix user id used for login */
     std::string mPassword; /**< password used for login */
     std::string mPrefix; /**< prefix for commands */

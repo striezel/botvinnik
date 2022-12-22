@@ -8,7 +8,7 @@ improvements may be omitted.)_
 
 * __[change]__
   The bot will now log a warning to standard output, if Synapse 1.62.0 or later
-  is used as Matrix home server. A similar warning will occur, when the `!ping`
+  is used as Matrix homeserver. A similar warning will occur, when the `!ping`
   command detects an unusually high latency.
 
   Reason for that change is that Synapse 1.62.0 changed the default value for
@@ -16,7 +16,7 @@ improvements may be omitted.)_
   which means that all synchronisation requests will be cached for that time by
   default - unless the server setting has been changed manually. This means,
   that with those versions the may take up to two minutes to become aware of any
-  commands send to it, because the home server caches responses instead of
+  commands send to it, because the homeserver caches responses instead of
   returning up-to-date messages. Server administrators are advised to set the
   `sync_response_cache_duration` value to zero or - if that is not possible - to
   a value not higher than a few seconds.

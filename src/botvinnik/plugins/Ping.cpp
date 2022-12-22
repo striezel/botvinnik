@@ -82,7 +82,7 @@ Message Ping::handleCommand(const std::string_view& command,
                + " default, making the bot very slow to respond. If that is "
                + "the case, the server administrator should lower the setting\n\n"
                + "    sync_response_cache_duration\n\n"
-               + "in the home server configuration.";
+               + "in the homeserver configuration.";
       msg.formatted_body += std::string("<br />\n<br />\nThis ping seems to ")
                + "be rather high. It may be that you are using Synapse 1.62.0"
                + " or later as homeserver. This versions may possibly cache "
@@ -90,7 +90,7 @@ Message Ping::handleCommand(const std::string_view& command,
                + "slow to respond. If that is the case, the server "
                + "administrator should lower the setting<br />\n<br />\n"
                + "    sync_response_cache_duration<br />\n<br />\n"
-               + "in the home server configuration.";
+               + "in the homeserver configuration.";
     }
     return msg;
   }

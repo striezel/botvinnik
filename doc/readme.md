@@ -22,7 +22,7 @@ allow you to sign up for a new account on Matrix.org.
 
 ## Note about Synapse configuration
 
-If you are using the bot on a Matrix home server running Synapse 1.62.0 or
+If you are using the bot on a Matrix homeserver running Synapse 1.62.0 or
 later, then please make sure that the `sync_response_cache_duration` setting in
 the server's configuration is set to zero, or - if that is too low - to a value
 not higher than a few seconds. Synapse's default value for that setting is two

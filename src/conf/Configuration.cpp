@@ -217,7 +217,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
     {
       if (!mHomeServer.empty())
       {
-        std::cerr << "Error: Matrix home server is specified more than once in file "
+        std::cerr << "Error: Matrix homeserver is specified more than once in file "
                   << fileName << "!" << std::endl;
         return false;
       }
@@ -227,12 +227,12 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
 
       if (value.substr(0, 7) == "http://")
       {
-        std::clog << "Warning: Home server URL does not use HTTPS!" << std::endl;
+        std::clog << "Warning: Homeserver URL does not use HTTPS!" << std::endl;
       }
       else if (value.substr(0, 8) != "https://")
       {
         value = "https://" + value;
-        std::cout << "Info: Prepending 'https://' to home server URL, it's now "
+        std::cout << "Info: Prepending 'https://' to homeserver URL, it's now "
                   << value <<"." << std::endl;
       }
       mHomeServer = value;

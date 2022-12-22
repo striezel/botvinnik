@@ -1,6 +1,6 @@
 # botvinnik - a simple bot for Matrix chats
 
-botvinnik is a bot that hooks into a [Matrix](https://matrix.org/) home server
+botvinnik is a bot that hooks into a [Matrix](https://matrix.org/) homeserver
 and provides some (more or less) useful additions.
 
 See the [documentation](doc/readme.md) for more information on how to get

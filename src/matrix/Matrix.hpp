@@ -161,9 +161,9 @@ class Matrix
     std::optional<int64_t> getUploadLimit();
 
 
-    /** \brief Gets the version of the Synapse home server.
+    /** \brief Gets the version of the Synapse homeserver.
      *
-     * \return Returns the version of the Synapse home server.
+     * \return Returns the version of the Synapse homeserver.
      *         If the request failed, the returned optional will be empty.
      * \remark This will probably not work with alternative server
      *         implementations, such as dendrite or Conduit.
