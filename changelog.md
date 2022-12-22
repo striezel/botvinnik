@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2022-12-??)
+## Version 0.5.2 (2022-12-22)
 
 * __[change]__
   The bot will now log a warning to standard output, if Synapse 1.62.0 or later
