@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -159,6 +159,16 @@ class Matrix
      *         negative one (-1).
      */
     std::optional<int64_t> getUploadLimit();
+
+
+    /** \brief Gets the version of the Synapse home server.
+     *
+     * \return Returns the version of the Synapse home server.
+     *         If the request failed, the returned optional will be empty.
+     * \remark This will probably not work with alternative server
+     *         implementations, such as dendrite or Conduit.
+     */
+    std::optional<std::string> getSynapseVersion();
 
 
     /** \brief Uploads string contents as file to the content repository.

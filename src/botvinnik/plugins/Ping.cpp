@@ -65,7 +65,7 @@ Message Ping::handleCommand(const std::string_view& command,
     // let's be a bit generous with the estimate here.
     const auto delay = sync_delay.count() <= 2000 ? "two"
                          : std::to_string(std::chrono::ceil<std::chrono::seconds>(sync_delay).count());
-    return Message(std::string(userId).append(": Ping took ").append(diffStr).append(" to arrive.")
+    auto msg = Message(std::string(userId).append(": Ping took ").append(diffStr).append(" to arrive.")
                   .append("\nNote that the bot only queries new events approx. every "
                           + delay + " seconds, so a \"ping\" of up to " + delay
                           + " seconds is not unusual."),
@@ -73,6 +73,26 @@ Message Ping::handleCommand(const std::string_view& command,
                   .append("<em>Note that the bot only queries new events approx. every "
                           + delay + " seconds, so a \"ping\" of up to " + delay
                           + " seconds is not unusual.</em>"));
+    // Add note about sync request caching in Synapse 1.62.0 and later.
+    if (diff >= 2 * sync_delay)
+    {
+      msg.body += std::string("\n\nThis ping seems to be rather high. It may")
+               + " be that you are using Synapse 1.62.0 or later as homeserver."
+               + " This versions may possibly cache requests for two minutes by"
+               + " default, making the bot very slow to respond. If that is "
+               + "the case, the server administrator should lower the setting\n\n"
+               + "    sync_response_cache_duration\n\n"
+               + "in the home server configuration.";
+      msg.formatted_body += std::string("<br />\n<br />\nThis ping seems to ")
+               + "be rather high. It may be that you are using Synapse 1.62.0"
+               + " or later as homeserver. This versions may possibly cache "
+               + "requests for two minutes by default, making the bot very "
+               + "slow to respond. If that is the case, the server "
+               + "administrator should lower the setting<br />\n<br />\n"
+               + "    sync_response_cache_duration<br />\n<br />\n"
+               + "in the home server configuration.";
+    }
+    return msg;
   }
 
   // unknown command

@@ -548,6 +548,39 @@ std::optional<int64_t> Matrix::getUploadLimit()
   return uploadLimit.get<int64_t>().value();
 }
 
+std::optional<std::string> Matrix::getSynapseVersion()
+{
+  Curly curl;
+  curl.setURL(conf.homeServer() + "/_synapse/admin/v1/server_version");
+  #ifdef BVN_USER_AGENT
+  addUserAgent(curl);
+  #endif
+  std::string response;
+  if (!curl.perform(response) || curl.getResponseCode() != 200)
+  {
+    return std::nullopt;
+  }
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element doc;
+  const auto error = parser.parse(response).get(doc);
+  if (error)
+  {
+    std::cerr << "Error retrieving server version: Unable to parse JSON data!" << std::endl
+              << "Response is: " << response << std::endl;
+    return std::nullopt;
+  }
+  simdjson::dom::element server_version;
+  const auto jsonError = doc["server_version"].get(server_version);
+  if (jsonError || server_version.type() != simdjson::dom::element_type::STRING)
+  {
+    std::clog << "Warning: Server did not disclose its version!" << std::endl;
+    return std::nullopt;
+  }
+
+  return std::string(server_version.get<std::string_view>().value());
+}
+
 std::optional<std::string> Matrix::uploadString(const std::string& data, const std::string& contentType, const std::string& fileName)
 {
   if (!isLoggedIn())

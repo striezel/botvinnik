@@ -104,6 +104,10 @@ class Bot
     // bot, i. e. it needs access to private data.
     friend Help;
   private:
+    /** \brief Checks the Synapse server version and emits warning, if required.
+     */
+    void checkServerVersion();
+
     /** \brief Handles joining of a Matrix room for the bot.
      *
      * \param roomId   id of the room
