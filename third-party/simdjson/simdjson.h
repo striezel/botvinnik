@@ -1,4 +1,4 @@
-/* auto-generated on 2023-02-06 18:28:54 -0500. Do not edit! */
+/* auto-generated on 2023-02-22 20:34:51 -0500. Do not edit! */
 /* begin file include/simdjson.h */
 #ifndef SIMDJSON_H
 #define SIMDJSON_H
@@ -43,7 +43,7 @@
 #define SIMDJSON_SIMDJSON_VERSION_H
 
 /** The version of simdjson being used (major.minor.revision) */
-#define SIMDJSON_VERSION 3.1.1
+#define SIMDJSON_VERSION "3.1.2"
 
 namespace simdjson {
 enum {
@@ -58,7 +58,7 @@ enum {
   /**
    * The revision (major.minor.REVISION) of simdjson being used.
    */
-  SIMDJSON_VERSION_REVISION = 1
+  SIMDJSON_VERSION_REVISION = 2
 };
 } // namespace simdjson
 
@@ -3180,21 +3180,11 @@ static inline uint32_t detect_supported_architectures() {
   return instruction_set::ALTIVEC;
 }
 
-#elif defined(__arm__) || defined(__aarch64__) // incl. armel, armhf, arm64
-
-#if defined(__ARM_NEON)
+#elif defined(__aarch64__) || defined(_M_ARM64)
 
 static inline uint32_t detect_supported_architectures() {
   return instruction_set::NEON;
 }
-
-#else // ARM without NEON
-
-static inline uint32_t detect_supported_architectures() {
-  return instruction_set::DEFAULT;
-}
-
-#endif
 
 #elif defined(__x86_64__) || defined(_M_AMD64) // x64
 
