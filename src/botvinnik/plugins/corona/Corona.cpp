@@ -182,7 +182,7 @@ int64_t getCountryId(sql::database& db, const std::string& geoId, const std::str
 
 std::optional<Country> getCountry(sql::database& db, const std::string& country)
 {
-  sql::statement stmt = sql::prepare(db, "SELECT countryId, name, geoId FROM country WHERE geoId=@country OR name=@country LIMIT 1;");
+  sql::statement stmt = sql::prepare(db, "SELECT countryId, name, geoId, population FROM country WHERE geoId=@country OR name=@country LIMIT 1;");
   if (!stmt)
     return std::nullopt;
   if (!sql::bind(stmt, 1, country))
@@ -197,6 +197,7 @@ std::optional<Country> getCountry(sql::database& db, const std::string& country)
     const char * geo = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2));
     if (geo != nullptr)
       result.geoId = geo;
+    result.population = sqlite3_column_int64(stmt.get(), 3);
     return result;
   }
 
@@ -406,7 +407,8 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     {
       // New country, insert it into database.
       const auto& name = parts[2];
-      const auto& population = -1;
+      const auto opt_country = World::find(currentGeoId);
+      const auto& population = opt_country.has_value() ? opt_country.value().population : -1;
       const auto& region = parts[3];
 
       countryId = getCountryId(db, currentGeoId, name,
