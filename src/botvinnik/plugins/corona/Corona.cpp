@@ -107,9 +107,7 @@ bool createDbStructure(sql::database& db)
           countryId INTEGER NOT NULL,
           date TEXT,
           cases INTEGER,
-          totalCases INTEGER,
           deaths INTEGER,
-          totalDeaths INTEGER,
           incidence7 REAL
         );
         )SQL";
@@ -420,9 +418,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
 
     const auto& date = parts[0];
     const int64_t cases = !parts[4].empty() ? getInt64(parts[4]) : 0;
-    const int64_t cumulative_cases = !parts[5].empty() ? getInt64(parts[5]) : 0;
     const int64_t deaths = !parts[6].empty() ? getInt64(parts[6]) : 0;
-    const int64_t cumulative_deaths = !parts[7].empty() ? getInt64(parts[7]) : 0;
     const double incidence7 = std::numeric_limits<double>::quiet_NaN();
     if (cases == std::numeric_limits<int64_t>::min() || deaths == std::numeric_limits<int64_t>::min())
     {
@@ -432,7 +428,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
 
     if (batch.empty())
     {
-      batch = "INSERT INTO covid19 (countryId, date, cases, totalCases, deaths, totalDeaths, incidence7) VALUES ";
+      batch = "INSERT INTO covid19 (countryId, date, cases, deaths, incidence7) VALUES ";
       batchCount = 0;
     }
 
@@ -440,9 +436,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
          .append(std::to_string(countryId)).append(", ")
          .append(sql::quote(date)).append(", ")
          .append(std::to_string(cases)).append(", ")
-         .append(std::to_string(cumulative_cases)).append(", ")
          .append(std::to_string(deaths)).append(", ")
-         .append(std::to_string(cumulative_deaths)).append(", ")
          .append(std::isnan(incidence7) ? "NULL" : std::to_string(incidence7))
          .append("),");
     ++batchCount;
