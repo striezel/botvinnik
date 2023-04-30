@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ void showVersion()
             << "Version control commit: " << info.commit() << "\n"
             << "Version control date:   " << info.date() << "\n\n"
             << "Libraries:" << std::endl
-            << "  * simdjson " << SIMDJSON_STRINGIFY(SIMDJSON_VERSION)
+            << "  * simdjson " << SIMDJSON_VERSION
             << ", using implementation "
             << simdjson::get_active_implementation()->name() << " ("
             << simdjson::get_active_implementation()->description() << ")" << std::endl
