@@ -16,9 +16,6 @@ add_subdirectory (components)
 # Recurse into subdirectory for libcurl-related tests.
 add_subdirectory (curly)
 
-# Recurse into subdirectory for disease.sh tests.
-add_subdirectory (disease.sh)
-
 # Recurse into subdirectory for JSON parsing tests.
 add_subdirectory (json)
 

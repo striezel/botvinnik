@@ -28,7 +28,6 @@ set(botvinnik_sources
     plugins/corona/Corona.cpp
     plugins/corona/CovidNumbers.cpp
     plugins/corona/World.cpp
-    plugins/corona/disease.sh.cpp
     plugins/CheatSheet.cpp
     plugins/DeactivatablePlugin.cpp
     plugins/Debian.cpp

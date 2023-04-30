@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2021, 2022  Dirk Stolle
+    Copyright (C) 2021, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 #include <functional>
 #include <unordered_map>
 #include "../../../util/Strings.hpp"
-#include "disease.sh.hpp"
 
 namespace bvn
 {
@@ -267,83 +266,6 @@ std::optional<Country> World::find(const std::string& nameOrGeoId)
     return std::optional<Country>(*iter);
   // No match found.
   return std::optional<Country>();
-}
-
-// std::function<CovidNumbers()> to handle non-standard cases
-const std::unordered_map<std::string, std::function<CovidNumbers()>> data_functions = {
-  // Anguilla
-  { "AI", [] { return disease_sh::requestHistoricalApiProvince("UK", "Anguilla", false); } },
-  // American Samoa
-  { "AS", [] { return disease_sh::requestHistoricalApiUsaCounties("american%20samoa", false); } },
-  // Aruba
-  { "AW", [] { return disease_sh::requestHistoricalApiProvince("NL", "Aruba", false); } },
-  // Bermuda
-  { "BM", [] { return disease_sh::requestHistoricalApiProvince("UK", "Bermuda", false); } },
-  // Bonaire, Saint Eustatius and Saba
-  { "BQ", [] { return disease_sh::requestHistoricalApiFirstOfMultipleProvinces("NL", "bonaire%2C%20sint%20eustatius%20and%20saba%7C", false); } },
-  // Cook Islands
-  { "CK", [] { return disease_sh::requestHistoricalApiProvince("NZ", "cook%20islands", false); } },
-  // Curacao
-  { "CW", [] { return disease_sh::requestHistoricalApiProvince("NL", "Curacao", false); } },
-  // Denmark
-  { "DK", [] { return disease_sh::requestHistoricalApiProvince("DK", "mainland", false); } },
-  // Falkland Islands
-  { "FK", [] { return disease_sh::requestHistoricalApiProvince("UK", "falkland%20islands%20(malvinas)", false); } },
-  // Faroe Islands
-  { "FO", [] { return disease_sh::requestHistoricalApiProvince("DK", "faroe%20islands", false); } },
-  // France
-  { "FR", [] { return disease_sh::requestHistoricalApiProvince("FR", "mainland", false); } },
-  // Gibraltar
-  { "GI", [] { return disease_sh::requestHistoricalApiProvince("UK", "gibraltar", false); } },
-  // Greenland
-  { "GL", [] { return disease_sh::requestHistoricalApiProvince("DK", "Greenland", false); } },
-  // Guam
-  { "GU", [] { return disease_sh::requestHistoricalApiUsaCounties("guam", false); } },
-  // Isle of Man
-  { "IM", [] { return disease_sh::requestHistoricalApiProvince("UK", "isle%20of%20man", false); } },
-  // Cayman Islands
-  { "KY", [] { return disease_sh::requestHistoricalApiProvince("UK", "Cayman%20Islands", false); } },
-  // Myanmar
-  { "MM", [] { return disease_sh::requestHistoricalApi("BU", false); } },
-  // Montserrat
-  { "MS", [] { return disease_sh::requestHistoricalApiProvince("UK", "Montserrat", false); } },
-  // New Caledonia
-  { "NC", [] { return disease_sh::requestHistoricalApiProvince("FR", "new%20caledonia", false); } },
-  // Netherlands
-  { "NL", [] { return disease_sh::requestHistoricalApiProvince("NL", "mainland", false); } },
-  // New Zealand
-  { "NZ", [] { return disease_sh::requestHistoricalApiProvince("NZ", "mainland", false); } },
-  // French Polynesia
-  { "PF", [] { return disease_sh::requestHistoricalApiProvince("FR", "french%20polynesia", false); } },
-  // Puerto Rico
-  { "PR", [] { return disease_sh::requestHistoricalApiUsaCounties("puerto%20rico", false); } },
-  // Palestine
-  { "PS", [] { return disease_sh::requestHistoricalApi("West%20Bank%20and%20Gaza", false); } },
-  // Sint Maarten
-  { "SX", [] { return disease_sh::requestHistoricalApiProvince("NL", "sint%20maarten", false); } },
-  // Turks and Caicos Islands
-  { "TC", [] { return disease_sh::requestHistoricalApiProvince("UK", "turks%20and%20caicos%20islands", false); } },
-  // United Kingdom
-  { "UK", [] { return disease_sh::requestHistoricalApiProvince("UK", "mainland", false); } },
-  // Vatican City
-  { "VA", [] { return disease_sh::requestHistoricalApi("Holy%20See", false); } },
-  // British Virgin Islands
-  { "VG", [] { return disease_sh::requestHistoricalApiProvince("UK", "British%20Virgin%20Islands", false); } },
-  // United States Virgin Islands
-  { "VI", [] { return disease_sh::requestHistoricalApiUsaCounties("virgin%20islands", false); } },
-  // Wallis and Futuna
-  { "WF", [] { return disease_sh::requestHistoricalApiProvince("FR", "wallis%20and%20futuna", false); } }
-};
-
-CovidNumbers World::getCountryData(const Country& country)
-{
-  const auto iter = data_functions.find(country.geoId);
-  if (iter != data_functions.end())
-  {
-    return iter->second();
-  }
-  // Default method: Just call API with geo id of country.
-  return disease_sh::requestHistoricalApi(country.geoId, false);
 }
 
 } // namespace

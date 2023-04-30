@@ -6,6 +6,13 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2023-01-??)
 
+__[change]__
+The data source for the `!corona` command has been switched from the Center for
+Systems Science and Engineering (CSSE) at Johns Hopkins University to the World
+Health Organization COVID-19 Dashboard.
+Reason for that switch is that Johns Hopkins University stopped the collection
+of new data on 10th March 2023. The WHO also provides data beyond that point.
+
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.0.1 to version 3.1.7.
