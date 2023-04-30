@@ -101,8 +101,7 @@ bool createDbStructure(sql::database& db)
           countryId INTEGER PRIMARY KEY NOT NULL,
           name TEXT NOT NULL,
           population INTEGER,
-          geoId TEXT NOT NULL,
-          region TEXT
+          geoId TEXT NOT NULL
         );
         CREATE TABLE covid19 (
           countryId INTEGER NOT NULL,
@@ -124,8 +123,8 @@ bool createDbStructure(sql::database& db)
 }
 
 
-int64_t getCountryId(sql::database& db, const std::string& geoId, const std::string& name,
-                     const int64_t pop, const std::string& region)
+int64_t getCountryId(sql::database& db, const std::string& geoId,
+                     const std::string& name, const int64_t pop)
 {
   sql::statement stmt = sql::prepare(db, "SELECT countryId FROM country WHERE geoId=@id LIMIT 1;");
   if (!stmt)
@@ -145,14 +144,13 @@ int64_t getCountryId(sql::database& db, const std::string& geoId, const std::str
   if (rc == SQLITE_DONE)
   {
     // Not found - insert it.
-    auto insert = sql::prepare(db, "INSERT INTO country (name, population, geoId, region) VALUES (@countryname, @pop, @geo, @region);");
+    auto insert = sql::prepare(db, "INSERT INTO country (name, population, geoId) VALUES (@countryname, @pop, @geo);");
     if (!insert)
     {
       std::cerr << "Error: Could not prepare insert statement for geoId!" << std::endl;
       return -1;
     }
-    if (!sql::bind(insert, 1, name) || !sql::bind(insert, 2, pop) || !sql::bind(insert, 3, geoId)
-        || !sql::bind(insert, 4, region))
+    if (!sql::bind(insert, 1, name) || !sql::bind(insert, 2, pop) || !sql::bind(insert, 3, geoId))
     {
       std::cerr << "Error: Could not bind values to prepared statement!" << std::endl;
       return -1;
@@ -409,11 +407,9 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       const auto& name = parts[2];
       const auto opt_country = World::find(currentGeoId);
       const auto& population = opt_country.has_value() ? opt_country.value().population : -1;
-      const auto& region = parts[3];
 
       countryId = getCountryId(db, currentGeoId, name,
-                               population != std::numeric_limits<int64_t>::min() ? population : -1,
-                               region);
+                               population != std::numeric_limits<int64_t>::min() ? population : -1);
       if (countryId == -1)
       {
         std::cerr << "Error: Could not find id for geographic code '" << currentGeoId << "'!" << std::endl;
