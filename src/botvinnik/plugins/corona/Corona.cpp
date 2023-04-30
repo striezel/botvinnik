@@ -91,7 +91,7 @@ std::string getTempFileName()
     }
   } while (fs::exists(dirPath / basename));
 
-  return (dirPath / basename).native();
+  return (dirPath / basename).string();
 }
 
 bool createDbStructure(sql::database& db)
