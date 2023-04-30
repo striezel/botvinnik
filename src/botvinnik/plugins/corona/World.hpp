@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2021  Dirk Stolle
+    Copyright (C) 2021, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -42,14 +42,6 @@ struct World
      *         Returns an empty optional, if no match was found.
      */
     static std::optional<Country> find(const std::string& nameOrGeoId);
-
-    /** \brief Gets recent data for a given country.
-     *
-     * \param country   the country for which the data shall be retrieved.
-     * \return Returns CovidNumbers with data, if successful.
-     *         Returns an empty CovidNumbers instance otherwise.
-     */
-    static CovidNumbers getCountryData(const Country& country);
 };
 
 } // namespace

@@ -6,6 +6,56 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2023-01-??)
 
+* __[change]__
+  The data source for the `!corona` command has been switched from the Center
+  for Systems Science and Engineering (CSSE) at Johns Hopkins University to the
+  World Health Organization COVID-19 Dashboard.
+  Reason for that switch is that Johns Hopkins University stopped the collection
+  of new data on 10th March 2023. The WHO also provides data beyond that point.
+
+  The change to WHO as data source affects a few countries / territories
+  (two-letter country codes according to ISO-3166 are given in parenthesis for
+   easier search / identification):
+
+  * Bonaire, Saint Eustatius and Saba (BQ) is split into three parts which now
+    can be queried individually:
+    * Bonaire (XA)
+    * Sint Eustatius (XB)
+    * Saba (XC)
+  * Cape Verde (CV) is now called Cabo Verde.
+  * Cote d'Ivoire (CI) is now called Côte d’Ivoire.
+  * French Guiana (GF) is added as new country / territory.
+  * Guadeloupe (GP) is added as new country / territory.
+  * Laos (LA) is now called Lao People's Democratic Republic.
+  * Martinique (MQ) is added as new country / territory.
+  * Mayotte (YT) is added as new country / territory.
+  * Micronesia (FM) is now called Micronesia (Federated States of).
+  * Nauru (NR) is added as new country / territory.
+  * Niue (NU) is added as new country / territory.
+  * Northern Mariana Islands (MP) is now called Northern Mariana Islands
+    (Commonwealth of the).
+  * Palestine (PS) is now called occupied Palestinian territory, including east
+    Jerusalem.
+  * Pitcairn Islands (PN) are added as new country / territory.
+  * South Korea (KR) is now called Republic of Korea.
+  * Moldova (MD) is now called Republic of Moldova.
+  * Réunion (RE) is added as new country / territory.
+  * Russia (RU) is now called Russian Federation.
+  * Saint Barthélemy (BL) is added as new country / territory.
+  * Saint Helena, Ascension and Tristan da Cunha (SH) is added as new country /
+    territory.
+  * Saint Martin (MF) is added as new country / territory.
+    (The Dutch part of the island is still available as Sint Maarten (SX).)
+  * Saint Pierre and Miquelon (PM) is added as new country / territory.
+  * Syria (SY) is now called Syrian Arab Republic.
+  * Unfortunately, the WHO does not provide separate data for Taiwan (TW), so
+    no separate data for Taiwan can be queried at the moment.
+  * United Kingdom (UK) is now The United Kingdom, and its country code is
+    changed from UK to GB.
+  * Venezuela (VE) is now called Venezuela (Bolivarian Republic of).
+  * Unfortunately, the WHO does not provide separate data for West Sahara (EH),
+    so no separate data for West Sahara can be queried at the moment.
+
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.0.1 to version 3.1.7.

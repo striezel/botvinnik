@@ -13,7 +13,6 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/corona/Corona.cpp
     ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
     ../../src/botvinnik/plugins/corona/World.cpp
-    ../../src/botvinnik/plugins/corona/disease.sh.cpp
     ../../src/botvinnik/plugins/CheatSheet.cpp
     ../../src/botvinnik/plugins/DeactivatablePlugin.cpp
     ../../src/botvinnik/plugins/Debian.cpp
