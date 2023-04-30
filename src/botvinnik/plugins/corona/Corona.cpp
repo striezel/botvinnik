@@ -180,7 +180,7 @@ int64_t getCountryId(sql::database& db, const std::string& geoId,
 
 std::optional<Country> getCountry(sql::database& db, const std::string& country)
 {
-  sql::statement stmt = sql::prepare(db, "SELECT countryId, name, geoId, population FROM country WHERE geoId=@country OR name=@country LIMIT 1;");
+  sql::statement stmt = sql::prepare(db, "SELECT countryId, name, geoId, population FROM country WHERE lower(geoId)=lower(@country) OR lower(name)=lower(@country) LIMIT 1;");
   if (!stmt)
     return std::nullopt;
   if (!sql::bind(stmt, 1, country))
