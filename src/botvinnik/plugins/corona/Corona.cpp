@@ -107,8 +107,7 @@ bool createDbStructure(sql::database& db)
           countryId INTEGER NOT NULL,
           date TEXT,
           cases INTEGER,
-          deaths INTEGER,
-          incidence7 REAL
+          deaths INTEGER
         );
         )SQL";
   if (!sql::exec(db, statement))
@@ -219,7 +218,7 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
   result.totalCases = sqlite3_column_int64(stmt.get(), 0);
   result.totalDeaths = sqlite3_column_int64(stmt.get(), 1);
 
-  stmt = sql::prepare(db, "SELECT date, cases, deaths, ifnull(incidence7, -20.0) FROM covid19 WHERE countryId = @cid ORDER BY date DESC LIMIT 25;");
+  stmt = sql::prepare(db, "SELECT date, cases, deaths FROM covid19 WHERE countryId = @cid ORDER BY date DESC LIMIT 25;");
   if (!stmt)
   {
     return CovidNumbers();
@@ -233,11 +232,7 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
     CovidNumbersElem elem;
     elem.cases = sqlite3_column_int64(stmt.get(), 1);
     elem.deaths = sqlite3_column_int64(stmt.get(), 2);
-    elem.incidence7 = sqlite3_column_double(stmt.get(), 3);
-    if (elem.incidence7 < 0.0)
-    {
-      elem.incidence7 = std::numeric_limits<double>::quiet_NaN();
-    }
+    elem.incidence7 = std::numeric_limits<double>::quiet_NaN();
     elem.date = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 0));
     result.days.emplace_back(elem);
   }
@@ -419,7 +414,6 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     const auto& date = parts[0];
     const int64_t cases = !parts[4].empty() ? getInt64(parts[4]) : 0;
     const int64_t deaths = !parts[6].empty() ? getInt64(parts[6]) : 0;
-    const double incidence7 = std::numeric_limits<double>::quiet_NaN();
     if (cases == std::numeric_limits<int64_t>::min() || deaths == std::numeric_limits<int64_t>::min())
     {
       std::cerr << "Error: Got invalid case numbers in the following line:\n" << line << std::endl;
@@ -428,7 +422,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
 
     if (batch.empty())
     {
-      batch = "INSERT INTO covid19 (countryId, date, cases, deaths, incidence7) VALUES ";
+      batch = "INSERT INTO covid19 (countryId, date, cases, deaths) VALUES ";
       batchCount = 0;
     }
 
@@ -436,8 +430,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
          .append(std::to_string(countryId)).append(", ")
          .append(sql::quote(date)).append(", ")
          .append(std::to_string(cases)).append(", ")
-         .append(std::to_string(deaths)).append(", ")
-         .append(std::isnan(incidence7) ? "NULL" : std::to_string(incidence7))
+         .append(std::to_string(deaths))
          .append("),");
     ++batchCount;
 
