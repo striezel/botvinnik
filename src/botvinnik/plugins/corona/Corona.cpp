@@ -352,7 +352,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
   unsigned long int lineCount = 0;
   std::string batch;
   unsigned int batchCount = 0;
-  batch.reserve(80000);
+  batch.reserve(160000);
   while (std::getline(stream, line))
   {
     ++lineCount;
@@ -436,8 +436,8 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
          .append("),");
     ++batchCount;
 
-    // Perform one insert for every 2500 data sets.
-    if (batchCount >= 2500 && !batch.empty())
+    // Perform one insert for every 5000 data sets.
+    if (batchCount >= 5000 && !batch.empty())
     {
       batch[batch.size() - 1] = ';';
       if (!sql::exec(db, batch))
