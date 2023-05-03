@@ -352,6 +352,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
   unsigned long int lineCount = 0;
   std::string batch;
   unsigned int batchCount = 0;
+  batch.reserve(80000);
   while (std::getline(stream, line))
   {
     ++lineCount;
@@ -401,8 +402,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       const auto opt_country = World::find(currentGeoId);
       const auto& population = opt_country.has_value() ? opt_country.value().population : -1;
 
-      countryId = getCountryId(db, currentGeoId, name,
-                               population != std::numeric_limits<int64_t>::min() ? population : -1);
+      countryId = getCountryId(db, currentGeoId, name, population);
       if (countryId == -1)
       {
         std::cerr << "Error: Could not find id for geographic code '" << currentGeoId << "'!" << std::endl;
@@ -437,7 +437,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     // Perform one insert for every 2500 data sets.
     if (batchCount >= 2500 && !batch.empty())
     {
-      batch.at(batch.size() - 1) = ';';
+      batch[batch.size() - 1] = ';';
       if (!sql::exec(db, batch))
       {
         std::cerr << "Error: Could not batch-insert case numbers into database!" << std::endl;
@@ -451,7 +451,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
 
   if (batchCount > 0 && !batch.empty())
   {
-    batch.at(batch.size() - 1) = ';';
+    batch[batch.size() - 1] = ';';
     if (!sql::exec(db, batch))
     {
       std::cerr << "Error: Could not batch-insert case numbers into database!" << std::endl;
