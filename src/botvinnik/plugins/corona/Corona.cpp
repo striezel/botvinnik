@@ -429,8 +429,10 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     batch.append("(")
          .append(std::to_string(countryId)).append(", ")
          .append(sql::quote(date)).append(", ")
-         .append(std::to_string(cases)).append(", ")
-         .append(std::to_string(deaths))
+         // parts[4] already contains cases as string.
+         .append(parts[4]).append(", ")
+         // parts[6] already contains cases as string.
+         .append(parts[6])
          .append("),");
     ++batchCount;
 
