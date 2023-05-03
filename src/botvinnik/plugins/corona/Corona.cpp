@@ -175,12 +175,29 @@ int64_t getCountryId(sql::database& db, const std::string& geoId,
   return -1;
 }
 
+std::string actualCountry(const std::string& country)
+{
+  const auto optional = World::find(country);
+  std::string actual_country = optional.has_value() ? optional.value().geoId : country;
+  // EL is no official code for Greece, use GR instead.
+  if (actual_country == "EL")
+  {
+    actual_country = "GR";
+  }
+  // UK is no official code for the United Kingdom, use GB instead.
+  if (actual_country == "UK")
+  {
+    actual_country = "GB";
+  }
+  return actual_country;
+}
+
 std::optional<Country> getCountry(sql::database& db, const std::string& country)
 {
   sql::statement stmt = sql::prepare(db, "SELECT countryId, name, geoId, population FROM country WHERE lower(geoId)=lower(@country) OR lower(name)=lower(@country) LIMIT 1;");
   if (!stmt)
     return std::nullopt;
-  if (!sql::bind(stmt, 1, country))
+  if (!sql::bind(stmt, 1, actualCountry(country)))
     return std::nullopt;
   const auto rc = sqlite3_step(stmt.get());
   if (rc == SQLITE_ROW)

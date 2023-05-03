@@ -11,6 +11,9 @@ __[improvement]__
 Remove superfluous / redundant data from database of COVID-19 data created by
 the `!corona` command to speed up database creation.
 
+Furthermore, the search algorithm for finding countries by name has been
+improved to allow for some variants of longer, complex names.
+
 ## Version 0.6.0 (2023-04-30)
 
 * __[change]__
