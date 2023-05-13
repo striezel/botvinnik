@@ -86,7 +86,7 @@ std::vector<Country> World::all()
     { 52, "Curaçao", "CW", 163423 },
     { 53, "Cyprus", "CY", 875899 },
     { 54, "Czechia", "CZ", 10649800 },
-    { 55, "Democratic People's Republic of Korea", "KP", 86790568 },
+    { 55, "Democratic People's Republic of Korea", "KP", 25549604 },
     { 56, "Democratic Republic of the Congo", "CD", 86790568 },
     { 57, "Denmark", "DK", 5806081 },
     { 58, "Djibouti", "DJ", 973557 },
