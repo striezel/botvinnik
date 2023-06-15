@@ -2,7 +2,7 @@
 
 #  build.sh - script to create Docker image from latest commit
 #
-#  Copyright (C) 2021, 2022  Dirk Stolle
+#  Copyright (C) 2021, 2022, 2023  Dirk Stolle
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ then
 fi
 
 # Try to pull newer version of base image.
-docker pull debian:11-slim
+docker pull debian:12-slim
 if [ $? -ne 0 ]
 then
   echo "Warning: Could not pull newer base image, but continuing anyway."
