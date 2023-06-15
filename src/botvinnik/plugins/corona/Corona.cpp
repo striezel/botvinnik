@@ -415,7 +415,12 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     if (currentGeoId != lastGeoId)
     {
       // New country, insert it into database.
-      const auto& name = parts[2];
+      std::string name = parts[2];
+      const auto pos = name.find("[1]");
+      if (pos != std::string::npos)
+      {
+        name.erase(pos, pos + 3);
+      }
       const auto opt_country = World::find(currentGeoId);
       const auto& population = opt_country.has_value() ? opt_country.value().population : -1;
 

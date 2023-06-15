@@ -6,6 +6,11 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2023-05-??)
 
+* __[improvement]__
+  When requesting COVID-19 data for Kosovo via the `!corona` command, the
+  country will now be correctly named "Kosovo" instead of "Kosovo[1]". This is a
+  quirk in the WHO data, and the program will now work around it.
+
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.1.7 to version 3.2.0.
