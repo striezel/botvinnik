@@ -6,6 +6,15 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2023-05-??)
 
+* __[new feature]__
+The Debian package search is extended by adding the `!deb13` command to search
+for packages in Debian 13 (a.k.a. "trixie").
+
+* __[change]__
+Furthermore, the `!deb` command is now an alias for `!deb12` instead for
+`!deb11`. In other words: `!deb` does now search packages of Debian 12 instead
+of Debian 11 as before.
+
 * __[improvement]__
   When requesting COVID-19 data for Kosovo via the `!corona` command, the
   country will now be correctly named "Kosovo" instead of "Kosovo[1]". This is a
@@ -19,7 +28,6 @@ improvements may be omitted.)_
   The base image for the Docker build is updated from `debian:11-slim` to
   `debian:12-slim`, i. e. from Debian 11 (codename "bullseye") to Debian 12
   (codename "bookworm").
-
 
 ## Version 0.6.1 (2023-05-03)
 
