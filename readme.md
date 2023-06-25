@@ -6,8 +6,7 @@ and provides some (more or less) useful additions.
 See the [documentation](doc/readme.md) for more information on how to get
 started with the bot.
 
-_Note: The bot is still in an early stage of development. So far it has only
-been tested against the
+_Note: So far the bot it has only been tested against the
 [Synapse homeserver](https://github.com/matrix-org/synapse/)
 which is the de-facto reference implementation of a Matrix homeserver. It may or
 may not work with other homeserver implementations such as
