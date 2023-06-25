@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -44,10 +44,6 @@ std::optional<std::string> executeCommand(const char* noArgsCommand)
     result += buffer.data();
   }
   return std::optional<std::string>(result);
-}
-
-Fortune::Fortune()
-{
 }
 
 std::vector<std::string> Fortune::commands() const

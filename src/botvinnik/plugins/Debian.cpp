@@ -29,10 +29,6 @@
 namespace bvn
 {
 
-Debian::Debian()
-{
-}
-
 std::vector<std::string> Debian::commands() const
 {
   return { "deb", "deb13", "deb12", "deb11", "deb10", "deb9", "deb8" };

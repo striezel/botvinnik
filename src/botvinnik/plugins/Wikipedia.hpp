@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,11 +34,6 @@ namespace bvn
 class Wikipedia final: public DeactivatablePlugin
 {
   public:
-    /** \brief Constructor.
-     */
-    Wikipedia();
-
-
     /** \brief Gets a list of commands that are provided by this plugin.
      *
      * \return Returns a vector of command names implemented by this plugin.
