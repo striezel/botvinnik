@@ -3,7 +3,7 @@ name: Clang
 on: push
 
 jobs:
-  build_ubuntu_clang:
+  clang:
     strategy:
       fail-fast: false
       matrix:
@@ -17,6 +17,12 @@ jobs:
           - version: 10
             os: ubuntu-20.04
           - version: 11
+            os: ubuntu-22.04
+          - version: 12
+            os: ubuntu-22.04
+          - version: 13
+            os: ubuntu-22.04
+          - version: 14
             os: ubuntu-22.04
     runs-on: ${{ matrix.os }}
     steps:
@@ -50,7 +56,7 @@ jobs:
           cmake -DUSER_AGENT=ON ../
           make -j2
           cd ..
-        if: matrix.version == 10
+        if: matrix.version == 14
       - name: Tests
         run: |
           cd "$GITHUB_WORKSPACE"/build
