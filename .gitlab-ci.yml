@@ -5,9 +5,9 @@ docker_image_gcc:
     - docker:20-dind
   script:
     - cd ci/
-    - docker build -t $CI_REGISTRY/striezel/botvinnik/gcc:deb11 . -f Dockerfile_gcc
+    - docker build -t $CI_REGISTRY/striezel/botvinnik/gcc:deb12 . -f Dockerfile_gcc
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push $CI_REGISTRY/striezel/botvinnik/gcc:deb11
+    - docker push $CI_REGISTRY/striezel/botvinnik/gcc:deb12
     - docker logout $CI_REGISTRY
   # Only build new image when the Dockerfile or the GitLab CI configuration
   # changes.
@@ -18,7 +18,7 @@ docker_image_gcc:
 
 # Build with GCC / G++.
 build_gcc:
-  image: registry.gitlab.com/striezel/botvinnik/gcc:deb11
+  image: registry.gitlab.com/striezel/botvinnik/gcc:deb12
   stage: test
   before_script:
     - apt-get update && apt-get -y upgrade
@@ -44,9 +44,9 @@ docker_image_clang:
     - docker:20-dind
   script:
     - cd ci/
-    - docker build -t $CI_REGISTRY/striezel/botvinnik/clang:deb11 . -f Dockerfile_clang
+    - docker build -t $CI_REGISTRY/striezel/botvinnik/clang:deb12 . -f Dockerfile_clang
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push $CI_REGISTRY/striezel/botvinnik/clang:deb11
+    - docker push $CI_REGISTRY/striezel/botvinnik/clang:deb12
     - docker logout $CI_REGISTRY
   # Only build new image when the Dockerfile or the GitLab CI configuration
   # changes.
@@ -57,7 +57,7 @@ docker_image_clang:
 
 # Build with Clang / Clang++.
 build_clang:
-  image: registry.gitlab.com/striezel/botvinnik/clang:deb11
+  image: registry.gitlab.com/striezel/botvinnik/clang:deb12
   stage: test
   before_script:
     - apt-get update && apt-get -y upgrade
@@ -121,7 +121,7 @@ coverage:
       - public
 
 pages:
-  image: debian:11-slim
+  image: debian:12-slim
   stage: deploy
   needs: ["coverage"]
   dependencies:

@@ -1,11 +1,11 @@
 # This Dockerfile builds the image used during the Clang build job on GitLab.
-FROM debian:11-slim
+FROM debian:12-slim
 LABEL maintainer="Dirk Stolle"
 # Always update any existing packages first.
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get upgrade -y
 # Install build toolchain and dependencies.
-RUN apt-get install -y catch clang cmake fortune-mod fortunes-min libc++-dev libcurl4-gnutls-dev libsqlite3-dev pkg-config
+RUN apt-get install -y catch2 clang cmake fortune-mod fortunes-min libc++-dev libcurl4-gnutls-dev libsqlite3-dev pkg-config
 ENV CXX=clang++
 ENV CC=clang
 RUN export CXX=clang++
