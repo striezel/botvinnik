@@ -4,6 +4,12 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2023-07-??)
+
+* __[maintenance]__
+  The library that does the JSON parsing (simdjson) has been updated from
+  version 3.2.0 to version 3.2.1.
+
 ## Version 0.6.2 (2023-06-25)
 
 * __[new feature]__
