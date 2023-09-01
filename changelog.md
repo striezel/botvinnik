@@ -4,6 +4,12 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2023-09-??)
+
+* __[improvement]__
+  The images that the bot sends as response to the `!giphy` command will now
+  have some metadata about the image size in bytes, the width and the height.
+
 ## Version 0.6.3 (2023-09-01)
 
 * __[new feature]__

@@ -50,6 +50,8 @@
 		<Unit filename="../Version.hpp" />
 		<Unit filename="../conf/Configuration.cpp" />
 		<Unit filename="../conf/Configuration.hpp" />
+		<Unit filename="../matrix/ImageInfo.cpp" />
+		<Unit filename="../matrix/ImageInfo.hpp" />
 		<Unit filename="../matrix/Matrix.cpp" />
 		<Unit filename="../matrix/Matrix.hpp" />
 		<Unit filename="../matrix/Message.cpp" />

@@ -25,6 +25,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/xkcd/XkcdData.cpp
     ../../src/botvinnik/plugins/xkcd/XkcdDb.cpp
     ../../src/conf/Configuration.cpp
+    ../../src/matrix/ImageInfo.cpp
     ../../src/matrix/Matrix.cpp
     ../../src/matrix/Message.cpp
     ../../src/matrix/events/PowerLevels.cpp

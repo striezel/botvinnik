@@ -508,7 +508,7 @@ bool Matrix::sendMessage(const std::string& roomId, const Message& message)
   return true;
 }
 
-bool Matrix::sendImage(const std::string& roomId, const std::string& mxcUri, const std::string mimeType)
+bool Matrix::sendImage(const std::string& roomId, const std::string& mxcUri, const std::string& body, const ImageInfo& info)
 {
   if (!isLoggedIn())
   {
@@ -530,13 +530,28 @@ bool Matrix::sendImage(const std::string& roomId, const std::string& mxcUri, con
 
   nlohmann::json message = {
       { "msgtype", "m.image" },
-      { "body", "[This is an image.]" },
+      { "body", body },
       { "url", mxcUri }
   };
-
-  if (!mimeType.empty())
+  if (body.empty())
   {
-    message["info"]["mimetype"] = mimeType;
+    message["body"] = "[This is an image.]";
+  }
+  if (!info.mimeType.empty())
+  {
+    message["info"]["mimetype"] = info.mimeType;
+  }
+  if (info.width != 0)
+  {
+    message["info"]["w"] = info.width;
+  }
+  if (info.height != 0)
+  {
+    message["info"]["h"] = info.height;
+  }
+  if (info.size != 0)
+  {
+    message["info"]["size"] = info.size;
   }
 
   std::string response;

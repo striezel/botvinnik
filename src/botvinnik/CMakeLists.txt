@@ -6,6 +6,7 @@ project(botvinnik)
 set(botvinnik_sources
     ../../third-party/simdjson/simdjson.cpp
     ../conf/Configuration.cpp
+    ../matrix/ImageInfo.cpp
     ../matrix/Matrix.cpp
     ../matrix/Message.cpp
     ../matrix/events/PowerLevels.cpp

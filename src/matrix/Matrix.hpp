@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 #include "../conf/Configuration.hpp"
+#include "ImageInfo.hpp"
 #include "Message.hpp"
 #include "Room.hpp"
 #include "events/PowerLevels.hpp"
@@ -155,12 +156,13 @@ class Matrix
      *
      * \param roomId   id of the room to send the image in
      * \param mxcUri   URI of the image
-     * \param mimeType MIME type of the image, if known (e. g. "image/jpeg");
-                       leave empty for unknown type
+     * \param body     body of the message, i. e. alternative for clients that
+                       cannot display images; leave empty for default
+     * \param info     metadata of the image, leave empty for unknown info
      * \return Returns true, if the image was sent successfully.
      *         Returns false otherwise.
      */
-    bool sendImage(const std::string& roomId, const std::string& mxcUri, const std::string mimeType = "");
+    bool sendImage(const std::string& roomId, const std::string& mxcUri, const std::string& body = "", const ImageInfo& info = ImageInfo());
 
 
     /** \brief Gets the upload size limit for the server's content repository.

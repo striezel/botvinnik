@@ -77,6 +77,8 @@
 		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdDb.hpp" />
 		<Unit filename="../../src/conf/Configuration.cpp" />
 		<Unit filename="../../src/conf/Configuration.hpp" />
+		<Unit filename="../../src/matrix/ImageInfo.cpp" />
+		<Unit filename="../../src/matrix/ImageInfo.hpp" />
 		<Unit filename="../../src/matrix/Matrix.cpp" />
 		<Unit filename="../../src/matrix/Matrix.hpp" />
 		<Unit filename="../../src/matrix/Message.cpp" />

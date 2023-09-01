@@ -77,7 +77,13 @@ std::string Giphy::helpOneLine(const std::string_view& command) const
   return std::string();
 }
 
-nonstd::expected<std::vector<std::string>, Message> extract_images_from_json(const std::string& json)
+struct GiphyImageData
+{
+  std::string url; /**< URL of image in CDN server */
+  ImageInfo info;  /**< metadata for the image */
+};
+
+nonstd::expected<std::vector<GiphyImageData>, Message> extract_images_from_json(const std::string& json)
 {
   simdjson::dom::parser parser;
   simdjson::dom::element doc;
@@ -97,20 +103,68 @@ nonstd::expected<std::vector<std::string>, Message> extract_images_from_json(con
     return nonstd::make_unexpected(Message("The request to get images from Giphy failed. Giphy server returned unexpected JSON format."));
   }
 
-  std::vector<std::string> result;
+  std::vector<GiphyImageData> result;
 
   for (const auto & item : data)
   {
-    simdjson::dom::element item_url;
-    const auto url_error = item.at_pointer("/images/original/url").get(item_url);
-    if (url_error || item_url.type() != simdjson::dom::element_type::STRING)
+    simdjson::dom::element item_element;
+    auto error = item.at_pointer("/images/original/url").get(item_element);
+    if (error || item_element.type() != simdjson::dom::element_type::STRING)
     {
-      std::cerr << "Error: JSON response from Debian does not contain '/images/original/url' element!" << std::endl
+      std::cerr << "Error: JSON response from Giphy does not contain '/images/original/url' element!" << std::endl
                 << "Response is: " << json << std::endl;
       return nonstd::make_unexpected(Message("The request to get images from Giphy failed. Giphy server returned unexpected JSON format."));
     }
+    GiphyImageData current_data;
+    current_data.url = std::string(item_element.get<std::string_view>().value());
+    // It's always GIF for the default image.
+    current_data.info.mimeType = "image/gif";
 
-    result.emplace_back(item_url.get<std::string_view>().value());
+    error = item.at_pointer("/images/original/width").get(item_element);
+    // Despite being an integer value, the API returns a string containing the
+    // width value (e. g. "400") instead of the real value (e. g. 400).
+    if (error || !item_element.is_string())
+    {
+      std::clog << "Error: JSON response from Giphy does not contain '/images/original/width' element!" << std::endl
+                << "Response is: " << json << std::endl;
+    }
+    else
+    {
+      const auto string = item_element.get<std::string_view>().value();
+      int value = 0;
+      if (stringToInt(std::string(string), value))
+        current_data.info.width = value;
+    }
+
+    error = item.at_pointer("/images/original/height").get(item_element);
+    if (error || !item_element.is_string())
+    {
+      std::clog << "Error: JSON response from Giphy does not contain '/images/original/width' element!" << std::endl
+                << "Response is: " << json << std::endl;
+    }
+    else
+    {
+      const auto string = item_element.get<std::string_view>().value();
+      int value = 0;
+      if (stringToInt(std::string(string), value))
+        current_data.info.height = value;
+    }
+
+    error = item.at_pointer("/images/original/size").get(item_element);
+    if (error || !item_element.is_string())
+    {
+      std::clog << "Error: JSON response from Giphy does not contain '/images/original/width' element!" << std::endl
+                << "Response is: " << json << std::endl;
+    }
+    else
+    {
+      const auto string = item_element.get<std::string_view>().value();
+      int value = 0;
+      if (stringToInt(std::string(string), value))
+        current_data.info.size = value;
+    }
+
+    result.emplace_back(current_data);
   }
 
   return result;
@@ -159,13 +213,13 @@ Message Giphy::performQuery(const std::string& query, const std::string_view& ro
   const unsigned int num = distribution(generator);
 
 
-  const auto mxcUri = theMatrix.uploadImage(images[num]);
+  const auto mxcUri = theMatrix.uploadImage(images[num].url);
   if (!mxcUri.has_value())
   {
     return Message("Failed to upload GIF to Matrix homeserver.");
   }
 
-  if (!theMatrix.sendImage(std::string(roomId), mxcUri.value(), "image/gif"))
+  if (!theMatrix.sendImage(std::string(roomId), mxcUri.value(), "giphy.gif", images[num].info))
   {
     return Message("Could not send GIF to Matrix server.");
   }
