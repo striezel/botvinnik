@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2023-07-??)
+## Version 0.6.3 (2023-09-01)
 
 * __[new feature]__
   A new command to display random GIFs - `!giphy` - is added. For example, the
