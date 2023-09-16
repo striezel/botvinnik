@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of scan-tool.
-    Copyright (C) 2015, 2016, 2017, 2021, 2022  Dirk Stolle
+    Copyright (C) 2015, 2016, 2017, 2021, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -459,16 +459,6 @@ bool Curly::perform(std::string& response)
     if (retCode != CURLE_OK)
     {
       std::cerr << "cURL error: setting upload mode for Curly::perform failed! Error: "
-                << curl_easy_strerror(retCode) << std::endl;
-      curl_slist_free_all(header_list);
-      header_list = nullptr;
-      curl_easy_cleanup(handle);
-      return false;
-    }
-    retCode = curl_easy_setopt(handle, CURLOPT_PUT, 1L);
-    if (retCode != CURLE_OK)
-    {
-      std::cerr << "cURL error: setting PUT mode for Curly::perform failed! Error: "
                 << curl_easy_strerror(retCode) << std::endl;
       curl_slist_free_all(header_list);
       header_list = nullptr;
