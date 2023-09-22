@@ -10,6 +10,10 @@ improvements may be omitted.)_
   The images that the bot sends as response to the `!giphy` command will now
   have some metadata about the image size in bytes, the width and the height.
 
+* __[maintenance]__
+  The library that does the JSON parsing (simdjson) has been updated from
+  version 3.2.3 to version 3.3.0.
+
 ## Version 0.6.3 (2023-09-01)
 
 * __[new feature]__
