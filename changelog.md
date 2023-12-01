@@ -14,6 +14,10 @@ improvements may be omitted.)_
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.2.3 to version 3.6.1.
 
+* __[maintenance]__
+  The library that does the JSON serialization (nlohmann/json) has been updated
+  from version 3.11.2 to version 3.11.3.
+
 ## Version 0.6.3 (2023-09-01)
 
 * __[new feature]__
