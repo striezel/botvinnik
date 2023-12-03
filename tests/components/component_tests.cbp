@@ -34,6 +34,8 @@
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.hpp" />
 		<Unit filename="../../src/conf/Configuration.cpp" />
 		<Unit filename="../../src/conf/Configuration.hpp" />
+		<Unit filename="../../src/matrix/ImageInfo.cpp" />
+		<Unit filename="../../src/matrix/ImageInfo.hpp" />
 		<Unit filename="../../src/matrix/events/PowerLevels.cpp" />
 		<Unit filename="../../src/matrix/events/PowerLevels.hpp" />
 		<Unit filename="../../src/net/htmlspecialchars.cpp" />
@@ -48,6 +50,7 @@
 		<Unit filename="calculate_incidence.cpp" />
 		<Unit filename="conf/Configuration.cpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="matrix/ImageInfo.cpp" />
 		<Unit filename="matrix/events/PowerLevels.cpp" />
 		<Unit filename="net/htmlspecialchars.cpp" />
 		<Extensions>

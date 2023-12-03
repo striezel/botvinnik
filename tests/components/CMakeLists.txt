@@ -8,11 +8,13 @@ set(component_tests_sources
     ../../src/botvinnik/FailCounter.cpp
     ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
     ../../src/conf/Configuration.cpp
+    ../../src/matrix/ImageInfo.cpp
     ../../src/matrix/events/PowerLevels.cpp
     ../../src/net/htmlspecialchars.cpp
     ../../src/util/Directories.cpp
     ../../src/util/Strings.cpp
     conf/Configuration.cpp
+    matrix/ImageInfo.cpp
     matrix/events/PowerLevels.cpp
     net/htmlspecialchars.cpp
     FailCounter.cpp
