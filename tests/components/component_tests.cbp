@@ -45,11 +45,11 @@
 		<Unit filename="../FileGuard.hpp" />
 		<Unit filename="../locate_catch.hpp" />
 		<Unit filename="FailCounter.cpp" />
-		<Unit filename="PowerLevels.cpp" />
 		<Unit filename="calculate_incidence.cpp" />
 		<Unit filename="conf/Configuration.cpp" />
-		<Unit filename="htmlspecialchars.cpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="matrix/events/PowerLevels.cpp" />
+		<Unit filename="net/htmlspecialchars.cpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

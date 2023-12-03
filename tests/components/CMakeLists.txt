@@ -13,10 +13,10 @@ set(component_tests_sources
     ../../src/util/Directories.cpp
     ../../src/util/Strings.cpp
     conf/Configuration.cpp
+    matrix/events/PowerLevels.cpp
+    net/htmlspecialchars.cpp
     FailCounter.cpp
-    PowerLevels.cpp
     calculate_incidence.cpp
-    htmlspecialchars.cpp
     main.cpp)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
