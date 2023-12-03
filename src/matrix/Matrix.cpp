@@ -255,7 +255,7 @@ std::string Matrix::encodeRoomId(const std::string& roomId)
   return encodedRoomId;
 }
 
-std::optional<std::string>  Matrix::roomName(const std::string& roomId)
+std::optional<std::string> Matrix::roomName(const std::string& roomId)
 {
   if (!isLoggedIn())
   {
