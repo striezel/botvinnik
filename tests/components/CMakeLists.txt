@@ -13,12 +13,12 @@ set(component_tests_sources
     ../../src/net/htmlspecialchars.cpp
     ../../src/util/Directories.cpp
     ../../src/util/Strings.cpp
+    botvinnik/FailCounter.cpp
     conf/Configuration.cpp
     matrix/ImageInfo.cpp
     matrix/events/PowerLevels.cpp
     net/htmlspecialchars.cpp
     util/Strings.cpp
-    FailCounter.cpp
     calculate_incidence.cpp
     main.cpp)
 

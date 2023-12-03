@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
  -------------------------------------------------------------------------------
 */
 
-#include "../locate_catch.hpp"
-#include "../../src/botvinnik/FailCounter.hpp"
+#include "../../locate_catch.hpp"
+#include "../../../src/botvinnik/FailCounter.hpp"
 
 TEST_CASE("FailCounter constructor")
 {
@@ -198,5 +198,4 @@ TEST_CASE("FailCounter::limitExceeded()")
     }
     REQUIRE_FALSE( counter.limitExceeded() );
   }
-
 }
