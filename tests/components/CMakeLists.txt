@@ -17,6 +17,7 @@ set(component_tests_sources
     matrix/ImageInfo.cpp
     matrix/events/PowerLevels.cpp
     net/htmlspecialchars.cpp
+    util/Strings.cpp
     FailCounter.cpp
     calculate_incidence.cpp
     main.cpp)

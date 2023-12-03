@@ -53,6 +53,7 @@
 		<Unit filename="matrix/ImageInfo.cpp" />
 		<Unit filename="matrix/events/PowerLevels.cpp" />
 		<Unit filename="net/htmlspecialchars.cpp" />
+		<Unit filename="util/Strings.cpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

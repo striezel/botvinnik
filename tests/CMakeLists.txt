@@ -22,8 +22,5 @@ add_subdirectory (json)
 # Recurse into subdirectory for plugin tests.
 add_subdirectory (plugins)
 
-# Recurse into subdirectory for line splitting tests.
-add_subdirectory (split)
-
 # Recurse into subdirectory for URL-encoding tests.
 add_subdirectory (urlencode)

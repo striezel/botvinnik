@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020  Dirk Stolle
+    Copyright (C) 2020, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
  -------------------------------------------------------------------------------
 */
 
-#include "../locate_catch.hpp"
-#include "../../src/util/Strings.hpp"
+#include "../../locate_catch.hpp"
+#include "../../../src/util/Strings.hpp"
 
 TEST_CASE("split strings")
 {
@@ -69,4 +69,19 @@ TEST_CASE("split strings")
   {
     REQUIRE( std::vector<std::string>({ "i", "j", "k" }) == split(std::string("i\0j\0k", 5), '\0') );
   }
+}
+
+TEST_CASE("toLowerString")
+{
+  using namespace bvn;
+
+  REQUIRE( toLowerString("") == "" );
+  REQUIRE( toLowerString("abcdefghijklmnopqrstuvwxyz") == "abcdefghijklmnopqrstuvwxyz" );
+  REQUIRE( toLowerString("ABCDEFGHIJKLMNOPQRSTUVWXYZ") == "abcdefghijklmnopqrstuvwxyz" );
+  REQUIRE( toLowerString("AbCdEfGhIjKlMnOpQrStUvWxYz") == "abcdefghijklmnopqrstuvwxyz" );
+  REQUIRE( toLowerString("This is a BIG test.") == "this is a big test." );
+  REQUIRE( toLowerString(" !\"#$%&'()*+,-./") == " !\"#$%&'()*+,-./" );
+  REQUIRE( toLowerString("0123456789") == "0123456789" );
+  REQUIRE( toLowerString(":;<=>?@") == ":;<=>?@" );
+  REQUIRE( toLowerString("[\\]^_`{|}~") == "[\\]^_`{|}~" );
 }

@@ -43,7 +43,7 @@ std::string toLowerString(std::string str)
 {
   // Assume ASCII or compatible charset, where distance of the codepoint of
   // the uppercase and lowercase version of a letter is always the same.
-  const int diff = 'a'-'A';
+  constexpr int diff = 'a' - 'A';
   for (unsigned int i = 0; i < str.size(); ++i)
   {
     if ((str[i] >= 'A') && (str[i] <= 'Z'))
