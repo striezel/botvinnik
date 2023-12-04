@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2017, 2020  Dirk Stolle
+    Copyright (C) 2017, 2020, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -52,14 +52,6 @@ std::string toLowerString(std::string str);
 void trim(std::string& str1);
 
 
-/** \brief Gets the string representation of an integer value.
- *
- * \param value   integer value
- * \return Returns a string containing the given integer.
- */
-std::string intToString(const int value);
-
-
 /** \brief Tries to convert the string representation of an integer number into an int.
  *
  * \param str   the string that contains the number
@@ -68,14 +60,6 @@ std::string intToString(const int value);
  * \remarks If false is returned, the value of parameter value is undefined.
  */
 bool stringToInt(const std::string& str, int& value);
-
-
-/** \brief Converts a floating point value into its string representation.
- *
- * \param f  the floating point value
- * \return Returns string representation of the floating point value.
- */
-std::string floatToString(const float f);
 
 
 /** \brief Tries to convert the string representation of a floating point value into a float.

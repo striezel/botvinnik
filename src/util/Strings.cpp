@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2017, 2020  Dirk Stolle
+    Copyright (C) 2017, 2020, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 
 #include "Strings.hpp"
 #include <limits>
-#include <sstream>
 
 namespace bvn
 {
@@ -124,13 +123,6 @@ void trim(std::string& str1)
   return;
 }
 
-std::string intToString(const int value)
-{
-  std::ostringstream s;
-  s << value;
-  return s.str();
-}
-
 bool stringToInt(const std::string& str, int& value)
 {
   if (str.empty())
@@ -174,13 +166,6 @@ bool stringToInt(const std::string& str, int& value)
   if (negative)
     value = -value;
   return true;
-}
-
-std::string floatToString(const float f)
-{
-  std::stringstream s_str;
-  s_str << f;
-  return s_str.str();
 }
 
 bool stringToFloat(const std::string& str, float& value)
