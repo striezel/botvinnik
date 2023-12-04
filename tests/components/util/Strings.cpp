@@ -21,6 +21,31 @@
 #include "../../locate_catch.hpp"
 #include "../../../src/util/Strings.hpp"
 
+TEST_CASE("endsWith")
+{
+  using namespace bvn;
+
+  SECTION("empty strings")
+  {
+    REQUIRE_FALSE( endsWith("", ".png") );
+    REQUIRE( endsWith("blah", "") );
+  }
+
+  SECTION("non-empty strings")
+  {
+    REQUIRE( endsWith("foo.png", ".png") );
+    REQUIRE_FALSE( endsWith("foo.PNG", ".png") );
+    REQUIRE( endsWith("foo.PNG", ".PNG") );
+    REQUIRE_FALSE( endsWith("foo.PNG", "foo") );
+  }
+
+  SECTION("string is shorter than perspective suffix")
+  {
+     REQUIRE_FALSE( endsWith("abc", "abcdef") );
+     REQUIRE_FALSE( endsWith("abc", "aaaaaaaaaa") );
+  }
+}
+
 TEST_CASE("split strings")
 {
   using namespace bvn;
@@ -84,4 +109,60 @@ TEST_CASE("toLowerString")
   REQUIRE( toLowerString("0123456789") == "0123456789" );
   REQUIRE( toLowerString(":;<=>?@") == ":;<=>?@" );
   REQUIRE( toLowerString("[\\]^_`{|}~") == "[\\]^_`{|}~" );
+}
+
+TEST_CASE("trim")
+{
+  using namespace bvn;
+
+  SECTION("empty string")
+  {
+    std::string s;
+    trim(s);
+    REQUIRE( s == "" );
+  }
+
+  SECTION("left side")
+  {
+    std::string s;
+
+    s = "     abc";
+    trim(s);
+    REQUIRE( s == "abc" );
+
+    s = "\t\t \t foo";
+    trim(s);
+    REQUIRE( s == "foo" );
+
+
+    s = "\t\t \t ";
+    trim(s);
+    REQUIRE( s == "" );
+  }
+
+  SECTION("right side")
+  {
+    std::string s;
+
+    s = "abc     ";
+    trim(s);
+    REQUIRE( s == "abc" );
+
+    s = "foo\t\t \t ";
+    trim(s);
+    REQUIRE( s == "foo" );
+  }
+
+  SECTION("both sides")
+  {
+    std::string s;
+
+    s = "  abc     ";
+    trim(s);
+    REQUIRE( s == "abc" );
+
+    s = "  \t  \t  foo\t\t \t ";
+    trim(s);
+    REQUIRE( s == "foo" );
+  }
 }
