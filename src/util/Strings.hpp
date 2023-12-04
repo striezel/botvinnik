@@ -62,16 +62,6 @@ void trim(std::string& str1);
 bool stringToInt(const std::string& str, int& value);
 
 
-/** \brief Tries to convert the string representation of a floating point value into a float.
- *
- * \param str    the string that contains the number
- * \param value  the float that will be used to store the result
- * \return Returns true on success, false on failure.
- * \remarks If false is returned, the value of parameter value is undefined.
- */
-bool stringToFloat(const std::string& str, float& value);
-
-
 /** \brief Checks whether a string ends with a given suffix.
  *
  * \param str     the string to check

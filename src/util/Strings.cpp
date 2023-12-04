@@ -168,66 +168,6 @@ bool stringToInt(const std::string& str, int& value)
   return true;
 }
 
-bool stringToFloat(const std::string& str, float& value)
-{
-  if (str.empty())
-    return false;
-  value = 0.0f;
-  unsigned int i, next_look;
-  bool negative;
-  if (str[0] == '-')
-  {
-    i = 1;
-    negative = true;
-    next_look = 1;
-  }
-  else
-  {
-    i = 0;
-    negative = false;
-    next_look = 0;
-  }
-  for ( ; i < str.length(); ++i)
-  {
-    if ((str[i] >= '0') && (str[i] <= '9'))
-    {
-      value = value * 10.0f;
-      value = value + (str[i]-'0');
-      ++next_look;
-    } // if
-    else if (str[i] == '.')
-    {
-      // decimal separator found - break out of loop
-      next_look = i + 1;
-      break;
-    }
-    else
-    {
-      // unknown or invalid character detected
-      return false;
-    }
-  } // for
-  // now go for the stuff after the separator
-  float second = 0.0f;
-  for (i = str.length() - 1; i >= next_look; --i)
-  {
-    if ((str[i] >= '0') && (str[i] <= '9'))
-    {
-      second = second + (str[i]-'0');
-      second = second / 10.0f;
-    } // if
-    else
-    {
-      // unknown or invalid character detected
-      return false;
-    }
-  } // for, second loop
-  value = value + second;
-  if (negative)
-   value = -value;
-  return true;
-}
-
 bool endsWith(const std::string& str, const std::string& suffix)
 {
   const std::string::size_type strLen = str.size();
