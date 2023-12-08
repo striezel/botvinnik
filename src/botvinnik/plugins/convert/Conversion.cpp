@@ -101,6 +101,12 @@ std::string Conversion::helpOneLine(const std::string_view& command) const
   return std::string();
 }
 
+Message Conversion::helpExtended(const std::string_view& command,
+                [[maybe_unused]] const std::string_view& prefix) const
+{
+  return Message(helpOneLine(command));
+}
+
 Message Conversion::convert(const std::string_view& command, const std::string_view& message, const unsigned int origBase, const unsigned int newBase)
 {
   std::string number = std::string(message.substr(command.size() + 1));

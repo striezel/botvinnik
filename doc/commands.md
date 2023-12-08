@@ -25,7 +25,10 @@ Core commands influence how the bot works or provide information about the bot
 itself:
 
 * `!help` - _(since version 0.0.6)_ shows a help message containing all
-  available commands and a short explanation for each command
+  available commands and a short explanation for each command. _Since version
+  0.7.0_, it can also show a more detailed help for a specific command. For
+  example, `!help wiki` or `!help !wiki` will show detailed help for the `!wiki`
+  command.
 * `!stop` - _(since version 0.0.5)_ stops the bot. Note that only users that are
   mentioned in the [configuration file](configuration-core.md) are allowed to
   stop the bot.
@@ -112,7 +115,7 @@ The following commands allow text translation between different languages:
   e. g. `!tr en de Hello world!` will translate the text "Hello world!" from
   English (`en`) to German (`de`).
 * `!tr-lang` - _(since version 0.4.0)_ shows a list of available languages and
-  their corresponding language codes.
+  their corresponding language codes for the `!tr` command.
 
 Note that these commands only work, if a translation server (and possibly an API
 key) has been set in botvinnik's configuration file.

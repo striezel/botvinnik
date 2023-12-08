@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -68,6 +68,15 @@ class Basic final: public Plugin
      * \return Returns a short, one line help text for the command.
      */
     std::string helpOneLine(const std::string_view& command) const override;
+
+
+    /** \brief Gets a longer help text for a command.
+     *
+     * \param command  name of the command where help is requested
+     * \param prefix   the prefix for bot commands, e. g. "!"
+     * \return Returns a Message containing a longer help text for the command.
+     */
+    Message helpExtended(const std::string_view& command, const std::string_view& prefix) const override;
 
 
     /** \brief Determines whether a command of the plugin can be deactivated.

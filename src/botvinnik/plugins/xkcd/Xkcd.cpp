@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -190,6 +190,23 @@ std::string Xkcd::helpOneLine(const std::string_view& command) const
   }
 
   return std::string();
+}
+
+Message Xkcd::helpExtended(const std::string_view& command, const std::string_view& prefix) const
+{
+  using namespace std::string_literals;
+
+  if (command == "xkcd")
+  {
+    return Message("show a random comic from xkcd.com. If you want to get a "s
+        + "particular comic, use its number after the command. For example, `"s
+        .append(prefix) + "xkcd 1` will show the very first comic of xkcd.",
+        "show a random comic from xkcd.com. If you want to get a "s
+        + "particular comic, use its number after the command. For example, <code>"s
+        .append(prefix) + "xkcd 1</code> will show the very first comic of xkcd.");
+  }
+
+  return Message();
 }
 
 } // namespace

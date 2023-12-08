@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2021, 2022  Dirk Stolle
+    Copyright (C) 2021, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -99,6 +99,33 @@ std::string CheatSheet::helpOneLine(const std::string_view& command) const
   }
 
   return std::string();
+}
+
+Message CheatSheet::helpExtended(const std::string_view& command, const std::string_view& prefix) const
+{
+  using namespace std::string_literals;
+
+  if (command == "cheat")
+  {
+    return Message("displays a cheat sheet for the given Unix program / command,"s
+        + " e. g. `"s.append(prefix) + "cheat grep` will show a list of common"
+        + " usage examples for the `grep` tool, while `!cheat java json parse` "
+        + "will show a small code example how to parse JSON when using the Java"
+        + " programming language",
+        "displays a cheat sheet for the given Unix program / command,"s
+        + " e. g. <code>"s.append(prefix) + "cheat grep</code> will show a list"
+        + " of common usage examples for the <code>grep</code> tool, while "
+        + "<code>"s.append(prefix) + "cheat java json parse</code> will show "
+        + "a small code example how to parse JSON when using the Java"
+        + " programming language");
+  }
+  if (command == "cheats")
+  {
+    return Message("displays a cheat sheet for the given Unix program / command"
+                 + " (alias for the cheat command)"s);
+  }
+
+  return Message();
 }
 
 } // namespace

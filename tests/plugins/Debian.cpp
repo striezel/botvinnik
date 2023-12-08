@@ -62,6 +62,23 @@ TEST_CASE("plugin Debian")
     REQUIRE( plugin.helpOneLine("plonk").empty() );
   }
 
+  SECTION("extended help")
+  {
+    for (const auto& cmd : commands)
+    {
+      // Help text must not be empty.
+      const Message msg = plugin.helpExtended(cmd, "!");
+      REQUIRE_FALSE( msg.body.empty() );
+    }
+  }
+
+  SECTION("extended help for non-existent command returns no text")
+  {
+    const Message msg = plugin.helpExtended("plonk", "!");
+    REQUIRE( msg.body.empty() );
+    REQUIRE( msg.formatted_body.empty() );
+  }
+
   SECTION("command handlers must return text")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";

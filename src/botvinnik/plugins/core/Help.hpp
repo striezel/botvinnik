@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -70,6 +70,15 @@ class Help final: public Plugin
     std::string helpOneLine(const std::string_view& command) const override;
 
 
+    /** \brief Gets a longer help text for a command.
+     *
+     * \param command  name of the command where help is requested
+     * \param prefix   the prefix for bot commands, e. g. "!"
+     * \return Returns a Message containing a longer help text for the command.
+     */
+    Message helpExtended(const std::string_view& command, const std::string_view& prefix) const override;
+
+
     /** \brief Determines whether a command of the plugin can be deactivated.
      *
      * \param command  name of the command to deactivate
@@ -79,6 +88,22 @@ class Help final: public Plugin
     bool allowDeactivation(const std::string_view& command) const override;
   private:
     Bot& theBot; /**< reference to the bot */
+
+    /** \brief Generates a message that contains the one line help for every command.
+     *
+     * \return Returns a message for use as reply.
+     */
+    Message oneLineOverview() const;
+
+    std::string_view extractRequestedCommand(const std::string_view& command,
+                                             const std::string_view& message) const;
+
+    /** \brief Generates an extended help message for the requested command.
+     *
+     * \param command  name of the command, e. g. "stop" for the !stop command
+     * \return Returns a message for use as reply.
+     */
+    Message extendedHelp(const std::string_view requested_command) const;
 }; // class
 
 } // namespace

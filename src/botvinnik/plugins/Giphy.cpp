@@ -71,10 +71,25 @@ std::string Giphy::helpOneLine(const std::string_view& command) const
 {
   if (command == "giphy")
   {
-    return "displays a random image from giphy.com";
+    return "displays a random image from giphy.com matching the given keyword";
   }
 
   return std::string();
+}
+
+Message Giphy::helpExtended(const std::string_view& command, const std::string_view& prefix) const
+{
+  using namespace std::string_literals;
+
+  if (command == "giphy")
+  {
+    return Message("show a random GIF file matching a given keyword. For example, `"s
+        .append(prefix) + "giphy cat` will show a random GIF of a cat.",
+        "show a random GIF file matching a given keyword. For example, <code>"s
+        .append(prefix) + "giphy cat</code> will show a random GIF of a cat.");
+  }
+
+  return Message();
 }
 
 struct GiphyImageData

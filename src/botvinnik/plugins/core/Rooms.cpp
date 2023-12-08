@@ -167,6 +167,38 @@ std::string Rooms::helpOneLine(const std::string_view& command) const
   return std::string();
 }
 
+Message Rooms::helpExtended(const std::string_view& command, const std::string_view& prefix) const
+{
+  using namespace std::string_literals;
+
+  if (command == "rooms")
+  {
+    return Message("shows the rooms where the bot is active.\n"s
+        + "Only users that are allowed to stop the bot can get a list."s);
+  }
+  else if (command == "leave")
+  {
+    return Message("makes the bot leave a Matrix room, e. g. the command `"s
+        .append(prefix) + "leave !id_of_room:example.com` would make the bot leave "s
+        + "the room with the id `!id_of_room:example.com`."s
+        + " If no room id is given, i. e. the command is just `"s.append(prefix)
+        + "leave`, then the bot is told to leave the room where the command"s
+        + " was sent. Only users that are allowed to stop the bot or have the"s
+        + " power levels to ban or kick users out of the corresponding room "s
+        + "can make the bot leave a room."s,
+        "makes the bot leave a Matrix room, e. g. the command <code>"s
+        .append(prefix) + "leave !id_of_room:example.com</code> would make the"s
+        + " bot leave the room with the id <code>!id_of_room:example.com</code>."s
+        + " If no room id is given, i. e. the command is just <code>"s.append(prefix)
+        + "leave</code>, then the bot is told to leave the room where the command"s
+        + " was sent. Only users that are allowed to stop the bot or have the"s
+        + " power levels to ban or kick users out of the corresponding room "s
+        + "can make the bot leave a room."s);
+  }
+
+  return Message();
+}
+
 bool Rooms::allowDeactivation([[maybe_unused]] const std::string_view& command) const
 {
   // This is a core command plugin. Commands may not be disabled.

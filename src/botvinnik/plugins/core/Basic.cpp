@@ -132,6 +132,33 @@ std::string Basic::helpOneLine(const std::string_view& command) const
     return "";
 }
 
+Message Basic::helpExtended(const std::string_view& command,
+           [[maybe_unused]] const std::string_view& prefix) const
+{
+  if (command == "stop")
+  {
+    return Message(std::string("stops the bot and initiates its shutdown. ")
+        + "Note that only users that are mentioned in the configuration file "
+        + "are allowed to stop the bot.",
+        std::string("stops the bot and initiates its shutdown. ")
+        + "Note that only users that are mentioned in the <a href=\""
+        + "https://github.com/striezel/botvinnik/blob/master/doc/configuration-core.md\">"
+        + "configuration file</a> are allowed to stop the bot.");
+  }
+  else if (command == "version")
+  {
+    return Message("shows the version of the bot and of the used libraries",
+                   "shows the version of the bot and of the used libraries");
+  }
+  else if (command == "whoami")
+  {
+    return Message("shows the Matrix user id of the user who issued the command",
+                   "shows the Matrix user id of the user who issued the command");
+  }
+  else
+    return Message();
+}
+
 bool Basic::allowDeactivation([[maybe_unused]] const std::string_view& command) const
 {
   // This is a core command plugin. Commands may not be disabled.

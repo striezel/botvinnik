@@ -66,6 +66,15 @@ class Giphy final: public DeactivatablePlugin
      * \return Returns a short, one line help text for the command.
      */
     std::string helpOneLine(const std::string_view& command) const override;
+
+
+    /** \brief Gets a longer help text for a command.
+     *
+     * \param command  name of the command where help is requested
+     * \param prefix   the prefix for bot commands, e. g. "!"
+     * \return Returns a Message containing a longer help text for the command.
+     */
+    Message helpExtended(const std::string_view& command, const std::string_view& prefix) const override;
   private:
     Message performQuery(const std::string& query, const std::string_view& roomId);
 

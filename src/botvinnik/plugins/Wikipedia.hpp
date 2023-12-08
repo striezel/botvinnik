@@ -23,6 +23,7 @@
 
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 #include "DeactivatablePlugin.hpp"
 
@@ -60,6 +61,15 @@ class Wikipedia final: public DeactivatablePlugin
      * \return Returns a short, one line help text for the command.
      */
     std::string helpOneLine(const std::string_view& command) const override;
+
+
+    /** \brief Gets a longer help text for a command.
+     *
+     * \param command  name of the command where help is requested
+     * \param prefix   the prefix for bot commands, e. g. "!"
+     * \return Returns a Message containing a longer help text for the command.
+     */
+    Message helpExtended(const std::string_view& command, const std::string_view& prefix) const override;
   private:
     /** \brief Gets extract of a Wikipedia article.
      *
@@ -70,6 +80,9 @@ class Wikipedia final: public DeactivatablePlugin
      *         If the return value is empty, no message will be sent.
      */
     Message extract(const std::string& lang, const std::string_view& command, const std::string_view& message) const;
+
+    /// maps command names (=keys) to language names (=values)
+    static const std::unordered_map<std::string, std::string> languages;
 }; // class
 
 } // namespace

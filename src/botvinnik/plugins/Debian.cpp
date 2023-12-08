@@ -344,4 +344,39 @@ std::string Debian::helpOneLine(const std::string_view& command) const
   return std::string();
 }
 
+Message Debian::helpExtended(const std::string_view& command, const std::string_view& prefix) const
+{
+  using namespace std::string_literals;
+
+  const std::unordered_map<std::string, std::string> code_names = {
+    { "deb13", "trixie" },
+    { "deb12", "bookworm" },
+    { "deb11", "bullseye" },
+    { "deb10", "buster" },
+    { "deb9", "stretch" },
+    { "deb8", "jessie" },
+  };
+  if (command == "deb")
+  {
+    return Message("alias for package searches for the current stable release "s
+                 + "of Debian, currently equal to the `!deb12` command");
+  }
+  if ((command == "deb13") || (command == "deb12") || (command == "deb11")
+      || (command == "deb10") || (command == "deb9") || (command == "deb8"))
+  {
+    const auto code_name = code_names.find(std::string(command))->second;
+    const auto release = command.substr(3);
+    return Message("searches for packages for Debian "s .append(release)
+        + " (\"" + code_name + "\"), e.g. `"s
+        .append(prefix).append(command) + " grep` will find Debian "s
+        .append(release) + " packages where \"grep\" is part of the name",
+        "searches for packages for Debian "s .append(release)
+        + " (\"" + code_name + "\"), e.g. <code>"s
+        .append(prefix).append(command) + " grep</code> will find Debian "s
+        .append(release) + " packages where \"grep\" is part of the name");
+  }
+
+  return Message();
+}
+
 } // namespace

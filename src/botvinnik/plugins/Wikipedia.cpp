@@ -27,6 +27,23 @@
 namespace bvn
 {
 
+const std::unordered_map<std::string, std::string> Wikipedia::languages = {
+    { "wikics", "Czech" },
+    { "wikicy", "Welsh" },
+    { "wikide", "German" },
+    { "wikiel", "Greek" },
+    { "wikien", "English" },
+    { "wikies", "Spanish" },
+    { "wikifr", "French" },
+    { "wikiit", "Italian" },
+    { "wikinl", "Dutch" },
+    { "wikipl", "Polish" },
+    { "wikipt", "Portuguese" },
+    { "wikiru", "Russian" },
+    { "wikitr", "Turkish" },
+    { "wikiuk", "Ukrainian" }
+};
+
 std::vector<std::string> Wikipedia::commands() const
 {
   return { "wiki",
@@ -68,22 +85,6 @@ Message Wikipedia::handleCommand(const std::string_view& command, const std::str
 
 std::string Wikipedia::helpOneLine(const std::string_view& command) const
 {
-  static const std::unordered_map<std::string, std::string> languages = {
-      { "wikics", "Czech" },
-      { "wikicy", "Welsh" },
-      { "wikide", "German" },
-      { "wikiel", "Greek" },
-      { "wikien", "English" },
-      { "wikies", "Spanish" },
-      { "wikifr", "French" },
-      { "wikiit", "Italian" },
-      { "wikinl", "Dutch" },
-      { "wikipl", "Polish" },
-      { "wikipt", "Portuguese" },
-      { "wikiru", "Russian" },
-      { "wikitr", "Turkish" },
-      { "wikiuk", "Ukrainian" }
-  };
   if (command == "wiki" || command == "wikien")
   {
     return "gets extract from an article on the English Wikipedia";
@@ -97,6 +98,51 @@ std::string Wikipedia::helpOneLine(const std::string_view& command) const
 
   // No help available.
   return std::string();
+}
+
+Message Wikipedia::helpExtended(const std::string_view& command, const std::string_view& prefix) const
+{
+  using namespace std::string_literals;
+
+  if (command == "wiki")
+  {
+    return Message("gets extract from an article on the English"s
+      + " Wikipedia, e. g. `"s .append(prefix).append(command)
+      + " Albert Einstein` will show an extract from the article about the "s
+      + "scientist Albert Einstein",
+      "gets extract from an article on the English"s
+      + " Wikipedia, e. g. <code>"s .append(prefix).append(command)
+      + " Albert Einstein</code> will show an extract from the article about "s
+      + "the scientist Albert Einstein");
+  }
+
+  const auto iter = languages.find(std::string(command));
+  if (iter != languages.end() && command != "wikiuk")
+  {
+    const auto language = iter->second;
+    return Message("gets extract from an article on the "s + language
+      + " Wikipedia, e. g. `"s .append(prefix).append(command)
+      + " Albert Einstein` will show an extract from the article about the "s
+      + "scientist Albert Einstein",
+      "gets extract from an article on the "s + language
+      + " Wikipedia, e. g. <code>"s .append(prefix).append(command)
+      + " Albert Einstein</code> will show an extract from the article about "s
+      + "the scientist Albert Einstein");
+  }
+
+  if (command == "wikiuk")
+  {
+    const auto language = iter->second;
+    return Message("gets extract from an article on the Ukrainian Wikipedia, "s
+      + "e. g. `"s .append(prefix) +"wikiuk Альберт Ейнштейн` will show an "s
+      + "extract from the article about the scientist Albert Einstein"s,
+      "gets extract from an article on the Ukrainian Wikipedia, "s
+      + "e. g. <code>"s .append(prefix) +"wikiuk Альберт Ейнштейн</code> will"s
+      + " show an extract from the article about the scientist Albert Einstein"s);
+  }
+
+  // No help available.
+  return Message();
 }
 
 Message Wikipedia::extract(const std::string& lang, const std::string_view& command, const std::string_view& message) const

@@ -4,7 +4,16 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2023-09-??)
+## Version 0.7.0-pre (2023-12-08)
+
+* __[new feature]__
+  The `!help` command can now also show a detailed help for a specific command,
+  if a command is named. For example, the command `!help wiki` or `!help !wiki`
+  will show detailed help for the `!wiki` command.
+
+  If the the `!help` command is sent without a command name it will list all
+  available commands and a short(er) explanation for each command, just as in
+  previous versions of the bot.
 
 * __[improvement]__
   The images that the bot sends as response to the `!giphy` command will now

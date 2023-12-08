@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -107,6 +107,17 @@ std::string Ping::helpOneLine(const std::string_view& command) const
   }
 
   return std::string();
+}
+
+Message Ping::helpExtended(const std::string_view& command,
+          [[maybe_unused]] const std::string_view& prefix) const
+{
+   if (command == "ping")
+  {
+    return Message("shows the time it took the message to reach the bot");
+  }
+
+  return Message();
 }
 
 } // namespace

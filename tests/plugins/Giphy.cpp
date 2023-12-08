@@ -48,7 +48,29 @@ TEST_CASE("plugin Giphy")
       // Help text must not be empty.
       REQUIRE_FALSE( plugin.helpOneLine(cmd).empty() );
     }
-  } // one line help section
+  }
+
+  SECTION("one line help for non-existent command returns no text")
+  {
+    REQUIRE( plugin.helpOneLine("plonk").empty() );
+  }
+
+  SECTION("extended help")
+  {
+    for (const auto& cmd : commands)
+    {
+      // Help text must not be empty.
+      const Message msg = plugin.helpExtended(cmd, "!");
+      REQUIRE_FALSE( msg.body.empty() );
+    }
+  }
+
+  SECTION("extended help for non-existent command returns no text")
+  {
+    const Message msg = plugin.helpExtended("plonk", "!");
+    REQUIRE( msg.body.empty() );
+    REQUIRE( msg.formatted_body.empty() );
+  }
 
   SECTION("command handlers must return text")
   {

@@ -104,6 +104,11 @@ TEST_CASE("plugin registration failures")
       {
         return std::string();
       }
+
+      Message helpExtended([[maybe_unused]] const std::string_view& command, [[maybe_unused]] const std::string_view& prefix) const override
+      {
+        return Message();
+      }
     };
 
     NoCommands no_cmd;
@@ -135,6 +140,11 @@ TEST_CASE("plugin registration failures")
       {
         return std::string();
       }
+
+      Message helpExtended([[maybe_unused]] const std::string_view& command, [[maybe_unused]] const std::string_view& prefix) const override
+      {
+        return Message();
+      }
     };
 
     EmptyCommand empty_cmd;
@@ -165,6 +175,11 @@ TEST_CASE("plugin registration failures")
       std::string helpOneLine([[maybe_unused]] const std::string_view& command) const override
       {
         return std::string();
+      }
+
+      Message helpExtended([[maybe_unused]] const std::string_view& command, [[maybe_unused]] const std::string_view& prefix) const override
+      {
+        return Message();
       }
     };
 

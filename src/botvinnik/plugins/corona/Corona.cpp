@@ -662,4 +662,30 @@ std::string Corona::helpOneLine(const std::string_view& command) const
   return std::string();
 }
 
+Message Corona::helpExtended(const std::string_view& command, const std::string_view& prefix) const
+{
+  using namespace std::string_literals;
+
+  if (command == "corona")
+  {
+    return Message("gets current COVID-19 case numbers. The country for which"s
+      + " to get the data can be specified either by its English name (e. g. `"s
+      .append(prefix) + "corona Germany`) or by its two letter code from ISO "s
+      + "3166 (e. g. `"s .append(prefix) + "corona DE` for Germany's data). "
+      + "If you want to show summarized worldwide case numbers, just type `"s
+      .append(prefix) + "corona world` or `"s .append(prefix) + "corona all`"s
+      + " to show the total amount of COVID-19 cases in the world.",
+      "gets current COVID-19 case numbers. The country for which"s
+      + " to get the data can be specified either by its English name (e. g. <code>"s
+      .append(prefix) + "corona Germany</code>) or by its two letter code from ISO "s
+      + "3166 (e. g. <code>"s .append(prefix) + "corona DE</code> for Germany's"
+      + " data). If you want to show summarized worldwide case numbers, just "
+      + "type <code>"s .append(prefix) + "corona world</code> or <code>"s
+      .append(prefix) + "corona all</code> to show the total amount of COVID-19"
+      + " cases in the world.");
+  }
+
+  return Message();
+}
+
 } // namespace

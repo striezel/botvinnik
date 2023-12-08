@@ -246,4 +246,28 @@ std::string LibreTranslate::helpOneLine(const std::string_view& command) const
   return std::string();
 }
 
+Message LibreTranslate::helpExtended(const std::string_view& command, const std::string_view& prefix) const
+{
+  using namespace std::string_literals;
+
+  if (command == "tr")
+  {
+    return Message("translates text from one language to another, e. g. `"s
+        .append(prefix) + " en de Hello world!` will translate the text "
+        + "\"Hello world!\" from English (`en`) to German (`de`).",
+        "translates text from one language to another, e. g. <code>"s
+        .append(prefix) + " en de Hello world!</code> will translate the text "
+        + "\"Hello world!\" from English (<code>en</code>) to German (<code>de</code>).");
+  }
+  if (command == "tr-lang")
+  {
+    return Message("shows a list of available languages and their corresponding"
+        + " language codes for the `"s .append(prefix) +  "tr` command.",
+        "shows a list of available languages and their corresponding language"
+        + " codes for the <code>"s .append(prefix) +  "tr</code> command.");
+  }
+
+  return Message();
+}
+
 } // namespace
