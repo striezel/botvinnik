@@ -100,16 +100,8 @@ std::string Fortune::helpOneLine(const std::string_view& command) const
 Message Fortune::helpExtended(const std::string_view& command,
              [[maybe_unused]] const std::string_view& prefix) const
 {
-  if (command == "fortune")
-  {
-    return Message("displays a random epigram / fortune cookie / quote");
-  }
-  if (command == "fortunes")
-  {
-    return Message("displays a random epigram / fortune cookie / quote (alias for the fortune command)");
-  }
-
-  return Message();
+  const auto text = helpOneLine(command);
+  return Message(text, text);
 }
 
 } // namespace
