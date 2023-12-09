@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2022  Dirk Stolle
+    Copyright (C) 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -253,10 +253,10 @@ Message LibreTranslate::helpExtended(const std::string_view& command, const std:
   if (command == "tr")
   {
     return Message("translates text from one language to another, e. g. `"s
-        .append(prefix) + " en de Hello world!` will translate the text "
+        .append(prefix) + "tr en de Hello world!` will translate the text "
         + "\"Hello world!\" from English (`en`) to German (`de`).",
         "translates text from one language to another, e. g. <code>"s
-        .append(prefix) + " en de Hello world!</code> will translate the text "
+        .append(prefix) + "tr en de Hello world!</code> will translate the text "
         + "\"Hello world!\" from English (<code>en</code>) to German (<code>de</code>).");
   }
   if (command == "tr-lang")
