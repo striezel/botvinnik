@@ -104,7 +104,66 @@ std::string Conversion::helpOneLine(const std::string_view& command) const
 Message Conversion::helpExtended(const std::string_view& command,
                 [[maybe_unused]] const std::string_view& prefix) const
 {
-  return Message(helpOneLine(command));
+  using namespace std::string_literals;
+
+  if (command == "bin2dec")
+  {
+    return Message("converts a binary number to a decimal number. For example, `"s
+                   .append(prefix) + "bin2dec 1101` will convert the binary "
+                   + "number 1101 to its decimal representation, which is 13.",
+                   "converts a binary number to a decimal number. For example, <code>"s
+                   .append(prefix) + "bin2dec 1101</code> will convert the binary "
+                   + "number 1101 to its decimal representation, which is 13.");
+  }
+  if (command == "bin2hex")
+  {
+    return Message("converts a binary number to a hexadecimal number. "
+        + "For example, `"s .append(prefix) + "bin2hex 1101` will convert the "
+        + "binary number 1101 to its hexadecimal representation.",
+        "converts a binary number to a hexadecimal number. For example, <code>"s
+        .append(prefix) + "bin2hex 1101</code> will convert the binary number "
+        + "1101 to its hexadecimal representation, which is d<sub>(16)</sub>.");
+  }
+  if (command == "dec2bin")
+  {
+    return Message("converts a decimal number to a binary number. "
+        + " For example, `"s .append(prefix) + "dec2bin 12` will convert the"
+        + " decimal number 12 to its binary representation, which is 1100.",
+        "converts a decimal number to a binary number. For example, <code>"s
+        .append(prefix) + "dec2bin 12</code> will convert the decimal number"
+        + " 12 to its binary representation, which is 1100<sub>(2)</sub>.");
+  }
+  if (command == "dec2hex")
+  {
+    return Message("converts a decimal number to a hexadecimal number. "
+        + " For example, `"s .append(prefix) + "dec2hex 123` will convert the"
+        + " decimal number 123 to its hexadecimal representation, which is 7b.",
+        "converts a decimal number to a hexadecimal number. For example, <code>"s
+        .append(prefix) + "dec2hex 123</code> will convert the decimal number"
+        + " 123 to its hexadecimal representation, which is 7b<sub>(16)</sub>.");
+  }
+  if (command == "hex2bin")
+  {
+    return Message("converts a hexadecimal number to a binary number. "
+        + " For example, `"s .append(prefix) + "hex2bin c2` will convert the"
+        + " hexadecimal number c2 to its binary representation, which is "
+        + "11000010.",
+        "converts a hexadecimal number to a binary number. For example, <code>"s
+        .append(prefix) + "hex2bin c2</code> will convert the hexadecimal "
+        + "number c2 to its binary representation,"
+        + " which is 11000010<sub>(2)</sub>.");
+  }
+  if (command == "hex2dec")
+  {
+    return Message("converts a hexadecimal number to a decimal number. "
+        + " For example, `"s .append(prefix) + "hex2dec c2` will convert the"
+        + " hexadecimal number c2 to its decimal representation, which is 194.",
+        "converts a hexadecimal number to a decimal number. For example, <code>"s
+        .append(prefix) + "hex2dec c2</code> will convert the hexadecimal "
+        + "number c2 to its decimal representation, which is 194.");
+  }
+
+  return Message();
 }
 
 Message Conversion::convert(const std::string_view& command, const std::string_view& message, const unsigned int origBase, const unsigned int newBase)
