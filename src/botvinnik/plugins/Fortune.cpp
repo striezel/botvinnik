@@ -72,9 +72,9 @@ Message Fortune::handleCommand(const std::string_view& command,
                    + " of the server where the bot runs, then try something like\n\n"
                    + "    apt-get install fortune-mod\n\nor similar to install it.",
                    std::string("<strong>Error: Failed to generate fortune. ")
-                   + "fortune binary may not be installed. If you are the administrator"
-                   + " of the server where the bot runs, then try something "
-                   + "like<br />\n<br />\n<code>"
+                   + "fortune binary may not be installed.</strong> If you are"
+                   + " the administrator of the server where the bot runs, then"
+                   + " try something like<br />\n<br />\n<code>"
                    + "apt-get install fortune-mod</code><br />\n<br />\nor "
                    + "similar to install it.");
   }
