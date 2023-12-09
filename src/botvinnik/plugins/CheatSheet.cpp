@@ -105,24 +105,19 @@ Message CheatSheet::helpExtended(const std::string_view& command, const std::str
 {
   using namespace std::string_literals;
 
-  if (command == "cheat")
+  if ((command == "cheat") || (command == "cheats"))
   {
     return Message("displays a cheat sheet for the given Unix program / command,"s
-        + " e. g. `"s.append(prefix) + "cheat grep` will show a list of common"
-        + " usage examples for the `grep` tool, while `!cheat java json parse` "
-        + "will show a small code example how to parse JSON when using the Java"
-        + " programming language",
+        + " e. g. `"s.append(prefix).append(command) + " grep` will show a list of common"
+        + " usage examples for the `grep` tool, while `"s. append(prefix)
+        .append(command) + " java json parse` will show a small code example "
+        + "how to parse JSON when using the Java programming language",
         "displays a cheat sheet for the given Unix program / command,"s
-        + " e. g. <code>"s.append(prefix) + "cheat grep</code> will show a list"
+        + " e. g. <code>"s.append(prefix).append(command) + " grep</code> will show a list"
         + " of common usage examples for the <code>grep</code> tool, while "
-        + "<code>"s.append(prefix) + "cheat java json parse</code> will show "
+        + "<code>"s.append(prefix).append(command) + " java json parse</code> will show "
         + "a small code example how to parse JSON when using the Java"
         + " programming language");
-  }
-  if (command == "cheats")
-  {
-    return Message("displays a cheat sheet for the given Unix program / command"
-                 + " (alias for the cheat command)"s);
   }
 
   return Message();
