@@ -358,8 +358,13 @@ Message Debian::helpExtended(const std::string_view& command, const std::string_
   };
   if (command == "deb")
   {
-    return Message("alias for package searches for the current stable release "s
-                 + "of Debian, currently equal to the `!deb12` command");
+    // `!deb` is currently an alias for `!deb12`.
+    return Message("searches for packages for Debian 12 (\"bookworm\"), e.g. `"s
+        .append(prefix).append(command) + " grep` will find Debian 12"s
+        + " packages where \"grep\" is part of the name",
+        "searches for packages for Debian 12 (\"bookworm\"), e.g. <code>"s
+        .append(prefix).append(command) + " grep</code> will find Debian 12"s
+        + " packages where \"grep\" is part of the name");
   }
   if ((command == "deb13") || (command == "deb12") || (command == "deb11")
       || (command == "deb10") || (command == "deb9") || (command == "deb8"))
