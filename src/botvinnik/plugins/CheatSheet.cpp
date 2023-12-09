@@ -70,7 +70,7 @@ Message CheatSheet::handleCommand(const std::string_view& command, const std::st
   // Pretend we are curl (which we actually are) via User-Agent. This is
   // necessary, because the server would return HTML code instead of plain
   // text otherwise.
-  curl.addHeader("User-Agent: curl/7.77.0");
+  curl.addHeader("User-Agent: curl/8.5.0");
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
