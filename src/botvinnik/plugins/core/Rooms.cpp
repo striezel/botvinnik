@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -174,6 +174,8 @@ Message Rooms::helpExtended(const std::string_view& command, const std::string_v
   if (command == "rooms")
   {
     return Message("shows the rooms where the bot is active.\n"s
+        + "Only users that are allowed to stop the bot can get a list."s,
+        "shows the rooms where the bot is active.<br />\n"s
         + "Only users that are allowed to stop the bot can get a list."s);
   }
   else if (command == "leave")
