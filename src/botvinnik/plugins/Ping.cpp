@@ -114,7 +114,8 @@ Message Ping::helpExtended(const std::string_view& command,
 {
    if (command == "ping")
   {
-    return Message("shows the time it took the message to reach the bot");
+    return Message("shows the time it took the message to reach the bot",
+                   "shows the time it took the message to reach the bot");
   }
 
   return Message();
