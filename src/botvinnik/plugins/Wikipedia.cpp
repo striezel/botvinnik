@@ -132,7 +132,6 @@ Message Wikipedia::helpExtended(const std::string_view& command, const std::stri
 
   if (command == "wikiuk")
   {
-    const auto language = iter->second;
     return Message("gets extract from an article on the Ukrainian Wikipedia, "s
       + "e. g. `"s .append(prefix) +"wikiuk Альберт Ейнштейн` will show an "s
       + "extract from the article about the scientist Albert Einstein"s,
