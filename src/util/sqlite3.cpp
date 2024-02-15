@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022  Dirk Stolle
+    Copyright (C) 2020, 2022, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ bool exec(database& db, const std::string& sql)
   char * errorMessage = nullptr;
   if (sqlite3_exec(db.get(), sql.c_str(), nullptr, nullptr, &errorMessage) != SQLITE_OK)
   {
-    std::cerr << "Error: Could execute SQL statement in sqlite3 database!" << std::endl
+    std::cerr << "Error: Could not execute SQL statement in sqlite3 database!\n"
               << errorMessage << std::endl;
     sqlite3_free(errorMessage);
     return false;
