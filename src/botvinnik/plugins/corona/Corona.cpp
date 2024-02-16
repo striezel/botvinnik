@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 
 #include "Corona.hpp"
 #include <algorithm>
-#include <climits>
 #include <cmath> // for std::isnan()
 #include <filesystem>
 #include <iostream>
@@ -43,21 +42,20 @@ int64_t getInt64(const std::string& value)
   try
   {
     std::size_t pos;
-    #if LONG_MAX == 9223372036854775807LL
-    // long int is 64 bit.
-    const int64_t i = std::stol(value, &pos);
-    #elif LLONG_MAX == 9223372036854775807LL
-    // long long int is 64 bit.
-    const int64_t i = std::stoll(value, &pos);
-    #else
-      #error Could not find suitable 64-bit integer type!
-    #endif // LONG_MAX
+    // Values for Our World in Data are actually floating-point numbers instead
+    // of integers, so we have to convert to double first.
+    const double d = std::stod(value, &pos);
     if (pos != value.size())
     {
-      std::cerr << "Error: '"<< value << "' is not a valid signed 64-bit integer!";
+      std::cerr << "Error: '"<< value << "' is not a valid floating-point number!";
       return std::numeric_limits<int64_t>::min();
     }
-    return i;
+    if ((d > std::numeric_limits<int64_t>::max()) || (d < std::numeric_limits<int64_t>::min()))
+    {
+      std::cerr << "Error: '"<< value << "' is out of range for 64 bit integer!";
+      return std::numeric_limits<int64_t>::min();
+    }
+    return static_cast<int64_t>(d);
   }
   catch (const std::exception& ex)
   {
@@ -175,29 +173,12 @@ int64_t getCountryId(sql::database& db, const std::string& geoId,
   return -1;
 }
 
-std::string actualCountry(const std::string& country)
-{
-  const auto optional = World::find(country);
-  std::string actual_country = optional.has_value() ? optional.value().geoId : country;
-  // EL is no official code for Greece, use GR instead.
-  if (actual_country == "EL")
-  {
-    actual_country = "GR";
-  }
-  // UK is no official code for the United Kingdom, use GB instead.
-  if (actual_country == "UK")
-  {
-    actual_country = "GB";
-  }
-  return actual_country;
-}
-
 std::optional<Country> getCountry(sql::database& db, const std::string& country)
 {
   sql::statement stmt = sql::prepare(db, "SELECT countryId, name, geoId, population FROM country WHERE lower(geoId)=lower(@country) OR lower(name)=lower(@country) LIMIT 1;");
   if (!stmt)
     return std::nullopt;
-  if (!sql::bind(stmt, 1, actualCountry(country)))
+  if (!sql::bind(stmt, 1, country))
     return std::nullopt;
   const auto rc = sqlite3_step(stmt.get());
   if (rc == SQLITE_ROW)
@@ -307,11 +288,13 @@ std::vector<std::string> Corona::commands() const
 std::optional<std::string> Corona::createDatabase()
 {
   Curly curl;
-  curl.setURL("https://covid19.who.int/WHO-COVID-19-global-data.csv");
+  curl.setURL("https://covid.ourworldindata.org/data/owid-covid-data.csv");
+  curl.followRedirects(true);
+  curl.setMaximumRedirects(5);
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Failed to get COVID-19 case numbers from WHO's COVID-19 Dashboard!" << std::endl
+    std::cerr << "Error: Failed to get COVID-19 case numbers from Our World in Data!" << std::endl
               << "HTTP status code: " << curl.getResponseCode() << std::endl
               << "Response: " << response << std::endl;
     return std::optional<std::string>();
@@ -342,8 +325,8 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       line.erase(0, 3);
   }
 
-  const std::string header("Date_reported,Country_code,Country,WHO_region,New_cases,Cumulative_cases,New_deaths,Cumulative_deaths");
-  if (line != header)
+  const std::string header("iso_code,continent,location,date,total_cases,new_cases,new_cases_smoothed,total_deaths,new_deaths,");
+  if (line.find(header) != 0)
   {
     std::cerr << "Error: Header line of CSV data does not match the expected format!" << std::endl
               << "Header line is '" << line << "'." << std::endl;
@@ -383,32 +366,17 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     }
 
     auto parts = split(line, ',');
-    if (parts.size() != 8)
+    if (parts.size() != 67)
     {
-      // Check for "Saint Helena, Ascension and Tristan da Cunha".
-      if (parts.size() == 9 && parts[2] == "\"Saint Helena" && parts[3] == " Ascension and Tristan da Cunha\"")
-      {
-        parts[2] = "Saint Helena, Ascension and Tristan da Cunha";
-        parts.erase(parts.begin() + 3);
-      }
-      // Check for "occupied Palestinian territory, including east Jerusalem"
-      else if (parts.size() == 9 && parts[2] == "\"occupied Palestinian territory" && parts[3] == " including east Jerusalem\"")
-      {
-        parts[2] = "occupied Palestinian territory, including east Jerusalem";
-        parts.erase(parts.begin() + 3);
-      }
-      else
-      {
-        std::cerr << "Error: A line of CSV data does not have eight data elements, but "
-                  << parts.size() << " elements instead!" << std::endl
-                  << "The line is '" << line << "'. It will be skipped." << std::endl;
+      std::cerr << "Error: A line of CSV data does not have 67 data elements, but "
+                << parts.size() << " elements instead!" << std::endl
+                << "The line is '" << line << "'. It will be skipped." << std::endl;
         continue;
-      }
     }
-    const std::string currentGeoId = parts.at(1);
+    const std::string currentGeoId = parts.at(0);
     if (currentGeoId.empty())
     {
-      std::cerr << "Error: A line of CSV data does not have a geoId!" << std::endl
+      std::cerr << "Error: A line of CSV data does not have a iso3 id!" << std::endl
                 << "The line is '" << line << "'." << std::endl;
       return std::nullopt;
     }
@@ -416,12 +384,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     {
       // New country, insert it into database.
       std::string name = parts[2];
-      const auto pos = name.find("[1]");
-      if (pos != std::string::npos)
-      {
-        name.erase(pos, pos + 3);
-      }
-      const auto opt_country = World::find(currentGeoId);
+      const auto opt_country = World::find(name);
       const auto& population = opt_country.has_value() ? opt_country.value().population : -1;
 
       countryId = getCountryId(db, currentGeoId, name, population);
@@ -433,9 +396,9 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       lastGeoId = currentGeoId;
     }
 
-    const auto& date = parts[0];
-    const int64_t cases = !parts[4].empty() ? getInt64(parts[4]) : 0;
-    const int64_t deaths = !parts[6].empty() ? getInt64(parts[6]) : 0;
+    const auto& date = parts[3];
+    const int64_t cases = !parts[5].empty() ? getInt64(parts[5]) : 0;
+    const int64_t deaths = !parts[8].empty() ? getInt64(parts[8]) : 0;
     if (cases == std::numeric_limits<int64_t>::min() || deaths == std::numeric_limits<int64_t>::min())
     {
       std::cerr << "Error: Got invalid case numbers in the following line:\n" << line << std::endl;
@@ -451,10 +414,8 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     batch.append("(")
          .append(std::to_string(countryId)).append(", ")
          .append(sql::quote(date)).append(", ")
-         // parts[4] already contains cases as string.
-         .append(parts[4]).append(", ")
-         // parts[6] already contains cases as string.
-         .append(parts[6])
+         .append(std::to_string(cases)).append(", ")
+         .append(std::to_string(deaths))
          .append("),");
     ++batchCount;
 
@@ -577,10 +538,10 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     if (!country_opt.has_value())
     {
       return Message("Could not find COVID-19 case numbers for '" + name
-                   + "'. Use a two letter country code (ISO 3166) or the English name of the country."
+                   + "'. Use a three letter country code (ISO 3166) or the English name of the country."
                    + " If you want worldwide case numbers, use 'world' or 'all' instead.",
                    "Could not find COVID-19 case numbers for '" + name
-                   + "'. Use a two letter country code (see <a href=\"https://en.wikipedia.org/wiki/ISO_3166\">ISO 3166</a>) or the English name of the country."
+                   + "'. Use a three letter country code (see <a href=\"https://en.wikipedia.org/wiki/ISO_3166\">ISO 3166</a>) or the English name of the country."
                    + " If you want worldwide case numbers, use 'world' or 'all' instead.");
     }
     const auto& country = country_opt.value();
@@ -632,8 +593,8 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     {
       result.body.append("\n\nThe 7-day incidence is the number of infections during the last seven days per 100000 inhabitants.");
     }
-    result.body.append("\n\nData source: https://covid19.who.int/data, ")
-                .append("provided by the World Health Organization");
+    result.body.append("\n\nData source: https://ourworldindata.org/coronavirus, ")
+                .append("provided by Our World in Data");
     result.formatted_body.append("\n</ul><br>\n<b>Total cases: " + std::to_string(data.totalCases))
                 .append(", total deaths: " + std::to_string(data.totalDeaths));
     if (!percentage.empty())
@@ -643,8 +604,8 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     {
       result.formatted_body.append("<br />\n<br />\n<sup>1</sup>=The 7-day incidence is the number of infections during the last seven days per 100000 inhabitants.");
     }
-    result.formatted_body.append("<br />\n<br />\nData source: https://covid19.who.int/data, ")
-                .append("provided by the World Health Organization");
+    result.formatted_body.append("<br />\n<br />\nData source: https://ourworldindata.org/coronavirus, ")
+                .append("provided by Our World in Data");
     return result;
   }
 
@@ -670,15 +631,15 @@ Message Corona::helpExtended(const std::string_view& command, const std::string_
   {
     return Message("gets current COVID-19 case numbers. The country for which"s
       + " to get the data can be specified either by its English name (e. g. `"s
-      .append(prefix) + "corona Germany`) or by its two letter code from ISO "s
-      + "3166 (e. g. `"s .append(prefix) + "corona DE` for Germany's data). "
+      .append(prefix) + "corona Germany`) or by its three letter code from ISO "s
+      + "3166 (e. g. `"s .append(prefix) + "corona DEU` for Germany's data). "
       + "If you want to show summarized worldwide case numbers, just type `"s
       .append(prefix) + "corona world` or `"s .append(prefix) + "corona all`"s
       + " to show the total amount of COVID-19 cases in the world.",
       "gets current COVID-19 case numbers. The country for which"s
       + " to get the data can be specified either by its English name (e. g. <code>"s
-      .append(prefix) + "corona Germany</code>) or by its two letter code from ISO "s
-      + "3166 (e. g. <code>"s .append(prefix) + "corona DE</code> for Germany's"
+      .append(prefix) + "corona Germany</code>) or by its three letter code from ISO "s
+      + "3166 (e. g. <code>"s .append(prefix) + "corona DEU</code> for Germany's"
       + " data). If you want to show summarized worldwide case numbers, just "
       + "type <code>"s .append(prefix) + "corona world</code> or <code>"s
       .append(prefix) + "corona all</code> to show the total amount of COVID-19"

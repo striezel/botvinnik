@@ -6,6 +6,20 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2024-02-??)
 
+* __[change]__
+  The data source for the `!corona` command has been switched from the World
+  Health Organization to Our World in Data. Reason for that switch is that the
+  World Health Organization stopped providing daily data and only provides
+  weekly data now.
+
+  As part of that change, the option to specify a country by its two-letter
+  country code according to ISO-3166 is changed to three-letter code instead.
+  That's used in the data which is provided by Our World in Data, so the bot
+  will use that from now on. The change means that e. g. when users previously
+  used the command `!corona GR` to get the numbers for Greece, they will now
+  have to use `!corona GRC` instead. Of course, full country names are still
+  possible, too, so `!corona Greece` will also work in that case.
+
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.6.3 to version 3.6.4.
