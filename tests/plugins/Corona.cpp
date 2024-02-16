@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -120,7 +120,7 @@ TEST_CASE("plugin Corona")
 
     SECTION("check output for Bonaire, Sint Eustatius and Saba")
     {
-      for (const std::string country: { "Bonaire", "Sint Eustatius", "Saba" })
+      for (const std::string country: { "Bonaire Sint Eustatius and Saba" })
       {
         const Message msg = plugin.handleCommand("corona", "corona " + country, mockUserId, mockRoomId, ts);
         REQUIRE_FALSE( msg.body.empty() );
