@@ -43,6 +43,10 @@ or
 
     yum install catch cmake gcc-c++ git libcurl-devel libsqlite3-devel pkgconfig
 
+or
+
+    apk add catch2 cmake curl-dev g++ git make sqlite-dev
+
 into a root terminal.
 
 ### Getting the source code
