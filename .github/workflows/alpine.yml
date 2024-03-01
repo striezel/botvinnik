@@ -1,0 +1,32 @@
+name: Alpine
+
+on: push
+
+jobs:
+  alpine:
+    runs-on: ubuntu-22.04
+    container: alpine:latest
+    steps:
+      - name: Install and prepare Git
+        run: |
+          apk update && apk upgrade
+          apk add git
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      # Checks-out the repository under $GITHUB_WORKSPACE.
+      - uses: actions/checkout@v4
+      - name: Install packages
+        run: |
+          apk update
+          apk add catch2 cmake curl-dev g++ git make pkgconf sqlite-dev
+      - name: Build
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          mkdir build
+          cd build
+          export GIT_DISCOVERY_ACROSS_FILESYSTEM=1
+          cmake ../
+          cmake --build . -j2
+      - name: Run tests
+        run: |
+          cd "$GITHUB_WORKSPACE/build"
+          ctest -V
