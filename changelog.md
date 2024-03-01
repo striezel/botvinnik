@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2024-02-??)
+## Version 0.8.0 (2024-03-01)
 
 * __[change]__
   The data source for the `!corona` command has been switched from the World
