@@ -61,7 +61,8 @@ endif(USER_AGENT)
 add_executable(botvinnik ${botvinnik_sources})
 
 # find cURL library
-find_package (CURL)
+find_package(PkgConfig)
+pkg_search_module (CURL REQUIRED libcurl)
 if (CURL_FOUND)
   include_directories(${CURL_INCLUDE_DIRS})
   target_link_libraries (botvinnik ${CURL_LIBRARIES})
@@ -70,7 +71,6 @@ else ()
 endif (CURL_FOUND)
 
 # find sqlite3 library
-find_package(PkgConfig)
 pkg_search_module (SQLite3 REQUIRED sqlite3)
 if (SQLite3_FOUND)
   include_directories(${SQLite3_INCLUDE_DIRS})

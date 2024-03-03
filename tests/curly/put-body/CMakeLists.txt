@@ -23,7 +23,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(test_curly_put_body ${test_curly_put_body_sources})
 
 # find cURL library
-find_package (CURL)
+find_package(PkgConfig)
+pkg_search_module (CURL REQUIRED libcurl)
 if (CURL_FOUND)
   include_directories(${CURL_INCLUDE_DIRS})
   target_link_libraries (test_curly_put_body ${CURL_LIBRARIES})
