@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -66,6 +66,14 @@ class Fortune final: public DeactivatablePlugin
      * \return Returns a Message containing a longer help text for the command.
      */
     Message helpExtended(const std::string_view& command, const std::string_view& prefix) const override;
+
+
+    /** \brief Gets the location of the fortune executable.
+     *
+     * \return Returns a possible location of the fortune executable.
+     * \remarks If fortune is not installed, then this path is not correct.
+     */
+    static std::string executableLocation();
 }; // class
 
 } // namespace

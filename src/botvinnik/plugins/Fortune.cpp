@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2023  Dirk Stolle
+    Copyright (C) 2020, 2021, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include "Fortune.hpp"
 #include <array>
 #include <cstdio>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -46,6 +47,19 @@ std::optional<std::string> executeCommand(const char* noArgsCommand)
   return std::optional<std::string>(result);
 }
 
+std::string Fortune::executableLocation()
+{
+  std::error_code ec;
+  // Debian and Debian-based distributions use /usr/games/fortune as path.
+  if (std::filesystem::exists("/usr/games/fortune", ec))
+  {
+    return "/usr/games/fortune";
+  }
+  // RHEL-based distributions use /usr/bin/fortune as path, so use that if the
+  // path above does not exist.
+  return "/usr/bin/fortune";
+}
+
 std::vector<std::string> Fortune::commands() const
 {
   return { "fortune", "fortunes" };
@@ -60,7 +74,7 @@ Message Fortune::handleCommand(const std::string_view& command,
   if ((command == "fortune") || (command == "fortunes"))
   {
     // fortune only works when installed.
-    const auto text = executeCommand("/usr/games/fortune");
+    const auto text = executeCommand(executableLocation().c_str());
     if (text.has_value() && !text.value().empty())
     {
       return Message(text.value(), std::string("<pre>").append(htmlspecialchars(text.value())).append("</pre>"));

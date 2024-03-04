@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -120,5 +120,10 @@ TEST_CASE("plugin Fortune")
       REQUIRE_FALSE( plugin.allowDeactivation("not-a-command") );
       REQUIRE_FALSE( plugin.allowDeactivation("ping") );
     }
+  }
+
+  SECTION("executable path must not be empty")
+  {
+    REQUIRE_FALSE( plugin.executableLocation().empty() );
   }
 }
