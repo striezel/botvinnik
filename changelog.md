@@ -10,6 +10,11 @@ improvements may be omitted.)_
   The `!fortune` command will now work on Linux distributions that are not based
   on Debian, too.
 
+* __[change]__
+  The `!fortune` command is now only available, if the bot runs on a Linux
+  system. Technically, that is not a limitation, because the fortune binary is
+  usually not available on Windows or macOS systems.
+
 ## Version 0.8.0 (2024-03-01)
 
 * __[change]__

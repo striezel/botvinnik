@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,7 +36,9 @@
 #include "plugins/corona/Corona.hpp"
 #include "plugins/CheatSheet.hpp"
 #include "plugins/Debian.hpp"
+#if defined(__linux__) || defined(linux)
 #include "plugins/Fortune.hpp"
+#endif
 #include "plugins/Giphy.hpp"
 #include "plugins/LibreTranslate.hpp"
 #include "plugins/Ping.hpp"
@@ -202,6 +204,7 @@ int main(int argc, char** argv)
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }
+  #if defined(__linux__) || defined(linux)
   bvn::Fortune fortune;
   if (!bot.registerPlugin(fortune))
   {
@@ -210,6 +213,7 @@ int main(int argc, char** argv)
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }
+  #endif
   bvn::Xkcd xkcd(bot.matrix());
   if (!bot.registerPlugin(xkcd))
   {
