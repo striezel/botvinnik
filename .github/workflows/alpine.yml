@@ -30,3 +30,16 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE/build"
           ctest -V
+      - name: Install statically linked libraries
+        run: |
+          apk add brotli-static c-ares-static curl-static libidn2-static
+          apk add libunistring-static nghttp2-static openssl-libs-static
+          apk add sqlite-static zlib-static
+      - name: Build statically linked executable
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          mkdir build-static
+          cd build-static
+          export GIT_DISCOVERY_ACROSS_FILESYSTEM=1
+          cmake ../ -DENABLE_LTO=ON -DENABLE_STATIC_LINKING=ON
+          cmake --build . -j2 --target botvinnik
