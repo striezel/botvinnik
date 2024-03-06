@@ -4,6 +4,13 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2024-03-??)
+
+* __[fix]__
+  Fix a bug where some Linux distributions (namely Alpine) could not properly
+  detect the user's home directory and thus would not search for an existing
+  configuration file in the user's home directory.
+
 ## Version 0.9.0 (2024-03-06)
 
 * __[fix]__
