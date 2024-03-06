@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2018, 2020, 2021  Dirk Stolle
+    Copyright (C) 2018, 2020, 2021, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -46,9 +46,17 @@ bool getHome(std::string& result)
     result = std::string(buffer);
     return true;
   #elif defined(__linux__) || defined(linux)
-    const long int buf_size = sysconf(_SC_GETPW_R_SIZE_MAX);
+    long int buf_size = sysconf(_SC_GETPW_R_SIZE_MAX);
     if (buf_size <= -1)
-      return false; // -1 means: sysconf() error / EINVAL
+    {
+      // A return value of -1 means: sysconf() error / EINVAL, so the system
+      // cannot give us a proper size value to use for the buffer. Then let's
+      // try an arbitrary but relatively large value instead. This is no
+      // guarantee that getpwuid_r() will work, but it works around potential
+      // problems with sysconf().
+      buf_size = 8192;
+    }
+
     char * buffer = new char[buf_size];
     std::memset(buffer, 0, buf_size);
     struct passwd info;
