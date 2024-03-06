@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2024-03-??)
+## Version 0.9.0 (2024-03-06)
 
 * __[fix]__
   The `!fortune` command will now work on Linux distributions that are not based
