@@ -14,6 +14,8 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
       # Checks-out the repository under $GITHUB_WORKSPACE.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Install packages
         run: |
           apk update
@@ -47,3 +49,27 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE/build-static"
           ctest -V
+      - name: Collect build artifacts
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE"/artifacts
+          cd "$GITHUB_WORKSPACE"
+          # binary file
+          cp build-static/src/botvinnik/botvinnik artifacts/
+          # license + changelog
+          cp LICENSE artifacts/
+          cp changelog.md artifacts/
+          # documentation files
+          cp doc/*.md artifacts/
+          # remove build instructions for Windows
+          unlink artifacts/msys2-build.md
+          # determine version
+          VERSION=$(git describe --always)
+          echo Version is $VERSION.
+          mv artifacts botvinnik-$VERSION
+          tar czf botvinnik_${VERSION}_linux-amd64-generic.tar.gz botvinnik-$VERSION
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: botvinnik_linux-amd64-generic
+          path: botvinnik_*_linux-amd64-generic.tar.gz
+          if-no-files-found: error
