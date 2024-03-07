@@ -58,8 +58,3 @@ Full details on the core configuration (supported settings, etc.) can be found
 
 An overview for all available bot commands can be found in a
 [separate documentation file](commands.md).
-
-# Ideas for improvements
-
-A small (but not necessarily complete) list for future improvements can be seen
-[here](possible-improvements.md).

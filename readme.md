@@ -131,6 +131,11 @@ if you want to avoid typing those commands out manually.
 
 A changelog is provided as [separate file](./changelog.md).
 
+# Ideas for improvements
+
+A small (but not necessarily complete) list for future improvements can be seen
+[here](possible-improvements.md).
+
 ## Copyright and Licensing
 
 Copyright 2020, 2021, 2022, 2023, 2024  Dirk Stolle
