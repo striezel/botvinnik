@@ -4,7 +4,7 @@ botvinnik provides a (still rather small) number of commands for Matrix users
 in the channels where the bot has joined. The bot automatically joins channels,
 if the invitation takes place when the bot is running.
 
-_Note that the bot currently does not support encrypted channels.__
+_Note that the bot currently does not support encrypted channels._
 
 ## General usage
 
