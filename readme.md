@@ -7,7 +7,7 @@ See the [documentation](doc/readme.md) for more information on how to get
 started with the bot.
 
 _Note: So far the bot it has only been tested against the
-[Synapse homeserver](https://github.com/matrix-org/synapse/)
+[Synapse homeserver](https://github.com/element-hq/synapse)
 which is the de-facto reference implementation of a Matrix homeserver. It may or
 may not work with other homeserver implementations such as
 [dendrite](https://github.com/matrix-org/dendrite) or
@@ -133,7 +133,7 @@ options:
 
 A changelog is provided as [separate file](./changelog.md).
 
-# Ideas for improvements
+## Ideas for improvements
 
 A small (but not necessarily complete) list for future improvements can be seen
 [here](possible-improvements.md).
