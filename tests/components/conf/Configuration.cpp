@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -145,6 +145,37 @@ TEST_CASE("Configuration")
       REQUIRE( conf.translationServer() == "https://libretranslate.com" );
       REQUIRE( conf.translationApiKey() == "abcdef1234567890" );
       REQUIRE( conf.gifApiKey() == "AbcdefghijklmnopQrStUvWxYz123456" );
+    }
+
+    SECTION("load minimal example configuration file")
+    {
+      const std::filesystem::path path{"minimal-example-from-documentation.conf"};
+      const std::string content = R"conf(
+      # Matrix server login settings
+      matrix.homeserver=https://matrix.example.tld/
+      matrix.userid=@alice:matrix.example.tld
+      matrix.password=secret, secret, top(!) secret
+      # bot management settings
+      bot.stop.allowed.userid=@bob:matrix.example.tld
+      )conf";
+      REQUIRE( writeConfiguration(path, content) );
+      FileGuard guard{path};
+
+      Configuration conf;
+      REQUIRE( conf.load(path.string()) );
+
+      REQUIRE( conf.homeServer() == "https://matrix.example.tld" );
+      REQUIRE( conf.userId() == "@alice:matrix.example.tld" );
+      REQUIRE( conf.password() == "secret, secret, top(!) secret" );
+      REQUIRE( conf.prefix() == "!" );
+      REQUIRE( conf.deactivatedCommands().empty() );
+      REQUIRE( conf.stopUsers().find("@alice:matrix.example.tld") != conf.stopUsers().end() );
+      REQUIRE( conf.stopUsers().find("@bob:matrix.example.tld") != conf.stopUsers().end() );
+      REQUIRE( conf.allowedFailures() == Configuration::default_allowed_failures );
+      REQUIRE( conf.syncDelay() == Configuration::default_sync_delay );
+      REQUIRE( conf.translationServer().empty() );
+      REQUIRE( conf.translationApiKey().empty() );
+      REQUIRE( conf.gifApiKey().empty() );
     }
 
     SECTION("invalid: multiple homeserver values")

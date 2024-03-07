@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -109,6 +109,11 @@ class Configuration
      * \return Returns the number of allowed failures for Matrix sync requests.
      */
     int allowedFailures() const;
+
+
+    /** \brief default value for allowed failures
+     */
+    static const int default_allowed_failures;
 
 
     /** \brief Gets the delay between two consecutive sync requests.

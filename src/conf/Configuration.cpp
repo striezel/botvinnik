@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -42,6 +42,9 @@ bool looksLikeUserId(const std::string& str)
 
 // use same comment character as in task files: '#'
 const char Configuration::commentCharacter = '#';
+
+// Default value for allowed failures.
+const int Configuration::default_allowed_failures = 24;
 
 // Anything below 100 ms is awfully close to a DoS attempt.
 const std::chrono::milliseconds Configuration::min_sync_delay = std::chrono::milliseconds(100);
@@ -438,10 +441,10 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
     std::clog << "Info: Setting command prefix to '" << mPrefix
               << "', because none is given in the configuration file." << std::endl;
   }
-  // Sync fail count may be missing. Set it to 24 in that case.
+  // Sync fail count may be missing. Set it to default in that case.
   if (mAllowedFailsIn64 < 0)
   {
-    mAllowedFailsIn64 = 24;
+    mAllowedFailsIn64 = default_allowed_failures;
     std::clog << "Info: Setting number of allowed sync failures to " << mAllowedFailsIn64
               << ", because none is given in the configuration file." << std::endl;
   }

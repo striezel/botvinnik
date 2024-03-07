@@ -30,7 +30,8 @@ order:
 * ./bvn.conf
 
 If none of these files exist and no location is given for the configuration
-file, then the program will exit with a non-zero exit code.
+file, then the program will exit with a non-zero exit code, because a
+configuration file is required for the bot to work properly.
 
 # Configuration elements
 
@@ -40,9 +41,9 @@ Configuration settings are basically key-value pairs, where the key is specified
 first, followed by an equals sign (`=`), followed by the value of the setting.
 For example, the line
 
-    matrix.homeserver=https://localhost/
+    matrix.homeserver=https://matrix.example.org/
 
-sets the value of `matrix.homeserver` to `https://localhost/`.
+sets the value of `matrix.homeserver` to `https://matrix.example.org/`.
 
 ## Comments
 
@@ -148,7 +149,7 @@ the plugin will not work.
 # Example of a complete configuration file
 
 The following example is a complete core configuration file for the
-botvinnik program (as of version 0.6.3):
+botvinnik program (as of version 0.6.3 or later):
 
     # This line is a comment and will be ignored by the program.
     #And so is this line.
@@ -169,3 +170,17 @@ botvinnik program (as of version 0.6.3):
     libretranslate.apikey=abcdef1234567890
     # Giphy API key
     giphy.apikey=AbCdEfGhIjKlMnOpQrStUvWxYz123456
+
+# Example of a minimal configuration file
+
+The following example is a minimal core configuration file for the
+botvinnik program (as of version 0.6.3 or later). It only contains the
+configuration settings which are required to start the bot. Any optional
+settings are left out.
+
+    # Matrix server login settings
+    matrix.homeserver=https://matrix.example.tld/
+    matrix.userid=@alice:matrix.example.tld
+    matrix.password=secret, secret, top(!) secret
+    # bot management settings
+    bot.stop.allowed.userid=@bob:matrix.example.tld
