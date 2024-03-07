@@ -117,15 +117,17 @@ if you want to avoid typing those commands out manually.
 
 ## Usage
 
-    botvinnik [OPTIONS]
+```
+botvinnik [OPTIONS]
 
-    options:
-      -? | --help            - shows this help message
-      -v | --version         - shows version information
-      -c FILE | --conf FILE  - sets the file name of the configuration file to use
-                               during the program run. If this option is omitted,
-                               then the program will search for the configuration
-                               in some predefined locations.
+options:
+  -? | --help            - Shows this help message.
+  -v | --version         - Shows version information.
+  -c FILE | --conf FILE  - Sets the file name of the configuration file to use
+                           during the program run. If this option is omitted,
+                           then the program will search for the configuration
+                           in some predefined locations.
+```
 
 ## History of changes
 

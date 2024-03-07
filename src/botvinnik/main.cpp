@@ -86,9 +86,9 @@ void showHelp()
   std::cout << "botvinnik [OPTIONS]\n"
             << "\n"
             << "options:\n"
-            << "  -? | --help            - shows this help message\n"
-            << "  -v | --version         - shows version information\n"
-            << "  -c FILE | --conf FILE  - sets the file name of the configuration file to use\n"
+            << "  -? | --help            - Shows this help message.\n"
+            << "  -v | --version         - Shows version information.\n"
+            << "  -c FILE | --conf FILE  - Sets the file name of the configuration file to use\n"
             << "                           during the program run. If this option is omitted,\n"
             << "                           then the program will search for the configuration\n"
             << "                           in some predefined locations.\n";
