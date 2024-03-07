@@ -11,12 +11,12 @@ In order to use the full potential of botvinnik you need the compiled program
 (see the readme in the root directory for build instructions) and a Matrix
 server instance where you have a valid login for the bot. You can either try a
 [public Matrix server](https://www.hello-matrix.net/public_servers.php) or set
-up your own server, e. g. by using [Synapse](https://github.com/matrix-org/synapse),
+up your own server, e. g. by using [Synapse](https://github.com/element-hq/synapse),
 the reference implementation. Other Matrix server implementations like
 [Conduit](https://conduit.rs/) or [dendrite](https://github.com/matrix-org/dendrite)
 may also work, but they have not been tested.
 
-Probably the easiest way to sign up and try Matrix out is to use Element, a
+Probably the easiest way to sign up and try Matrix is to use Element, a
 web-based client. Go to <https://app.element.io/> to get started. This will
 allow you to sign up for a new account on Matrix.org.
 
@@ -41,7 +41,7 @@ caches:
 ```
 
 For more information on cache settings, consult the
-[documentation of Synapse](https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html#caches-and-associated-values).
+[documentation of Synapse](https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html#caches-and-associated-values).
 
 # Configuration file
 
