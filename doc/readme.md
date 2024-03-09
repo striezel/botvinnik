@@ -3,7 +3,7 @@
 botvinnik is a bot that hooks into a [Matrix](https://matrix.org/) homeserver
 and provides some (more or less) useful additions.
 
-See the [getting-started.md](getting-started.md) for more information on how to
+See [getting-started.md](getting-started.md) for more information on how to
 get started with the bot.
 
 _Note: So far the bot it has only been tested against the
