@@ -13,6 +13,11 @@ may not work with other homeserver implementations such as
 [dendrite](https://github.com/matrix-org/dendrite) or
 [Conduit](https://conduit.rs/)._
 
+## Available releases
+
+Check out the [releases section](https://github.com/striezel/botvinnik/releases)
+to download the latest available release.
+
 ## Build status
 
 * GitHub workflows:
@@ -23,6 +28,12 @@ may not work with other homeserver implementations such as
 [![GitLab pipeline status](https://gitlab.com/striezel/botvinnik/badges/master/pipeline.svg)](https://gitlab.com/striezel/botvinnik/)
 
 ## Building from source
+
+In most cases, there should be no need to build the bot from source. Just
+downloading the most recent [release](https://github.com/striezel/botvinnik/releases)
+is much easier.
+
+If you still want to build from source, read on.
 
 ### Prerequisites
 

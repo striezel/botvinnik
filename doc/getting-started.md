@@ -8,8 +8,9 @@ A list of all available commands can be seen [here](commands.md).
 # Preparations
 
 In order to use the full potential of botvinnik you need the compiled program
-(see the readme in the root directory for build instructions) and a Matrix
-server instance where you have a valid login for the bot. You can either try a
+(see the [release section of the project on GitHub](https://github.com/striezel/botvinnik/releases)
+for a download of the current version) and a Matrix server instance where you
+have a valid login for the bot. You can either try a
 [public Matrix server](https://www.hello-matrix.net/public_servers.php) or set
 up your own server, e. g. by using [Synapse](https://github.com/element-hq/synapse),
 the reference implementation. Other Matrix server implementations like
