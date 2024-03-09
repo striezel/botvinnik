@@ -45,14 +45,14 @@ For more information on cache settings, consult the
 
 # Configuration file
 
-The configuration file is the place where some of the core settings like the
-Matrix login information are stored. Since this is some sensitive information,
-take precaution that no other users or only users who you trust can access the
+The configuration file is the place where settings like the Matrix login
+information are stored. Since this is some sensitive information, take
+precaution that no other users or only users who you trust can access the
 configuration file. This can usually be achieved by setting proper file
 permissions and file ownership for the configuration file.
 
-Full details on the core configuration (supported settings, etc.) can be found
-[here](configuration-core.md).
+Full details on the configuration (supported settings, etc.) can be found in the
+file [configuration.md](configuration.md).
 
 # Bot commands
 

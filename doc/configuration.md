@@ -1,6 +1,6 @@
-# botvinnik: core configuration file
+# botvinnik: configuration file
 
-The configuration file of botvinnik is the place where the core settings like
+The configuration file of botvinnik is the place where the settings like
 the Matrix homeserver or the user id and password for login are stored.
 **Since this is sensitive information, take precaution that no other
 users or only users who you trust can access the configuration file.** This can
@@ -148,8 +148,8 @@ the plugin will not work.
 
 # Example of a complete configuration file
 
-The following example is a complete core configuration file for the
-botvinnik program (as of version 0.6.3 or later):
+The following example is a complete configuration file for the botvinnik program
+(as of version 0.6.3 or later):
 
     # This line is a comment and will be ignored by the program.
     #And so is this line.
@@ -173,10 +173,9 @@ botvinnik program (as of version 0.6.3 or later):
 
 # Example of a minimal configuration file
 
-The following example is a minimal core configuration file for the
-botvinnik program (as of version 0.6.3 or later). It only contains the
-configuration settings which are required to start the bot. Any optional
-settings are left out.
+The following example is a minimal configuration file for the botvinnik program
+(as of version 0.6.3 or later). It only contains the configuration settings
+which are required to start the bot. Any optional settings are left out.
 
     # Matrix server login settings
     matrix.homeserver=https://matrix.example.tld/

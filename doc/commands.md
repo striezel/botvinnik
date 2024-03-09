@@ -9,7 +9,7 @@ _Note that the bot currently does not support encrypted channels._
 ## General usage
 
 Commands are just text messages. They usually start with `!`. (That is, unless
-the command prefix has been changed in the [configuration file](configuration-core.md)).
+the command prefix has been changed in the [configuration file](configuration.md)).
 For example, the help command is a text message that looks like this: `!help`.
 Once a user types such a command into the chat, the bot will react after a few
 seconds by replying with another text message.
@@ -30,8 +30,8 @@ itself:
   example, `!help wiki` or `!help !wiki` will show detailed help for the `!wiki`
   command.
 * `!stop` - _(since version 0.0.5)_ stops the bot. Note that only users that are
-  mentioned in the [configuration file](configuration-core.md) are allowed to
-  stop the bot.
+  mentioned in the [configuration file](configuration.md) are allowed to stop
+  the bot.
   _(Before version 0.0.11 any user could initiate the bot shutdown.)_
 * `!rooms` - _(since version 0.1.7)_ shows a list of rooms where the bot is
   active. Only users that are allowed to stop the bot can get a list.
