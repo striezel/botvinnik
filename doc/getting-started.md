@@ -58,3 +58,29 @@ file [configuration.md](configuration.md).
 
 An overview for all available bot commands can be found in a
 [separate documentation file](commands.md).
+
+# Running the bot
+
+To run the bot, make sure there is a [configuration file](configuration.md) set
+up, including - among others - the homeserver URL, a Matrix user id, and the
+corresponding password. Let's assume this file is called `botvinnik.conf`.
+Then start the executable (`botvinnik.exe` on Windows or just `botvinnik` on
+Linux systems) and point it to the configuration file you have created by
+providing its location via the command line parameter `-c`. For example, the
+command on Windows systems would be
+
+    botvinnik.exe -c botvinnik.conf
+
+whereas Linux systems would use
+
+    ./botvinnik -c botvinnik.conf
+
+instead.
+
+Make sure that the bot account is invited to the Matrix rooms where you want to
+use the bot. Once invited, the bot automatically joins the room. However, the
+bot cannot handle encrypted rooms yet.
+
+Note that once the bot has successfully started, it potentially runs forever.
+It only stops if it is either stopped by the `!stop` command or if there is a
+longer network downtime.

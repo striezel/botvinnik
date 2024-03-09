@@ -3,8 +3,8 @@
 botvinnik is a bot that hooks into a [Matrix](https://matrix.org/) homeserver
 and provides some (more or less) useful additions.
 
-See the [documentation](doc/readme.md) for more information on how to get
-started with the bot.
+See the [documentation](doc/getting-started.md) for more information on how to
+get started with the bot.
 
 _Note: So far the bot it has only been tested against the
 [Synapse homeserver](https://github.com/element-hq/synapse)
