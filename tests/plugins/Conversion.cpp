@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -178,6 +178,59 @@ TEST_CASE("plugin Conversion")
     const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
 
     REQUIRE( out.body.find("254") != std::string::npos );
+  }
+
+  SECTION("wrong use of command")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    const std::string_view cmd = "hex2dec";
+
+    SECTION("no number given")
+    {
+      const std::string_view msg = "hex2dec";
+      const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
+
+      REQUIRE( out.body.find("You have to give a number") != std::string::npos );
+    }
+
+    SECTION("no number given, part 2")
+    {
+      const std::string_view msg = "hex2dec  ";
+      const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
+
+      REQUIRE( out.body.find("No number given") == 0 );
+    }
+
+    SECTION("conversion failure")
+    {
+      const std::string_view msg = "hex2dec GHI";
+      const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
+
+      REQUIRE( out.body.find("could not be converted") != std::string::npos );
+    }
+
+    SECTION("partially invalid number")
+    {
+      const std::string_view msg = "hex2dec 123GHI";
+      const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
+
+      REQUIRE( out.body.find("not a valid number") != std::string::npos );
+    }
+  }
+
+  SECTION("non-existing command returns empty message")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    const std::string_view cmd = "foo";
+    const std::string_view msg = "foo 123";
+    const Message out = plugin.handleCommand(cmd, msg, mockUserId, mockRoomId, ts);
+
+    REQUIRE( out.body.empty() );
+    REQUIRE( out.formatted_body.empty() );
   }
 
   SECTION("allowDeactivation()")
