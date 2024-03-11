@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2023  Dirk Stolle
+    Copyright (C) 2020, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -82,6 +82,17 @@ TEST_CASE("plugin Giphy")
       // Answer to commands must not be empty.
       REQUIRE_FALSE( plugin.handleCommand(cmd, cmd, mockUserId, mockRoomId, ts).body.empty() );
     }
+  }
+
+  SECTION("handler returns empty message for non-existent command")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+
+    // Answer to commands must be empty.
+    REQUIRE( plugin.handleCommand("plonk", "plonk", mockUserId, mockRoomId, ts).body.empty() );
+    REQUIRE( plugin.handleCommand("plonk", "plonk", mockUserId, mockRoomId, ts).formatted_body.empty() );
   }
 
   SECTION("plugin registration")

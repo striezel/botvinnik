@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2021, 2022, 2023  Dirk Stolle
+    Copyright (C) 2021, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -84,6 +84,19 @@ TEST_CASE("plugin CheatSheet")
       const std::string mockMessage = cmd + " grep";
       // Answer to commands must not be empty.
       REQUIRE_FALSE( plugin.handleCommand(cmd, mockMessage, mockUserId, mockRoomId, ts).body.empty() );
+    }
+  }
+
+  SECTION("wrong use of command")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+
+    SECTION("topic is too short")
+    {
+      const auto message = plugin.handleCommand("cheat", "cheat a", mockUserId, mockRoomId, ts);
+      REQUIRE( message.body.find("at least two characters") != std::string::npos );
     }
   }
 

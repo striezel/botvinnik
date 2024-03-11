@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -114,6 +114,19 @@ TEST_CASE("plugin Wikipedia")
     // Answer to commands must be empty.
     REQUIRE( plugin.handleCommand("plonk", "plonk", mockUserId, mockRoomId, ts).body.empty() );
     REQUIRE( plugin.handleCommand("plonk", "plonk", mockUserId, mockRoomId, ts).formatted_body.empty() );
+  }
+
+  SECTION("wrong use of command")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+
+    SECTION("keyword is missing")
+    {
+      const auto message = plugin.handleCommand("wiki", "wiki", mockUserId, mockRoomId, ts);
+      REQUIRE( message.body.find("There must be a keyword after the command") != std::string::npos );
+    }
   }
 
   SECTION("plugin registration")

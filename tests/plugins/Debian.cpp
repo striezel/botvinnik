@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -102,6 +102,25 @@ TEST_CASE("plugin Debian")
     const auto msg = plugin.handleCommand("plonk", "plonk this_stuff", mockUserId, mockRoomId, ts);
     REQUIRE( msg.body.empty() );
     REQUIRE( msg.formatted_body.empty() );
+  }
+
+  SECTION("potentially wrong use of command")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+
+    SECTION("package name is too short")
+    {
+      const auto message = plugin.handleCommand("deb", "deb a", mockUserId, mockRoomId, ts);
+      REQUIRE( message.body.find("at least two characters") != std::string::npos );
+    }
+
+    SECTION("no matching package")
+    {
+      const auto message = plugin.handleCommand("deb", "deb waaaaargarblah", mockUserId, mockRoomId, ts);
+      REQUIRE( message.body.find("Could not find a matching package") != std::string::npos );
+    }
   }
 
   SECTION("plugin registration")
