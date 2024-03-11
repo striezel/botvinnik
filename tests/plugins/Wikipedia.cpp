@@ -127,6 +127,12 @@ TEST_CASE("plugin Wikipedia")
       const auto message = plugin.handleCommand("wiki", "wiki", mockUserId, mockRoomId, ts);
       REQUIRE( message.body.find("There must be a keyword after the command") != std::string::npos );
     }
+
+    SECTION("keyword is only whitespace")
+    {
+      const auto message = plugin.handleCommand("wiki", "wiki      ", mockUserId, mockRoomId, ts);
+      REQUIRE( message.body.find("There must be a keyword after the command") != std::string::npos );
+    }
   }
 
   SECTION("plugin registration")

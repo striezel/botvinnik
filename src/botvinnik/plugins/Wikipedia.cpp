@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 */
 
 #include "Wikipedia.hpp"
+#include <algorithm>
 #include <iostream>
 #include "../../../third-party/simdjson/simdjson.h"
 #include "../../net/Curly.hpp"
@@ -146,13 +147,14 @@ Message Wikipedia::helpExtended(const std::string_view& command, const std::stri
 
 Message Wikipedia::extract(const std::string& lang, const std::string_view& command, const std::string_view& message) const
 {
+  std::string_view title = message.substr(std::min(command.size() + 1, message.size()));
+  title.remove_prefix(std::min(title.find_first_not_of(" \t\n\r"), title.size()));
   // Is there a title after the command?
-  if (message.size() <= command.size() + 1)
+  if (title.empty())
   {
     return Message(std::string("Error: There must be a keyword after the command ")
         .append(command).append(", e. g. '").append(command).append(" Einstein'."));
   }
-  const std::string_view title = message.substr(command.size() + 1);
   std::string escapedTitle;
   try
   {
