@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2024-03-??)
+## Version 0.9.2 (2024-03-12)
 
 * __[feature]__
   Two more languages are now supported by the Wikipedia command: Japanese and
