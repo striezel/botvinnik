@@ -6,6 +6,11 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2024-03-??)
 
+* __[feature]__
+  Two more languages are now supported by the Wikipedia command: Japanese and
+  Chinese. For those the new commands `!wikija` (for the Japanese Wikipedia)
+  and `!wikizh` (for the Chinese Wikipedia) are added.
+
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.7.0 to version 3.8.0.

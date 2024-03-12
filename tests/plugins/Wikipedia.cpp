@@ -55,6 +55,9 @@ TEST_CASE("plugin Wikipedia")
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikipt") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikitr") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikiuk") == commands.end() );
+
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikija") == commands.end() );
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "wikizh") == commands.end() );
   }
 
   SECTION("one line help")

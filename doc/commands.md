@@ -73,6 +73,9 @@ itself:
 * `!wikiit` - _(since version 0.0.7)_ gets extract from an article on the
   Italian Wikipedia, e. g. `!wikiit Albert Einstein` will show an extract from
   the article about the scientist Albert Einstein
+* `!wikija` - _(since version 0.9.2)_ gets extract from an article on the
+  Japanese Wikipedia, e. g. `!wikija Albert Einstein` will show an extract from
+  the article about the scientist Albert Einstein
 * `!wikinl` - _(since version 0.1.0)_ gets extract from an article on the Dutch
   Wikipedia, e. g. `!wikinl Albert Einstein` will show an extract from the
   article about the scientist Albert Einstein
@@ -91,6 +94,9 @@ itself:
 * `!wikiuk` - _(since version 0.1.0)_ gets extract from an article on the
   Ukrainian Wikipedia, e. g. `!wikiuk Альберт Ейнштейн` will show an extract
   from the article about the scientist Albert Einstein
+* `!wikizh` - _(since version 0.9.2)_ gets extract from an article on the
+  Japanese Wikipedia, e. g. `!wikizh Albert Einstein` will show an extract from
+  the article about the scientist Albert Einstein
 
 ### Entertainment
 

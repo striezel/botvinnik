@@ -37,12 +37,14 @@ const std::unordered_map<std::string, std::string> Wikipedia::languages = {
     { "wikies", "Spanish" },
     { "wikifr", "French" },
     { "wikiit", "Italian" },
+    { "wikija", "Japanese" },
     { "wikinl", "Dutch" },
     { "wikipl", "Polish" },
     { "wikipt", "Portuguese" },
     { "wikiru", "Russian" },
     { "wikitr", "Turkish" },
-    { "wikiuk", "Ukrainian" }
+    { "wikiuk", "Ukrainian" },
+    { "wikizh", "Chinese" }
 };
 
 std::vector<std::string> Wikipedia::commands() const
@@ -56,12 +58,14 @@ std::vector<std::string> Wikipedia::commands() const
            "wikies", // Spanish
            "wikifr", // French
            "wikiit", // Italian
+           "wikija", // Japanese
            "wikinl", // Dutch
            "wikipl", // Polish
            "wikipt", // Portuguese
            "wikiru", // Russian
            "wikitr", // Turkish
            "wikiuk", // Ukrainian
+           "wikizh", // Chinese
          };
 }
 
