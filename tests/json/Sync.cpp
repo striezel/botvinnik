@@ -816,6 +816,279 @@ TEST_CASE("parsing sync events")
     REQUIRE( invitedRoomIds.size() == 0 );
   }
 
+  SECTION("invalid JSON")
+  {
+    const std::string json = R"json(
+    {
+    "next" "batch": "1234",
+       [[[[ ))))
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be empty.
+    REQUIRE( nextBatch.empty() );
+    // No room should be present.
+    REQUIRE( rooms.size() == 0 );
+    // Should have been invited into no rooms.
+    REQUIRE( invitedRoomIds.size() == 0 );
+  }
+
+  SECTION("spec violation: empty next_batch element")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":""
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be empty.
+    REQUIRE( nextBatch.empty() );
+  }
+
+  SECTION("spec violation: rooms element is not an object")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"foobar1234_8765_90",
+    "rooms": 12345
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foobar1234_8765_90" );
+    // No rooms should be present.
+    REQUIRE( rooms.empty() );
+    // Should have been invited into no rooms.
+    REQUIRE( invitedRoomIds.empty() );;
+  }
+
+  SECTION("invalid: join element is not an object")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"foo_no_join_object",
+    "rooms":{
+        "join": ["!roomid1234:example.com", "!roomid5:example.com"],
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foo_no_join_object" );
+  }
+
+  SECTION("invalid: invite element is not an object")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"foo_no_invite_object",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body":"Somebody will change the topic soon.",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>Somebody</b> will change the topic soon."
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        },
+                        {
+                            "content": {
+                                "topic": "Nice topic is 'noice'."
+                            },
+                            "event_id": "$aabbbbaaaabbbbaaa:example.org",
+                            "origin_server_ts": 13375678904444,
+                            "room_id": "!roomid1234:example.org",
+                            "sender": "@somebody_else:example.org",
+                            "state_key": "",
+                            "type": "m.room.topic",
+                            "unsigned": {
+                                "age": 1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite": "fails_here"
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "foo_no_invite_object" );
+  }
+
+  SECTION("invalid: one element in join is not an object")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"joined_room_not_object",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com": "fail_here"
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "joined_room_not_object" );
+  }
+
+  SECTION("invalid: missing timeline events in room")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"missing_timeline_events",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "missing_timeline_events" );
+  }
+
+  SECTION("invalid: timeline events are not an array")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"timeline_events_not_array",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":123.456,
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "timeline_events_not_array" );
+  }
+
+  SECTION("invalid: timeline event type is missing")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"event_type_missing",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body":"Event type is missing.",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>type</b> is missing."
+                            },
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "event_type_missing" );
+  }
+
+  SECTION("invalid: timeline event type is not a string")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"event_type_not_a_string",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body":"This has the wrong type element.",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>This</b> has the wrong type element."
+                            },
+                            "type": { "should_be": "a string"},
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "event_type_not_a_string" );
+  }
+
   SECTION("no events, missing next_batch")
   {
     const std::string json = "{ }";
@@ -837,7 +1110,7 @@ TEST_CASE("parsing sync events")
     "next_batch": 12.34
     }
     )json";
-    // Parsing fails, because next_batch must be a string accordring to the
+    // Parsing fails, because next_batch must be a string according to the
     // Matrix specification.
     REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
 
