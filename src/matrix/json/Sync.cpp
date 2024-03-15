@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021  Dirk Stolle
+    Copyright (C) 2020, 2021, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,8 +36,8 @@ bool Sync::parse(const std::string& json, std::string& nextBatch, std::vector<ma
   const auto parseError = parser.parse(json).get(doc);
   if (parseError)
   {
-    std::cerr << "Error while syncing events: Unable to parse JSON data!" << std::endl
-              << "Response is: " << json << std::endl;
+    std::cerr << "Error while syncing events: Unable to parse JSON data!\n"
+              << "JSON is: " << json << '\n';
     return false;
   }
   simdjson::dom::element jsonNextBatch;
@@ -45,7 +45,7 @@ bool Sync::parse(const std::string& json, std::string& nextBatch, std::vector<ma
   if (jsonError || jsonNextBatch.type() != simdjson::dom::element_type::STRING)
   {
     std::cerr << "Error while syncing events: JSON data does not contain"
-              << " a next_batch element or it's not a string!" << std::endl;
+              << " a next_batch element or it's not a string!\n";
     return false;
   }
   // nextBatch should only be overwritten, if it is not empty.
@@ -73,7 +73,7 @@ bool Sync::parse(const std::string& json, std::string& nextBatch, std::vector<ma
   }
   if (jsonRooms.type() != simdjson::dom::element_type::OBJECT)
   {
-    std::cerr << "Error: The rooms element is not an object!" << std::endl;
+    std::cerr << "Error: The rooms element is not an object!\n";
     return false;
   }
 
@@ -84,7 +84,7 @@ bool Sync::parse(const std::string& json, std::string& nextBatch, std::vector<ma
     {
       if (join.type() != simdjson::dom::element_type::OBJECT)
       {
-        std::cerr << "Error: The join element is not an object!" << std::endl;
+        std::cerr << "Error: The join element is not an object!\n";
         return false;
       }
 
@@ -93,7 +93,7 @@ bool Sync::parse(const std::string& json, std::string& nextBatch, std::vector<ma
       join.get<simdjson::dom::object>().tie(joinObject, error);
       if (error)
       {
-        std::cerr << "Error: 'join' is not an object!" << std::endl;
+        std::cerr << "Error: 'join' is not an object!\n";
         return false;
       }
 
@@ -109,7 +109,7 @@ bool Sync::parse(const std::string& json, std::string& nextBatch, std::vector<ma
     {
       if (invite.type() != simdjson::dom::element_type::OBJECT)
       {
-        std::cerr << "Error: The invite element is not an object!" << std::endl;
+        std::cerr << "Error: The invite element is not an object!\n";
         return false;
       }
       return parseInvitedRooms(invite, invitedRoomIds) == 0;
@@ -130,7 +130,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
     auto error = keyValue.value.get<simdjson::dom::object>(roomObject);
     if (error)
     {
-      std::cerr << "Error: 'join' contains at least one non-object!" << std::endl;
+      std::cerr << "Error: 'join' contains at least one non-object!\n";
       return JsonError;
     }
 
@@ -138,12 +138,12 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
     roomObject.at_pointer("/timeline/events").tie(events, error);
     if (error)
     {
-      std::cerr << "Error: Could not find timeline/events pointer!" << std::endl;
+      std::cerr << "Error: Could not find timeline/events pointer!\n";
       return JsonError;
     }
     if (events.type() != simdjson::dom::element_type::ARRAY)
     {
-      std::cerr << "Error: events is not an array!" << std::endl;
+      std::cerr << "Error: events is not an array!\n";
       return JsonError;
     }
 
@@ -153,7 +153,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
       elem["type"].tie(type, error);
       if (error || type.type() != simdjson::dom::element_type::STRING)
       {
-        std::cerr << "Error: Event type is missing or not a string!" << std::endl;
+        std::cerr << "Error: Event type is missing or not a string!\n";
         return JsonError;
       }
 
@@ -164,7 +164,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
         elem.at_pointer("/content/msgtype").tie(msgtype, error);
         if (error || msgtype.type() != simdjson::dom::element_type::STRING)
         {
-          std::cerr << "Error: content-msgtype is missing or not a string!" << std::endl;
+          std::cerr << "Error: content-msgtype is missing or not a string!\n";
           return JsonError;
         }
         // Currently only text messages are relevant.
@@ -176,7 +176,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
           elem.at_pointer("/content/body").tie(data, error);
           if (error || data.type() != simdjson::dom::element_type::STRING)
           {
-            std::cerr << "Error: content-body is missing or not a string!" << std::endl;
+            std::cerr << "Error: content-body is missing or not a string!\n";
             return JsonError;
           }
           txt.body = data.get<std::string_view>().value();
@@ -195,7 +195,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
           elem.at_pointer("/sender").tie(data, error);
           if (error || data.type() != simdjson::dom::element_type::STRING)
           {
-            std::cerr << "Error: Event's sender is missing or not a string!" << std::endl;
+            std::cerr << "Error: Event's sender is missing or not a string!\n";
             return JsonError;
           }
           txt.sender = data.get<std::string_view>().value();
@@ -203,7 +203,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
           elem["origin_server_ts"].tie(data, error);
           if (error || data.type() != simdjson::dom::element_type::INT64)
           {
-            std::cerr << "Error: Event's timestamp is missing or not an int64!" << std::endl;
+            std::cerr << "Error: Event's timestamp is missing or not an int64!\n";
             return JsonError;
           }
           txt.server_ts = std::chrono::milliseconds(data.get<int64_t>().value());
@@ -219,7 +219,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
         elem.at_pointer("/content/name").tie(data, error);
         if (error || data.type() != simdjson::dom::element_type::STRING)
         {
-          std::cerr << "Error: content-name is missing or not a string!" << std::endl;
+          std::cerr << "Error: content-name is missing or not a string!\n";
           return JsonError;
         }
         name.name = data.get<std::string_view>().value();
@@ -227,7 +227,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
         elem["sender"].tie(data, error);
         if (error || data.type() != simdjson::dom::element_type::STRING)
         {
-          std::cerr << "Error: Event's sender is missing or not a string!" << std::endl;
+          std::cerr << "Error: Event's sender is missing or not a string!\n";
           return JsonError;
         }
         name.sender = data.get<std::string_view>().value();
@@ -235,7 +235,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
         elem["origin_server_ts"].tie(data, error);
         if (error || data.type() != simdjson::dom::element_type::INT64)
         {
-          std::cerr << "Error: Event's timestamp is missing or not an int64!" << std::endl;
+          std::cerr << "Error: Event's timestamp is missing or not an int64!\n";
           return JsonError;
         }
         name.server_ts = std::chrono::milliseconds(data.get<int64_t>().value());
@@ -250,7 +250,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
         elem.at_pointer("/content/topic").tie(data, error);
         if (error || data.type() != simdjson::dom::element_type::STRING)
         {
-          std::cerr << "Error: content-topic is missing or not a string!" << std::endl;
+          std::cerr << "Error: content-topic is missing or not a string!\n";
           return JsonError;
         }
         topic.topic = data.get<std::string_view>().value();
@@ -258,7 +258,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
         elem["sender"].tie(data, error);
         if (error || data.type() != simdjson::dom::element_type::STRING)
         {
-          std::cerr << "Error: Event's sender is missing or not a string!" << std::endl;
+          std::cerr << "Error: Event's sender is missing or not a string!\n";
           return JsonError;
         }
         topic.sender = data.get<std::string_view>().value();
@@ -266,7 +266,7 @@ int Sync::parseJoinedRooms(const simdjson::dom::object& join, std::vector<matrix
         elem["origin_server_ts"].tie(data, error);
         if (error || data.type() != simdjson::dom::element_type::INT64)
         {
-          std::cerr << "Error: Event's timestamp is missing or not an int64!" << std::endl;
+          std::cerr << "Error: Event's timestamp is missing or not an int64!\n";
           return JsonError;
         }
         topic.server_ts = std::chrono::milliseconds(data.get<int64_t>().value());
@@ -290,7 +290,7 @@ int Sync::parseInvitedRooms(const simdjson::dom::element& invite, std::vector<st
   invite.get<simdjson::dom::object>().tie(inviteObject, error);
   if (error)
   {
-    std::cerr << "Error: 'invite' is not an object!" << std::endl;
+    std::cerr << "Error: 'invite' is not an object!\n";
     return JsonError;
   }
 
