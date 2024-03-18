@@ -1421,6 +1421,243 @@ TEST_CASE("parsing sync events")
     REQUIRE( nextBatch == "m.text_origin_server_ts_not_an_int64" );
   }
 
+  SECTION("invalid: m.room.name: name is missing")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"name_missing",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content": {
+                            },
+                            "event_id": "$aabbbbaaaabbbbaaa:example.org",
+                            "origin_server_ts": 13375678901235,
+                            "room_id": "!roomid1234:example.org",
+                            "sender": "@renamer_id:example.org",
+                            "state_key": "",
+                            "type": "m.room.name",
+                            "unsigned": {
+                                "age": 1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "name_missing" );
+  }
+
+  SECTION("invalid: m.room.name: name is not a string")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"content/name_not_a_string",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content": {
+                                "name": ["fail", "here"]
+                            },
+                            "event_id": "$aabbbbaaaabbbbaaa:example.org",
+                            "origin_server_ts": 13375678901235,
+                            "room_id": "!roomid1234:example.org",
+                            "sender": "@renamer_id:example.org",
+                            "state_key": "",
+                            "type": "m.room.name",
+                            "unsigned": {
+                                "age": 1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "content/name_not_a_string" );
+  }
+
+  SECTION("invalid: m.room.name: sender is missing")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"m.room.name_sender_missing",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content": {
+                                "name": "New room name"
+                            },
+                            "event_id": "$aabbbbaaaabbbbaaa:example.org",
+                            "origin_server_ts": 13375678901235,
+                            "room_id": "!roomid1234:example.org",
+                            "state_key": "",
+                            "type": "m.room.name",
+                            "unsigned": {
+                                "age": 1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "m.room.name_sender_missing" );
+  }
+
+  SECTION("invalid: m.room.name: sender is not a string")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"m.room.name_sender_not_a_string",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content": {
+                                "name": "New room name"
+                            },
+                            "event_id": "$aabbbbaaaabbbbaaa:example.org",
+                            "origin_server_ts": 13375678901235,
+                            "room_id": "!roomid1234:example.org",
+                            "sender": {"fail": "here"},
+                            "state_key": "",
+                            "type": "m.room.name",
+                            "unsigned": {
+                                "age": 1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "m.room.name_sender_not_a_string" );
+  }
+
+  SECTION("invalid: m.room.name: origin_server_ts is missing")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"m.room.name_origin_server_ts_sender_missing",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content": {
+                                "name": "New room name"
+                            },
+                            "event_id": "$aabbbbaaaabbbbaaa:example.org",
+                            "room_id": "!roomid1234:example.org",
+                            "sender": "@renamer_id:example.org",
+                            "state_key": "",
+                            "type": "m.room.name",
+                            "unsigned": {
+                                "age": 1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "m.room.name_origin_server_ts_sender_missing" );
+  }
+
+  SECTION("invalid: m.room.name: origin_server_ts is not an int64")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"m.room.name_origin_server_ts_not_an_int64",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content": {
+                                "name": "New room name"
+                            },
+                            "event_id": "$aabbbbaaaabbbbaaa:example.org",
+                            "origin_server_ts": ["fail", "here"],
+                            "room_id": "!roomid1234:example.org",
+                            "sender": "@renamer_id:example.org",
+                            "state_key": "",
+                            "type": "m.room.name",
+                            "unsigned": {
+                                "age": 1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "m.room.name_origin_server_ts_not_an_int64" );
+  }
+
   SECTION("no events, missing next_batch")
   {
     const std::string json = "{ }";
