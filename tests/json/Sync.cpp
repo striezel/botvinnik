@@ -1089,6 +1089,338 @@ TEST_CASE("parsing sync events")
     REQUIRE( nextBatch == "event_type_not_a_string" );
   }
 
+  SECTION("invalid: m.text: content/msgtype is missing")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"content/msgtype_missing",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body":"msgtype is missing.",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>msgtype</b> is missing."
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "content/msgtype_missing" );
+  }
+
+  SECTION("invalid: m.text: content/msgtype is not a string")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"content/msgtype_not_a_string",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body":"Somebody will change the topic soon.",
+                                "msgtype": {"fail":"here"},
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>Somebody</b> will change the topic soon."
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "content/msgtype_not_a_string" );
+  }
+
+  SECTION("invalid: m.text: content/body is missing")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"content/body_missing",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>body</b> is missing."
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "content/body_missing" );
+  }
+
+  SECTION("invalid: m.text: content/body is not a string")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"content/body_not_a_string",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body": 1234.56,
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>Somebody</b> will change the topic soon."
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "content/body_not_a_string" );
+  }
+
+  SECTION("invalid: m.text: sender is missing")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"m.text_sender_missing",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body": "sender is missing.",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>sender</b> is missing."
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "m.text_sender_missing" );
+  }
+
+  SECTION("invalid: m.text: sender is not a string")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"m.text_sender_not_a_string",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body": "sender is not a string.",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>sender</b> is not a string."
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":["fail", "here"],
+                            "origin_server_ts":13375678901234,
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "m.text_sender_not_a_string" );
+  }
+
+  SECTION("invalid: m.text: origin_server_ts is missing")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"m.origin_server_ts_sender_missing",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body": "sender is missing.",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>sender</b> is missing."
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "m.origin_server_ts_sender_missing" );
+  }
+
+  SECTION("invalid: m.text: origin_server_ts is not an int64")
+  {
+    const std::string json = R"json(
+    {
+    "next_batch":"m.text_origin_server_ts_not_an_int64",
+    "rooms":{
+        "join": {
+            "!roomid1234:example.com":{
+                "timeline":{
+                    "events":[
+                        {
+                            "content":{
+                                "body": "sender is not a string.",
+                                "msgtype":"m.text",
+                                "format":"org.matrix.custom.html",
+                                "formatted_body":"<b>sender</b> is not a string."
+                            },
+                            "type":"m.room.message",
+                            "event_id":"$aaaaaaaaaaaaaaaaa:example.org",
+                            "room_id":"!roomid1234:example.com",
+                            "sender":"@text_user_id:example.org",
+                            "origin_server_ts": {"fail": "here"},
+                            "unsigned":{
+                                "age":1234
+                            }
+                        }
+                    ],
+                    "limited":true,
+                    "prev_batch":"p12-123456_0_0"
+                }
+            }
+        },
+        "invite":{}
+    }
+    }
+    )json";
+    REQUIRE_FALSE( Sync::parse(json, nextBatch, rooms, invitedRoomIds) );
+
+    // Next batch should be set properly.
+    REQUIRE( nextBatch == "m.text_origin_server_ts_not_an_int64" );
+  }
+
   SECTION("no events, missing next_batch")
   {
     const std::string json = "{ }";
