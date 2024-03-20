@@ -11,6 +11,7 @@ set(component_tests_sources
     ../../src/matrix/events/PowerLevels.cpp
     ../../src/net/htmlspecialchars.cpp
     ../../src/util/Directories.cpp
+    ../../src/util/sqlite3.cpp
     ../../src/util/Strings.cpp
     botvinnik/FailCounter.cpp
     conf/Configuration.cpp
@@ -18,6 +19,7 @@ set(component_tests_sources
     matrix/events/PowerLevels.cpp
     net/htmlspecialchars.cpp
     util/Directories.cpp
+    util/sqlite3.cpp
     util/Strings.cpp
     calculate_incidence.cpp
     main.cpp)
@@ -42,6 +44,21 @@ if (HAS_CATCH_V3)
     find_package(Catch2 3 REQUIRED)
     target_link_libraries(component_tests Catch2::Catch2WithMain)
 endif ()
+
+# find sqlite3 library
+find_package(PkgConfig)
+pkg_search_module (SQLite3 REQUIRED sqlite3)
+if (SQLite3_FOUND)
+  if (ENABLE_STATIC_LINKING)
+    include_directories(${SQLite3_STATIC_INCLUDE_DIRS})
+    target_link_libraries (component_tests ${SQLite3_STATIC_LIBRARIES})
+  else ()
+    include_directories(${SQLite3_INCLUDE_DIRS})
+    target_link_libraries (component_tests ${SQLite3_LIBRARIES})
+  endif ()
+else ()
+  message ( FATAL_ERROR "SQLite3 was not found!" )
+endif (SQLite3_FOUND)
 
 # GNU GCC before 9.1.0 needs to link to libstdc++fs explicitly.
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.1.0")

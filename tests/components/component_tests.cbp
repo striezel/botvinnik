@@ -28,6 +28,9 @@
 			<Add option="-std=c++17" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Linker>
+			<Add library="sqlite3" />
+		</Linker>
 		<Unit filename="../../src/botvinnik/FailCounter.cpp" />
 		<Unit filename="../../src/botvinnik/FailCounter.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.cpp" />
@@ -44,7 +47,10 @@
 		<Unit filename="../../src/util/Directories.hpp" />
 		<Unit filename="../../src/util/Strings.cpp" />
 		<Unit filename="../../src/util/Strings.hpp" />
+		<Unit filename="../../src/util/sqlite3.cpp" />
+		<Unit filename="../../src/util/sqlite3.hpp" />
 		<Unit filename="../FileGuard.hpp" />
+		<Unit filename="../WriteConf.hpp" />
 		<Unit filename="../locate_catch.hpp" />
 		<Unit filename="botvinnik/FailCounter.cpp" />
 		<Unit filename="calculate_incidence.cpp" />
@@ -55,6 +61,7 @@
 		<Unit filename="net/htmlspecialchars.cpp" />
 		<Unit filename="util/Directories.cpp" />
 		<Unit filename="util/Strings.cpp" />
+		<Unit filename="util/sqlite3.cpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

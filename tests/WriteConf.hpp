@@ -18,28 +18,21 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_TEST_FILEGUARD_HPP
-#define BVN_TEST_FILEGUARD_HPP
+#ifndef BVN_TEST_WRITE_CONF_HPP
+#define BVN_TEST_WRITE_CONF_HPP
 
-#include <filesystem>
+#include <fstream>
 
-// guard to ensure file deletion when it goes out of scope
-class FileGuard
+// utility function to write a configuration file for testing
+bool writeConfiguration(const std::filesystem::path& path, const std::string& content)
 {
-  private:
-    std::filesystem::path path;
-  public:
-    FileGuard(const std::filesystem::path& filePath)
-    : path(filePath)
-    { }
+  std::ofstream stream(path, std::ios::out | std::ios::binary);
+  if (!stream.good())
+    return false;
+  if (!stream.write(content.c_str(), content.size()).good())
+    return false;
+  stream.close();
+  return stream.good();
+}
 
-    FileGuard(const FileGuard& op) = delete;
-    FileGuard(FileGuard&& op) = delete;
-
-    ~FileGuard()
-    {
-      std::filesystem::remove(path);
-    }
-};
-
-#endif // BVN_TEST_FILEGUARD_HPP
+#endif // BVN_TEST_WRITE_CONF_HPP

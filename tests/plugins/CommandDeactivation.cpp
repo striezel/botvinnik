@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2022  Dirk Stolle
+    Copyright (C) 2022, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include "../locate_catch.hpp"
 #include <algorithm>
 #include "../FileGuard.hpp"
+#include "../WriteConf.hpp"
 #include "../../src/botvinnik/Bot.hpp"
 #include "../../src/conf/Configuration.hpp"
 #include "../../src/botvinnik/plugins/Ping.hpp"

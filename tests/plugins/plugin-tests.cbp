@@ -110,6 +110,7 @@
 		<Unit filename="../../third-party/simdjson/simdjson.cpp" />
 		<Unit filename="../../third-party/simdjson/simdjson.h" />
 		<Unit filename="../FileGuard.hpp" />
+		<Unit filename="../WriteConf.hpp" />
 		<Unit filename="../locate_catch.hpp" />
 		<Unit filename="CheatSheet.cpp" />
 		<Unit filename="CommandDeactivation.cpp" />

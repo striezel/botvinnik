@@ -22,6 +22,7 @@
 #include <cctype>
 #include <type_traits>
 #include "../../FileGuard.hpp"
+#include "../../WriteConf.hpp"
 #include "../../../src/conf/Configuration.hpp"
 
 TEST_CASE("Configuration")
