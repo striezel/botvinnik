@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,13 +20,34 @@
 
 #include "../../locate_catch.hpp"
 #include <algorithm>
+#include <fstream>
+#include "../../FileGuard.hpp"
 #include "../../../src/botvinnik/plugins/core/Help.hpp"
+
+bool load_test_configuration(bvn::Configuration& conf)
+{
+  namespace fs = std::filesystem;
+  const fs::path path{fs::temp_directory_path() / "load_test.conf"};
+  const FileGuard guard{path};
+  {
+    std::ofstream stream(path);
+    stream << "command.prefix=!\n"
+           << "matrix.homeserver=https://matrix.example.tld/\n"
+           << "matrix.userid=@alice:matrix.example.tld\n"
+           << "matrix.password=secret, secret, top(!) secret\n"
+           << "bot.stop.allowed.userid=@alice:matrix.example.tld\n"
+           << "bot.sync.allowed_failures=12";
+    stream.close();
+  }
+  return conf.load(path.string());
+}
 
 TEST_CASE("plugin Help")
 {
   using namespace bvn;
   using namespace std::chrono;
   Configuration conf;
+  REQUIRE( load_test_configuration(conf) );
   Bot bot(conf);
   Help plugin(bot);
 
@@ -83,6 +104,24 @@ TEST_CASE("plugin Help")
     }
   }
 
+  SECTION("command handlers must return text for extended help")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+
+    REQUIRE( bot.registerPlugin(plugin) );
+
+    // Answer to commands must not be empty.
+    auto message = plugin.handleCommand("help", "help !help", mockUserId, mockRoomId, ts);
+    REQUIRE_FALSE( message.body.empty() );
+    REQUIRE( message.body.find("short explanation for each command") != std::string::npos );
+
+    message = plugin.handleCommand("help", "help help", mockUserId, mockRoomId, ts);
+    REQUIRE_FALSE( message.body.empty() );
+    REQUIRE( message.body.find("short explanation for each command") != std::string::npos );
+  }
+
   SECTION("handler returns empty message for non-existent command")
   {
     const std::string_view mockUserId = "@alice:bob.charlie.tld";
@@ -92,6 +131,21 @@ TEST_CASE("plugin Help")
     // Answer to commands must be empty.
     REQUIRE( plugin.handleCommand("plonk", "plonk", mockUserId, mockRoomId, ts).body.empty() );
     REQUIRE( plugin.handleCommand("plonk", "plonk", mockUserId, mockRoomId, ts).formatted_body.empty() );
+  }
+
+  SECTION("handler returns error message for extended help of non-existent command")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+
+    auto message = plugin.handleCommand("help", "help !plonk", mockUserId, mockRoomId, ts);
+    REQUIRE_FALSE( message.body.empty() );
+    REQUIRE( message.body.find("bot does not have a command by the name") != std::string::npos );
+
+    message = plugin.handleCommand("help", "help plonk", mockUserId, mockRoomId, ts);
+    REQUIRE_FALSE( message.body.empty() );
+    REQUIRE( message.body.find("bot does not have a command by the name") != std::string::npos );
   }
 
   SECTION("plugin registration")
