@@ -35,6 +35,7 @@ set(botvinnik_sources
     plugins/Giphy.cpp
     plugins/LibreTranslate.cpp
     plugins/Ping.cpp
+    plugins/weather/Location.cpp
     plugins/Wikipedia.cpp
     plugins/xkcd/Xkcd.cpp
     plugins/xkcd/XkcdData.cpp
