@@ -193,9 +193,9 @@ improved to allow for some variants of longer, complex names.
   Reason for that change is that Synapse 1.62.0 changed the default value for
   the Synapse setting `sync_response_cache_duration` from zero to two minutes,
   which means that all synchronisation requests will be cached for that time by
-  default - unless the server setting has been changed manually. This means,
-  that with those versions the may take up to two minutes to become aware of any
-  commands send to it, because the homeserver caches responses instead of
+  default - unless the server setting has been changed manually. This means
+  that with those versions the bot may take up to two minutes to become aware of
+  any commands send to it, because the homeserver caches responses instead of
   returning up-to-date messages. Server administrators are advised to set the
   `sync_response_cache_duration` value to zero or - if that is not possible - to
   a value not higher than a few seconds.
