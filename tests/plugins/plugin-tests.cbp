@@ -71,6 +71,8 @@
 		<Unit filename="../../src/botvinnik/plugins/corona/World.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/Location.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/Location.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookup.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookup.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdData.cpp" />
@@ -132,6 +134,7 @@
 		<Unit filename="main.cpp" />
 		<Unit filename="pluginRegistration.cpp" />
 		<Unit filename="weather/Location.cpp" />
+		<Unit filename="weather/LocationLookup.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>
