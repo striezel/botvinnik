@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include "LocationLookup.hpp"
+#include "LocationLookupOpenStreetMap.hpp"
 #include <iostream>
 #include "../../../../third-party/simdjson/simdjson.h"
 #include "../../../net/Curly.hpp"

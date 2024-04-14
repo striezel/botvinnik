@@ -19,9 +19,9 @@
 */
 
 #include "../../locate_catch.hpp"
-#include "../../../src/botvinnik/plugins/weather/LocationLookup.hpp"
+#include "../../../src/botvinnik/plugins/weather/LocationLookupOpenStreetMap.hpp"
 
-TEST_CASE("plugin Weather: location lookup")
+TEST_CASE("plugin Weather: location lookup via OpenStreetMap")
 {
   using namespace bvn;
 
