@@ -18,7 +18,7 @@
  -------------------------------------------------------------------------------
 */
 
-#include "LocationLookupOpenStreetMap.hpp"
+#include "LocationLookupOpenMeteo.hpp"
 #include <iostream>
 #include "../../../../third-party/simdjson/simdjson.h"
 #include "../../../net/Curly.hpp"
@@ -27,7 +27,7 @@
 namespace bvn
 {
 
-nonstd::expected<Location, std::string> LocationLookupOpenStreetMap::find_location(const std::string_view location_name)
+nonstd::expected<Location, std::string> LocationLookupOpenMeteo::find_location(const std::string_view location_name)
 {
   std::string encoded_location;
   try
@@ -40,13 +40,12 @@ nonstd::expected<Location, std::string> LocationLookupOpenStreetMap::find_locati
   }
 
   Curly curl;
-  curl.setURL("https://nominatim.openstreetmap.org/search?q=" + encoded_location
-              + "&accept-language=en&limit=1&format=geojson");
-  curl.addHeader("User-Agent: botvinnik/42.0");
+  curl.setURL("https://geocoding-api.open-meteo.com/v1/search?name=" + encoded_location
+              + "&count=1&language=en&format=json");
   std::string response;
   if (!curl.perform(response))
   {
-    std::cerr << "Error: Request to OSM failed!\n"
+    std::cerr << "Error: Request to Open-Meteo failed!\n"
               << "HTTP status code: " << curl.getResponseCode() << std::endl
               << "Response: " << response << std::endl;
     return nonstd::make_unexpected("Failed to look up the requested location!");
@@ -64,53 +63,61 @@ nonstd::expected<Location, std::string> LocationLookupOpenStreetMap::find_locati
 
   if (doc.type() != simdjson::dom::element_type::OBJECT)
   {
-    return nonstd::make_unexpected("OSM lookup contained invalid JSON: Root element is not an object!");
+    return nonstd::make_unexpected("Open-Meteo lookup contained invalid JSON: Root element is not an object!");
   }
 
-  simdjson::dom::element features;
-  error = doc.at_pointer("/features").get(features);
-  if (error || features.type() != simdjson::dom::element_type::ARRAY)
+  simdjson::dom::element results;
+  error = doc.at_pointer("/results").get(results);
+  if (error)
+  {
+    // If no match was found, then the Open-Meteor geocoding API does not
+    // generate a results element.
+    return nonstd::make_unexpected("No matching location was found.");
+  }
+  if (results.type() != simdjson::dom::element_type::ARRAY)
   {
     std::cout << "JSON: " << response << "\n\n";
-    return nonstd::make_unexpected( "OSM lookup contained invalid JSON: features element is missing or not an array!");
-  }
-
-  if (features.get_array().value().size() == 0)
-  {
-    return nonstd::make_unexpected("No matching location was found.");
+    return nonstd::make_unexpected("Open-Meteo lookup contained invalid JSON: results element is not an array!");
   }
 
   simdjson::dom::element element;
-  error = features.at_pointer("/0/properties/display_name").get(element);
+  error = results.at_pointer("/0/name").get(element);
   if (error || element.type() != simdjson::dom::element_type::STRING)
   {
-    return nonstd::make_unexpected( "OSM lookup contained invalid JSON: display_name element is missing or not a string!");
+    return nonstd::make_unexpected("Open-Meteo lookup contained invalid JSON: name element is missing or not a string!");
   }
   Location data;
-  data.display_name = element.get<std::string_view>().value();
-
-  error = features.at_pointer("/0/properties/name").get(element);
-  if (error || element.type() != simdjson::dom::element_type::STRING)
-  {
-    return nonstd::make_unexpected( "OSM lookup contained invalid JSON: name element is missing or not a string!");
-  }
   data.name = element.get<std::string_view>().value();
 
-  error = features.at_pointer("/0/geometry/coordinates/0").get(element);
-  if (error || element.type() != simdjson::dom::element_type::DOUBLE)
+  // Initialize display name with name, and then fill it up with existing
+  // additional information.
+  data.display_name = data.name;
+  const auto keys_to_search = { "admin1", "country" };
+  for (const auto& key: keys_to_search)
   {
-    std::cout << "JSON: " << response << "\n\n";
-    return nonstd::make_unexpected( "OSM lookup contained invalid JSON: longitude data is missing or not a floating-point number!");
+    error = results.at_pointer(std::string("/0/") + key).get(element);
+    if (!error || element.type() == simdjson::dom::element_type::STRING)
+    {
+      // Use name
+      data.display_name.append(", ").append(element.get<std::string_view>().value());
+    }
   }
-  data.longitude = element.get<double>().value();
 
-  error = features.at_pointer("/0/geometry/coordinates/1").get(element);
+  error = results.at_pointer("/0/latitude").get(element);
   if (error || element.type() != simdjson::dom::element_type::DOUBLE)
   {
     std::cout << "JSON: " << response << "\n\n";
-    return nonstd::make_unexpected( "OSM lookup contained invalid JSON: latitude data is missing or not a floating-point number!");
+    return nonstd::make_unexpected("Open-Meteo lookup contained invalid JSON: latitude is missing or not a floating-point number!");
   }
   data.latitude = element.get<double>().value();
+
+  error = results.at_pointer("/0/longitude").get(element);
+  if (error || element.type() != simdjson::dom::element_type::DOUBLE)
+  {
+    std::cout << "JSON: " << response << "\n\n";
+    return nonstd::make_unexpected("Open-Meteo lookup contained invalid JSON: longitude is missing or not a floating-point number!");
+  }
+  data.longitude = element.get<double>().value();
 
   return data;
 }

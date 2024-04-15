@@ -19,15 +19,15 @@
 */
 
 #include "../../locate_catch.hpp"
-#include "../../../src/botvinnik/plugins/weather/LocationLookupOpenStreetMap.hpp"
+#include "../../../src/botvinnik/plugins/weather/LocationLookupOpenMeteo.hpp"
 
-TEST_CASE("plugin Weather: location lookup via OpenStreetMap")
+TEST_CASE("plugin Weather: location lookup via Open-Meteo")
 {
   using namespace bvn;
 
   SECTION("attempt to find location that does not exist")
   {
-    const auto location = LocationLookupOpenStreetMap::find_location("Waaaaaaargablah");
+    const auto location = LocationLookupOpenMeteo::find_location("Waaaaaaargablah");
 
     REQUIRE_FALSE( location.has_value() );
     REQUIRE( location.error() == "No matching location was found." );
@@ -35,7 +35,7 @@ TEST_CASE("plugin Weather: location lookup via OpenStreetMap")
 
   SECTION("find existing location")
   {
-    const auto location = LocationLookupOpenStreetMap::find_location("Berlin");
+    const auto location = LocationLookupOpenMeteo::find_location("Berlin");
 
     REQUIRE( location.has_value() );
     const auto data = location.value();
@@ -47,23 +47,23 @@ TEST_CASE("plugin Weather: location lookup via OpenStreetMap")
     REQUIRE( data.longitude <= 13.7 );
 
     REQUIRE( data.name == "Berlin" );
-    REQUIRE( data.display_name == "Berlin, Germany" );
+    REQUIRE( data.display_name == "Berlin, Land Berlin, Germany" );
   }
 
   SECTION("find existing location, part 2")
   {
-    const auto location = LocationLookupOpenStreetMap::find_location("Berlin, Camden");
+    const auto location = LocationLookupOpenMeteo::find_location("Strasbourg");
 
     REQUIRE( location.has_value() );
     const auto data = location.value();
 
-    REQUIRE( data.latitude >= 39.7 );
-    REQUIRE( data.latitude <= 39.9 );
+    REQUIRE( data.latitude >= 48.3 );
+    REQUIRE( data.latitude <= 48.9 );
 
-    REQUIRE( data.longitude >= -75.1 );
-    REQUIRE( data.longitude <= -74.7 );
+    REQUIRE( data.longitude >= 7.5 );
+    REQUIRE( data.longitude <= 7.9 );
 
-    REQUIRE( data.name == "Berlin" );
-    REQUIRE( data.display_name == "Berlin, Camden County, New Jersey, United States" );
+    REQUIRE( data.name == "Strasbourg" );
+    REQUIRE( data.display_name == "Strasbourg, Grand Est, France" );
   }
 }

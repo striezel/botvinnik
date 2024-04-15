@@ -18,8 +18,8 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_PLUGIN_WEATHER_LOCATION_LOOKUP_OSM_HPP
-#define BVN_PLUGIN_WEATHER_LOCATION_LOOKUP_OSM_HPP
+#ifndef BVN_PLUGIN_WEATHER_LOCATION_LOOKUP_OPENMETEO_HPP
+#define BVN_PLUGIN_WEATHER_LOCATION_LOOKUP_OPENMETEO_HPP
 
 #include <string>
 #include "../../../../third-party/nonstd/expected.hpp"
@@ -28,9 +28,9 @@
 namespace bvn
 {
 
-/** \brief Finds a location by name via OpenStreetMap.
+/** \brief Finds a location by name via the Open-Meteo geocoding API.
  */
-class LocationLookupOpenStreetMap
+class LocationLookupOpenMeteo
 {
   public:
     /** \brief Tries to find a location by its name.
@@ -44,4 +44,4 @@ class LocationLookupOpenStreetMap
 
 } // namespace
 
-#endif // BVN_PLUGIN_WEATHER_LOCATION_LOOKUP_OSM_HPP
+#endif // BVN_PLUGIN_WEATHER_LOCATION_LOOKUP_OPENMETEO_HPP
