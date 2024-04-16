@@ -40,6 +40,15 @@ class LocationLookupOpenMeteo
      *         Returns a string containing an error message in case of failure.
      */
     static nonstd::expected<Location, std::string> find_location(const std::string_view location_name);
+
+
+    /** \brief Parses the JSON from an API response.
+     *
+     * \param response    the text of the response (i. e. JSON text)
+     * \return Returns the parsed data for the location in case of success.
+     *         Returns a string containing an error message in case of failure.
+     */
+    static nonstd::expected<Location, std::string> parse_response(const std::string& response);
 }; // class
 
 } // namespace

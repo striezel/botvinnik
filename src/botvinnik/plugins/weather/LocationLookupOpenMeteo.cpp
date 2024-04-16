@@ -51,12 +51,17 @@ nonstd::expected<Location, std::string> LocationLookupOpenMeteo::find_location(c
     return nonstd::make_unexpected("Failed to look up the requested location!");
   }
 
+  return parse_response(response);
+}
+
+nonstd::expected<Location, std::string> LocationLookupOpenMeteo::parse_response(const std::string& response)
+{
   simdjson::dom::parser parser;
   simdjson::dom::element doc;
   auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error while trying to parse JSON response from OSM\n!"
+    std::cerr << "Error while trying to parse JSON response from Open-Meteo!\n"
               << "Response is: " << response << std::endl;
     return nonstd::make_unexpected("The location lookup returned invalid JSON.");
   }
@@ -76,7 +81,6 @@ nonstd::expected<Location, std::string> LocationLookupOpenMeteo::find_location(c
   }
   if (results.type() != simdjson::dom::element_type::ARRAY)
   {
-    std::cout << "JSON: " << response << "\n\n";
     return nonstd::make_unexpected("Open-Meteo lookup contained invalid JSON: results element is not an array!");
   }
 
@@ -98,7 +102,7 @@ nonstd::expected<Location, std::string> LocationLookupOpenMeteo::find_location(c
     error = results.at_pointer(std::string("/0/") + key).get(element);
     if (!error || element.type() == simdjson::dom::element_type::STRING)
     {
-      // Use name
+      // Use name and append region data.
       data.display_name.append(", ").append(element.get<std::string_view>().value());
     }
   }
@@ -106,7 +110,6 @@ nonstd::expected<Location, std::string> LocationLookupOpenMeteo::find_location(c
   error = results.at_pointer("/0/latitude").get(element);
   if (error || element.type() != simdjson::dom::element_type::DOUBLE)
   {
-    std::cout << "JSON: " << response << "\n\n";
     return nonstd::make_unexpected("Open-Meteo lookup contained invalid JSON: latitude is missing or not a floating-point number!");
   }
   data.latitude = element.get<double>().value();
@@ -114,7 +117,6 @@ nonstd::expected<Location, std::string> LocationLookupOpenMeteo::find_location(c
   error = results.at_pointer("/0/longitude").get(element);
   if (error || element.type() != simdjson::dom::element_type::DOUBLE)
   {
-    std::cout << "JSON: " << response << "\n\n";
     return nonstd::make_unexpected("Open-Meteo lookup contained invalid JSON: longitude is missing or not a floating-point number!");
   }
   data.longitude = element.get<double>().value();
