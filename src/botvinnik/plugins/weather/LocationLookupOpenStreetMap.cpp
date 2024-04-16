@@ -52,12 +52,17 @@ nonstd::expected<Location, std::string> LocationLookupOpenStreetMap::find_locati
     return nonstd::make_unexpected("Failed to look up the requested location!");
   }
 
+  return parse_response(response);
+}
+
+nonstd::expected<Location, std::string> LocationLookupOpenStreetMap::parse_response(const std::string& response)
+{
   simdjson::dom::parser parser;
   simdjson::dom::element doc;
   auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error while trying to parse JSON response from OSM\n!"
+    std::cerr << "Error while trying to parse JSON response from OSM!\n"
               << "Response is: " << response << std::endl;
     return nonstd::make_unexpected("The location lookup returned invalid JSON.");
   }
@@ -71,8 +76,7 @@ nonstd::expected<Location, std::string> LocationLookupOpenStreetMap::find_locati
   error = doc.at_pointer("/features").get(features);
   if (error || features.type() != simdjson::dom::element_type::ARRAY)
   {
-    std::cout << "JSON: " << response << "\n\n";
-    return nonstd::make_unexpected( "OSM lookup contained invalid JSON: features element is missing or not an array!");
+    return nonstd::make_unexpected("OSM lookup contained invalid JSON: features element is missing or not an array!");
   }
 
   if (features.get_array().value().size() == 0)
@@ -84,7 +88,7 @@ nonstd::expected<Location, std::string> LocationLookupOpenStreetMap::find_locati
   error = features.at_pointer("/0/properties/display_name").get(element);
   if (error || element.type() != simdjson::dom::element_type::STRING)
   {
-    return nonstd::make_unexpected( "OSM lookup contained invalid JSON: display_name element is missing or not a string!");
+    return nonstd::make_unexpected("OSM lookup contained invalid JSON: display_name element is missing or not a string!");
   }
   Location data;
   data.display_name = element.get<std::string_view>().value();
@@ -92,23 +96,21 @@ nonstd::expected<Location, std::string> LocationLookupOpenStreetMap::find_locati
   error = features.at_pointer("/0/properties/name").get(element);
   if (error || element.type() != simdjson::dom::element_type::STRING)
   {
-    return nonstd::make_unexpected( "OSM lookup contained invalid JSON: name element is missing or not a string!");
+    return nonstd::make_unexpected("OSM lookup contained invalid JSON: name element is missing or not a string!");
   }
   data.name = element.get<std::string_view>().value();
 
   error = features.at_pointer("/0/geometry/coordinates/0").get(element);
   if (error || element.type() != simdjson::dom::element_type::DOUBLE)
   {
-    std::cout << "JSON: " << response << "\n\n";
-    return nonstd::make_unexpected( "OSM lookup contained invalid JSON: longitude data is missing or not a floating-point number!");
+    return nonstd::make_unexpected("OSM lookup contained invalid JSON: longitude data is missing or not a floating-point number!");
   }
   data.longitude = element.get<double>().value();
 
   error = features.at_pointer("/0/geometry/coordinates/1").get(element);
   if (error || element.type() != simdjson::dom::element_type::DOUBLE)
   {
-    std::cout << "JSON: " << response << "\n\n";
-    return nonstd::make_unexpected( "OSM lookup contained invalid JSON: latitude data is missing or not a floating-point number!");
+    return nonstd::make_unexpected("OSM lookup contained invalid JSON: latitude data is missing or not a floating-point number!");
   }
   data.latitude = element.get<double>().value();
 
