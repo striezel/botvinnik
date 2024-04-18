@@ -23,6 +23,7 @@
 #include "../../../../third-party/simdjson/simdjson.h"
 #include "../../../net/Curly.hpp"
 #include "../../../net/url_encode.hpp"
+#include "../../../Version.hpp"
 
 namespace bvn
 {
@@ -42,7 +43,7 @@ nonstd::expected<Location, std::string> LocationLookupOpenStreetMap::find_locati
   Curly curl;
   curl.setURL("https://nominatim.openstreetmap.org/search?q=" + encoded_location
               + "&accept-language=en&limit=1&format=geojson");
-  curl.addHeader("User-Agent: botvinnik/42.0");
+  curl.addHeader("User-Agent: " + bvn::userAgent);
   std::string response;
   if (!curl.perform(response))
   {
