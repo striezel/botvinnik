@@ -75,6 +75,10 @@
 		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookupOpenMeteo.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookupOpenStreetMap.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookupOpenStreetMap.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/OpenMeteo.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/OpenMeteo.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/WeatherData.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/WeatherData.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdData.cpp" />
@@ -138,6 +142,8 @@
 		<Unit filename="weather/Location.cpp" />
 		<Unit filename="weather/LocationLookupOpenMeteo.cpp" />
 		<Unit filename="weather/LocationLookupOpenStreetMap.cpp" />
+		<Unit filename="weather/OpenMeteo.cpp" />
+		<Unit filename="weather/WeatherData.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>
