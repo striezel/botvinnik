@@ -31,6 +31,7 @@
 		<Linker>
 			<Add library="sqlite3" />
 		</Linker>
+		<Unit filename="../../src/Version.hpp" />
 		<Unit filename="../../src/botvinnik/FailCounter.cpp" />
 		<Unit filename="../../src/botvinnik/FailCounter.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.cpp" />
@@ -52,6 +53,7 @@
 		<Unit filename="../FileGuard.hpp" />
 		<Unit filename="../WriteConf.hpp" />
 		<Unit filename="../locate_catch.hpp" />
+		<Unit filename="Version.cpp" />
 		<Unit filename="botvinnik/FailCounter.cpp" />
 		<Unit filename="calculate_incidence.cpp" />
 		<Unit filename="conf/Configuration.cpp" />
