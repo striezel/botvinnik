@@ -19,6 +19,7 @@
 */
 
 #include "../../locate_catch.hpp"
+#include <cmath>
 #include "../../../src/botvinnik/plugins/weather/OpenMeteo.hpp"
 
 TEST_CASE("plugin Weather: weather data from Open-Meteo")
