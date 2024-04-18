@@ -21,19 +21,12 @@
 #include "OpenMeteo.hpp"
 #include <cmath>
 #include <iostream>
-#include <sstream>
 #include "../../../../third-party/simdjson/simdjson.h"
 #include "../../../net/Curly.hpp"
+#include "../../../util/Strings.hpp"
 
 namespace bvn
 {
-
-std::string doubleToString(const double d)
-{
-  std::stringstream s_str;
-  s_str << d;
-  return s_str.str();
-}
 
 nonstd::expected<WeatherData, std::string> OpenMeteo::get_weather(const Location& location)
 {

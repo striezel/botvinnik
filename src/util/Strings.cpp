@@ -20,6 +20,7 @@
 
 #include "Strings.hpp"
 #include <limits>
+#include <sstream>
 
 namespace bvn
 {
@@ -175,6 +176,13 @@ bool endsWith(const std::string& str, const std::string& suffix)
   if (strLen < suffixLen)
     return false;
   return (str.substr(strLen - suffixLen).compare(suffix) == 0);
+}
+
+std::string doubleToString(const double d)
+{
+  std::stringstream s_str;
+  s_str << d;
+  return s_str.str();
 }
 
 } // namespace

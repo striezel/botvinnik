@@ -67,19 +67,19 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
 
   const WeatherData& data = weather.value();
   return Message("Weather for " + location.value().display_name + "\n"
-      + std::to_string(data.temperature_celsius) + " °C, feels like "
-      + std::to_string(data.apparent_temperature) + " °C\n"
+      + doubleToString(data.temperature_celsius) + " °C, feels like "
+      + doubleToString(data.apparent_temperature) + " °C\n"
       + "Relative humidity: " + std::to_string(data.relative_humidity) + " %\n"
-      + "Wind speed: " + std::to_string(data.wind_speed) + " km/h\n"
-      + "Pressure: " + std::to_string(data.pressure) + " hPa\n"
-      + "Precipitation: " + std::to_string(data.precipitation) + " mm",
+      + "Wind speed: " + doubleToString(data.wind_speed) + " km/h\n"
+      + "Pressure: " + doubleToString(data.pressure) + " hPa\n"
+      + "Precipitation: " + doubleToString(data.precipitation) + " mm",
       "<strong>Weather for " + location.value().display_name + "</strong><br />\n"
-      + std::to_string(data.temperature_celsius) + " °C, feels like "
-      + std::to_string(data.apparent_temperature) + " °C<br />\n"
+      + doubleToString(data.temperature_celsius) + " °C, feels like "
+      + doubleToString(data.apparent_temperature) + " °C<br />\n"
       + "Relative humidity: " + std::to_string(data.relative_humidity) + " %<br />\n"
-      + "Wind speed: " + std::to_string(data.wind_speed) + " km/h<br />\n"
-      + "Pressure: " + std::to_string(data.pressure) + " hPa<br />\n"
-      + "Precipitation: " + std::to_string(data.precipitation) + " mm"           );
+      + "Wind speed: " + doubleToString(data.wind_speed) + " km/h<br />\n"
+      + "Pressure: " + doubleToString(data.pressure) + " hPa<br />\n"
+      + "Precipitation: " + doubleToString(data.precipitation) + " mm"           );
 }
 
 std::string Weather::helpOneLine(const std::string_view& command) const
