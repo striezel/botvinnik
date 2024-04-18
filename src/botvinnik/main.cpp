@@ -42,6 +42,7 @@
 #include "plugins/Giphy.hpp"
 #include "plugins/LibreTranslate.hpp"
 #include "plugins/Ping.hpp"
+#include "plugins/weather/Weather.hpp"
 #include "plugins/Wikipedia.hpp"
 #include "plugins/xkcd/Xkcd.hpp"
 
@@ -267,6 +268,14 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of Giphy plugin failed!" << std::endl
+              << "The bot will not start." << std::endl;
+    return bvn::rcPluginRegistrationError;
+  }
+  bvn::Weather weather;
+  if (!bot.registerPlugin(weather))
+  {
+    // Should never happen!
+    std::cerr << "Error: Registration of weather plugin failed!" << std::endl
               << "The bot will not start." << std::endl;
     return bvn::rcPluginRegistrationError;
   }

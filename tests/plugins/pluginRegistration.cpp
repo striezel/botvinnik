@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2021, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@
 #include "../../src/botvinnik/plugins/Giphy.hpp"
 #include "../../src/botvinnik/plugins/LibreTranslate.hpp"
 #include "../../src/botvinnik/plugins/Ping.hpp"
+#include "../../src/botvinnik/plugins/weather/Weather.hpp"
 #include "../../src/botvinnik/plugins/Wikipedia.hpp"
 #include "../../src/botvinnik/plugins/xkcd/Xkcd.hpp"
 
@@ -55,6 +56,7 @@ TEST_CASE("plugin registration for all known plugins")
   Giphy giphy("key", bot.matrix());
   LibreTranslate translate("https://libretranslate.com", "");
   Ping ping(std::chrono::milliseconds(2345));
+  Weather weather;
   Wikipedia wiki;
   Xkcd xkcd(bot.matrix());
 
@@ -73,6 +75,7 @@ TEST_CASE("plugin registration for all known plugins")
     REQUIRE( bot.registerPlugin(translate) );
     REQUIRE( bot.registerPlugin(ping) );
     REQUIRE( bot.registerPlugin(wiki) );
+    REQUIRE( bot.registerPlugin(weather) );
     REQUIRE( bot.registerPlugin(xkcd) );
   }
 }
