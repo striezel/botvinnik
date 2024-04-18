@@ -20,6 +20,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/LibreTranslate.cpp
     ../../src/botvinnik/plugins/Ping.cpp
     ../../src/botvinnik/plugins/weather/Location.cpp
+    ../../src/botvinnik/plugins/weather/LocationLookup.cpp
     ../../src/botvinnik/plugins/weather/LocationLookupOpenMeteo.cpp
     ../../src/botvinnik/plugins/weather/LocationLookupOpenStreetMap.cpp
     ../../src/botvinnik/plugins/weather/OpenMeteo.cpp
@@ -57,6 +58,7 @@ set(plugin_tests_sources
     LibreTranslate.cpp
     Ping.cpp
     weather/Location.cpp
+    weather/LocationLookup.cpp
     weather/LocationLookupOpenMeteo.cpp
     weather/LocationLookupOpenStreetMap.cpp
     weather/OpenMeteo.cpp

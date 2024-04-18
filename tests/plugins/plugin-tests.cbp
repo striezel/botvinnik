@@ -33,6 +33,7 @@
 			<Add library="curl" />
 			<Add library="sqlite3" />
 		</Linker>
+		<Unit filename="../../src/Version.hpp" />
 		<Unit filename="../../src/botvinnik/Bot.cpp" />
 		<Unit filename="../../src/botvinnik/Bot.hpp" />
 		<Unit filename="../../src/botvinnik/FailCounter.cpp" />
@@ -71,6 +72,8 @@
 		<Unit filename="../../src/botvinnik/plugins/corona/World.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/Location.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/Location.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookup.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookup.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookupOpenMeteo.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookupOpenMeteo.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookupOpenStreetMap.cpp" />
@@ -140,6 +143,7 @@
 		<Unit filename="main.cpp" />
 		<Unit filename="pluginRegistration.cpp" />
 		<Unit filename="weather/Location.cpp" />
+		<Unit filename="weather/LocationLookup.cpp" />
 		<Unit filename="weather/LocationLookupOpenMeteo.cpp" />
 		<Unit filename="weather/LocationLookupOpenStreetMap.cpp" />
 		<Unit filename="weather/OpenMeteo.cpp" />
