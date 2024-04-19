@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,23 +18,33 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
+#ifndef BVN_PLUGIN_WEATHER_LOCATION_HPP
+#define BVN_PLUGIN_WEATHER_LOCATION_HPP
 
 #include <string>
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.9.2, 2024-03-12";
+/// Contains data of a location, e. g. a city or village.
+struct Location
+{
+  Location();
 
-/** \brief the User-Agent to use when sending requests to the Matrix server
- *
- * \remark User-Agent is disabled by default.
- */
-const std::string userAgent = "botvinnik/0.9.2";
+
+  /** \brief Checks whether all data members are set.
+   *
+   * \return Returns true, if all data members are set.
+   *         Returns false otherwise.
+   */
+  bool has_data() const;
+
+  double latitude;  /**< latitude of the location in degrees */
+  double longitude; /**< longitude of the location in degrees */
+  std::string name; /**< short-ish name of the location */
+  std::string display_name; /**< long(er) name of the location */
+}; // struct
 
 } // namespace
 
-#endif // BVN_VERSION_HPP
+#endif // BVN_PLUGIN_WEATHER_LOCATION_HPP

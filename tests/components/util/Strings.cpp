@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2023  Dirk Stolle
+    Copyright (C) 2020, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 */
 
 #include "../../locate_catch.hpp"
+#include <limits>
 #include "../../../src/util/Strings.hpp"
 
 TEST_CASE("endsWith")
@@ -164,5 +165,32 @@ TEST_CASE("trim")
     s = "  \t  \t  foo\t\t \t ";
     trim(s);
     REQUIRE( s == "foo" );
+  }
+}
+
+TEST_CASE("doubleToString")
+{
+  using namespace bvn;
+
+  SECTION("positive numbers")
+  {
+    REQUIRE( doubleToString(0.0) == "0" );
+    REQUIRE( doubleToString(0.12345) == "0.12345" );
+    REQUIRE( doubleToString(6.1) == "6.1" );
+    REQUIRE( doubleToString(1018.3) == "1018.3" );
+  }
+
+  SECTION("negative numbers")
+  {
+    REQUIRE( doubleToString(-0.0) == "-0" );
+    REQUIRE( doubleToString(-0.12345) == "-0.12345" );
+    REQUIRE( doubleToString(-3.2) == "-3.2" );
+    REQUIRE( doubleToString(-1024.25) == "-1024.25" );
+  }
+
+  SECTION("NaN and infinity")
+  {
+    REQUIRE( doubleToString(std::numeric_limits<double>::quiet_NaN()) == "nan" );
+    REQUIRE( doubleToString(std::numeric_limits<double>::infinity()) == "inf" );
   }
 }

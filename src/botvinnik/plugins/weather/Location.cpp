@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,23 +18,25 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
-
-#include <string>
+#include "Location.hpp"
+#include <cmath>
+#include <limits>
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.9.2, 2024-03-12";
+Location::Location()
+: latitude(std::numeric_limits<double>::quiet_NaN()),
+  longitude(std::numeric_limits<double>::quiet_NaN()),
+  name(""),
+  display_name("")
+{
+}
 
-/** \brief the User-Agent to use when sending requests to the Matrix server
- *
- * \remark User-Agent is disabled by default.
- */
-const std::string userAgent = "botvinnik/0.9.2";
+bool Location::has_data() const
+{
+  return !std::isnan(latitude) && !std::isnan(longitude)
+      && !name.empty() && !display_name.empty();
+}
 
 } // namespace
-
-#endif // BVN_VERSION_HPP

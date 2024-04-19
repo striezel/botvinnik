@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2017, 2020, 2023  Dirk Stolle
+    Copyright (C) 2017, 2020, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -70,6 +70,14 @@ bool stringToInt(const std::string& str, int& value);
  *         Returns false otherwise.
  */
 bool endsWith(const std::string& str, const std::string& suffix);
+
+
+/** \brief Gets the string representation of a floating-point value.
+ *
+ * \param d    the floating-point value to represent as string
+ * \return Returns the string representation of the given double value.
+ */
+std::string doubleToString(const double d);
 
 } // namespace
 

@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,23 +18,23 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
-
-#include <string>
+#include "WeatherData.hpp"
+#include <cmath>
+#include <limits>
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.9.2, 2024-03-12";
-
-/** \brief the User-Agent to use when sending requests to the Matrix server
- *
- * \remark User-Agent is disabled by default.
- */
-const std::string userAgent = "botvinnik/0.9.2";
+WeatherData::WeatherData()
+: temperature_celsius(std::numeric_limits<double>::quiet_NaN()),
+  apparent_temperature(std::numeric_limits<double>::quiet_NaN()),
+  relative_humidity(-1),
+  weather_code(-1),
+  wind_speed(std::numeric_limits<double>::quiet_NaN()),
+  wind_direction(std::numeric_limits<double>::quiet_NaN()),
+  pressure(std::numeric_limits<double>::quiet_NaN()),
+  precipitation(std::numeric_limits<double>::quiet_NaN())
+{
+}
 
 } // namespace
-
-#endif // BVN_VERSION_HPP

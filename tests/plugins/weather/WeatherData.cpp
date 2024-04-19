@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
-    This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
+    This file is part of the test suite for botvinnik.
+    Copyright (C) 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,23 +18,25 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
+#include "../../locate_catch.hpp"
+#include <cmath>
+#include "../../../src/botvinnik/plugins/weather/WeatherData.hpp"
 
-#include <string>
-
-namespace bvn
+TEST_CASE("plugin Weather: WeatherData")
 {
+  using namespace bvn;
 
-/** \brief version information */
-const std::string version = "version 0.9.2, 2024-03-12";
+  SECTION("constructor")
+  {
+    WeatherData data;
 
-/** \brief the User-Agent to use when sending requests to the Matrix server
- *
- * \remark User-Agent is disabled by default.
- */
-const std::string userAgent = "botvinnik/0.9.2";
-
-} // namespace
-
-#endif // BVN_VERSION_HPP
+    REQUIRE( std::isnan(data.temperature_celsius) );
+    REQUIRE( std::isnan(data.apparent_temperature) );
+    REQUIRE( data.relative_humidity == -1 );
+    REQUIRE( data.weather_code == -1 );
+    REQUIRE( std::isnan(data.wind_speed) );
+    REQUIRE( std::isnan(data.wind_direction) );
+    REQUIRE( std::isnan(data.pressure) );
+    REQUIRE( std::isnan(data.precipitation) );
+  }
+}

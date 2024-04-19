@@ -22,6 +22,7 @@ set(component_tests_sources
     util/sqlite3.cpp
     util/Strings.cpp
     calculate_incidence.cpp
+    Version.cpp
     main.cpp)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

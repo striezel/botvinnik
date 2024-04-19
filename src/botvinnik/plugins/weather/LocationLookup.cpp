@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,23 +18,23 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
-
-#include <string>
+#include "LocationLookup.hpp"
+#include "LocationLookupOpenMeteo.hpp"
+#include "LocationLookupOpenStreetMap.hpp"
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.9.2, 2024-03-12";
+nonstd::expected<Location, std::string> LocationLookup::find_location(const std::string_view location_name)
+{
+  auto location = LocationLookupOpenStreetMap::find_location(location_name);
+  if (!location.has_value())
+  {
+    // Fall back to Open-Meteo geo-coding API.
+    location = LocationLookupOpenMeteo::find_location(location_name);
+  }
 
-/** \brief the User-Agent to use when sending requests to the Matrix server
- *
- * \remark User-Agent is disabled by default.
- */
-const std::string userAgent = "botvinnik/0.9.2";
+  return location;
+}
 
 } // namespace
-
-#endif // BVN_VERSION_HPP

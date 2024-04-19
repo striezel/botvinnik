@@ -19,6 +19,14 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/Giphy.cpp
     ../../src/botvinnik/plugins/LibreTranslate.cpp
     ../../src/botvinnik/plugins/Ping.cpp
+    ../../src/botvinnik/plugins/weather/FreeFunctions.cpp
+    ../../src/botvinnik/plugins/weather/Location.cpp
+    ../../src/botvinnik/plugins/weather/LocationLookup.cpp
+    ../../src/botvinnik/plugins/weather/LocationLookupOpenMeteo.cpp
+    ../../src/botvinnik/plugins/weather/LocationLookupOpenStreetMap.cpp
+    ../../src/botvinnik/plugins/weather/OpenMeteo.cpp
+    ../../src/botvinnik/plugins/weather/Weather.cpp
+    ../../src/botvinnik/plugins/weather/WeatherData.cpp
     ../../src/botvinnik/plugins/Wikipedia.cpp
     ../../src/botvinnik/plugins/xkcd/Xkcd.cpp
     ../../src/botvinnik/plugins/xkcd/XkcdData.cpp
@@ -51,6 +59,14 @@ set(plugin_tests_sources
     Giphy.cpp
     LibreTranslate.cpp
     Ping.cpp
+    weather/FreeFunctions.cpp
+    weather/Location.cpp
+    weather/LocationLookup.cpp
+    weather/LocationLookupOpenMeteo.cpp
+    weather/LocationLookupOpenStreetMap.cpp
+    weather/OpenMeteo.cpp
+    weather/Weather.cpp
+    weather/WeatherData.cpp
     Wikipedia.cpp
     Xkcd.cpp
     XkcdData.cpp

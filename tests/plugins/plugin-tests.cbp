@@ -33,6 +33,7 @@
 			<Add library="curl" />
 			<Add library="sqlite3" />
 		</Linker>
+		<Unit filename="../../src/Version.hpp" />
 		<Unit filename="../../src/botvinnik/Bot.cpp" />
 		<Unit filename="../../src/botvinnik/Bot.hpp" />
 		<Unit filename="../../src/botvinnik/FailCounter.cpp" />
@@ -69,6 +70,22 @@
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/World.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/World.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/FreeFunctions.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/FreeFunctions.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/Location.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/Location.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookup.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookup.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookupOpenMeteo.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookupOpenMeteo.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookupOpenStreetMap.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/LocationLookupOpenStreetMap.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/OpenMeteo.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/OpenMeteo.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/Weather.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/Weather.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/WeatherData.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/WeatherData.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdData.cpp" />
@@ -129,6 +146,14 @@
 		<Unit filename="core/Rooms.cpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="pluginRegistration.cpp" />
+		<Unit filename="weather/FreeFunctions.cpp" />
+		<Unit filename="weather/Location.cpp" />
+		<Unit filename="weather/LocationLookup.cpp" />
+		<Unit filename="weather/LocationLookupOpenMeteo.cpp" />
+		<Unit filename="weather/LocationLookupOpenStreetMap.cpp" />
+		<Unit filename="weather/OpenMeteo.cpp" />
+		<Unit filename="weather/Weather.cpp" />
+		<Unit filename="weather/WeatherData.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

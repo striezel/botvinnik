@@ -35,6 +35,14 @@ set(botvinnik_sources
     plugins/Giphy.cpp
     plugins/LibreTranslate.cpp
     plugins/Ping.cpp
+    plugins/weather/FreeFunctions.cpp
+    plugins/weather/Location.cpp
+    plugins/weather/LocationLookup.cpp
+    plugins/weather/LocationLookupOpenMeteo.cpp
+    plugins/weather/LocationLookupOpenStreetMap.cpp
+    plugins/weather/OpenMeteo.cpp
+    plugins/weather/Weather.cpp
+    plugins/weather/WeatherData.cpp
     plugins/Wikipedia.cpp
     plugins/xkcd/Xkcd.cpp
     plugins/xkcd/XkcdData.cpp

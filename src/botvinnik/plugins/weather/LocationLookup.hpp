@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,23 +18,30 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_VERSION_HPP
-#define BVN_VERSION_HPP
+#ifndef BVN_PLUGIN_WEATHER_LOCATION_LOOKUP_HPP
+#define BVN_PLUGIN_WEATHER_LOCATION_LOOKUP_HPP
 
 #include <string>
+#include "../../../../third-party/nonstd/expected.hpp"
+#include "Location.hpp"
 
 namespace bvn
 {
 
-/** \brief version information */
-const std::string version = "version 0.9.2, 2024-03-12";
-
-/** \brief the User-Agent to use when sending requests to the Matrix server
- *
- * \remark User-Agent is disabled by default.
+/** \brief Finds a geographical location by name.
  */
-const std::string userAgent = "botvinnik/0.9.2";
+class LocationLookup
+{
+  public:
+    /** \brief Tries to find a location by its name.
+     *
+     * \param location_name   name of the location to find, e. g. "Berlin"
+     * \return Returns the data for the location in case of success.
+     *         Returns a string containing an error message in case of failure.
+     */
+    static nonstd::expected<Location, std::string> find_location(const std::string_view location_name);
+}; // class
 
 } // namespace
 
-#endif // BVN_VERSION_HPP
+#endif // BVN_PLUGIN_WEATHER_LOCATION_LOOKUP_HPP
