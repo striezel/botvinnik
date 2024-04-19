@@ -21,6 +21,7 @@
 #include "Weather.hpp"
 #include <iostream>
 #include "../../../util/Strings.hpp"
+#include "FreeFunctions.hpp"
 #include "LocationLookup.hpp"
 #include "OpenMeteo.hpp"
 
@@ -67,6 +68,7 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
 
   const WeatherData& data = weather.value();
   return Message("Weather for " + location.value().display_name + "\n"
+      + weather::wmo_code_to_text(data.weather_code) + ", "
       + doubleToString(data.temperature_celsius) + " °C, feels like "
       + doubleToString(data.apparent_temperature) + " °C\n"
       + "Relative humidity: " + std::to_string(data.relative_humidity) + " %\n"
@@ -74,6 +76,7 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
       + "Pressure: " + doubleToString(data.pressure) + " hPa\n"
       + "Precipitation: " + doubleToString(data.precipitation) + " mm",
       "<strong>Weather for " + location.value().display_name + "</strong><br />\n"
+      + weather::wmo_code_to_text(data.weather_code) + ", "
       + doubleToString(data.temperature_celsius) + " °C, feels like "
       + doubleToString(data.apparent_temperature) + " °C<br />\n"
       + "Relative humidity: " + std::to_string(data.relative_humidity) + " %<br />\n"

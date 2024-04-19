@@ -119,6 +119,8 @@
 		<Unit filename="plugins/corona/CovidNumbers.hpp" />
 		<Unit filename="plugins/corona/World.cpp" />
 		<Unit filename="plugins/corona/World.hpp" />
+		<Unit filename="plugins/weather/FreeFunctions.cpp" />
+		<Unit filename="plugins/weather/FreeFunctions.hpp" />
 		<Unit filename="plugins/weather/Location.cpp" />
 		<Unit filename="plugins/weather/Location.hpp" />
 		<Unit filename="plugins/weather/LocationLookup.cpp" />
