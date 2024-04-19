@@ -42,6 +42,14 @@ std::string wmo_code_to_text(const int code);
  */
 std::string wind_direction_to_text(const double direction);
 
+/** \brief Translates wind direction in degrees to an UTF-8 encoded arrow.
+ *
+ * \param direction   wind direction in degrees, with 0=N, 90=E, 180=S, 270=W
+ * \return Returns a code point of a matching arrow for the wind direction, encoded in UTF-8.
+ *         Returns an empty string, if direction is not within [0.0;360.0].
+ */
+std::string wind_direction_to_arrow(const double direction);
+
 } // namespace
 
 #endif // BVN_PLUGIN_WEATHER_FREE_FUNCTIONS_HPP

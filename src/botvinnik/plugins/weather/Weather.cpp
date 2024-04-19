@@ -72,7 +72,9 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
       + doubleToString(data.temperature_celsius) + " °C, feels like "
       + doubleToString(data.apparent_temperature) + " °C\n"
       + "Relative humidity: " + std::to_string(data.relative_humidity) + " %\n"
-      + "Wind: " + doubleToString(data.wind_speed) + " km/h " + weather::wind_direction_to_text(data.wind_direction) + "\n"
+      + "Wind: " + doubleToString(data.wind_speed) + " km/h "
+                 + weather::wind_direction_to_arrow(data.wind_direction)
+                 + " " + weather::wind_direction_to_text(data.wind_direction) + "\n"
       + "Pressure: " + doubleToString(data.pressure) + " hPa\n"
       + "Precipitation: " + doubleToString(data.precipitation) + " mm\n\n"
       + "Weather data by Open-Meteo.com <https://open-meteo.com/>",
@@ -81,7 +83,9 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
       + doubleToString(data.temperature_celsius) + " °C, feels like "
       + doubleToString(data.apparent_temperature) + " °C<br />\n"
       + "Relative humidity: " + std::to_string(data.relative_humidity) + " %<br />\n"
-      + "Wind: " + doubleToString(data.wind_speed) + " km/h " + weather::wind_direction_to_text(data.wind_direction) + "<br />\n"
+      + "Wind: " + doubleToString(data.wind_speed) + " km/h "
+                 + weather::wind_direction_to_arrow(data.wind_direction)
+                 + " " + weather::wind_direction_to_text(data.wind_direction) + "<br />\n"
       + "Pressure: " + doubleToString(data.pressure) + " hPa<br />\n"
       + "Precipitation: " + doubleToString(data.precipitation) + " mm<br />\n<br />\n"
       + "<a href=\"https://open-meteo.com/\">Weather data by Open-Meteo.com</a>");

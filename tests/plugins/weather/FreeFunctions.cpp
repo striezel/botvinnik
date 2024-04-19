@@ -111,4 +111,58 @@ TEST_CASE("plugin Weather: free functions")
       REQUIRE( wind_direction_to_text(nan) == "" );
     }
   }
+
+  SECTION("wind_direction_to_arrow")
+  {
+    SECTION("some usual values")
+    {
+      // N
+      REQUIRE( wind_direction_to_arrow(0.0) == "\xE2\x86\x93" );
+      REQUIRE( wind_direction_to_arrow(15.0) == "\xE2\x86\x93" );
+      // NE
+      REQUIRE( wind_direction_to_arrow(30.0) == "\xE2\x86\x99" );
+      REQUIRE( wind_direction_to_arrow(45.0) == "\xE2\x86\x99" );
+      REQUIRE( wind_direction_to_arrow(60.0) == "\xE2\x86\x99" );
+      // E
+      REQUIRE( wind_direction_to_arrow(75.0) == "\xE2\x86\x90" );
+      REQUIRE( wind_direction_to_arrow(90.0) == "\xE2\x86\x90" );
+      REQUIRE( wind_direction_to_arrow(105.0) == "\xE2\x86\x90" );
+      // SE
+      REQUIRE( wind_direction_to_arrow(120.0) == "\xE2\x86\x96" );
+      REQUIRE( wind_direction_to_arrow(135.0) == "\xE2\x86\x96" );
+      REQUIRE( wind_direction_to_arrow(150.0) == "\xE2\x86\x96" );
+      // S
+      REQUIRE( wind_direction_to_arrow(165.0) == "\xE2\x86\x91" );
+      REQUIRE( wind_direction_to_arrow(180.0) == "\xE2\x86\x91" );
+      REQUIRE( wind_direction_to_arrow(195.0) == "\xE2\x86\x91" );
+      // SW
+      REQUIRE( wind_direction_to_arrow(210.0) == "\xE2\x86\x97" );
+      REQUIRE( wind_direction_to_arrow(225.0) == "\xE2\x86\x97" );
+      REQUIRE( wind_direction_to_arrow(240.0) == "\xE2\x86\x97" );
+      // W
+      REQUIRE( wind_direction_to_arrow(255.0) == "\xE2\x86\x92" );
+      REQUIRE( wind_direction_to_arrow(270.0) == "\xE2\x86\x92" );
+      REQUIRE( wind_direction_to_arrow(285.0) == "\xE2\x86\x92" );
+      // NW
+      REQUIRE( wind_direction_to_arrow(300.0) == "\xE2\x86\x98" );
+      REQUIRE( wind_direction_to_arrow(315.0) == "\xE2\x86\x98" );
+      REQUIRE( wind_direction_to_arrow(330.0) == "\xE2\x86\x98" );
+      // N
+      REQUIRE( wind_direction_to_arrow(345.0) == "\xE2\x86\x93" );
+      REQUIRE( wind_direction_to_arrow(360.0) == "\xE2\x86\x93" );
+    }
+
+    SECTION("invalid direction values")
+    {
+      REQUIRE( wind_direction_to_arrow(-23.45) == "" );
+      REQUIRE( wind_direction_to_arrow(360.05) == "" );
+
+      const double infinity = std::numeric_limits<double>::infinity();
+      REQUIRE( wind_direction_to_arrow(infinity) == "" );
+      REQUIRE( wind_direction_to_arrow(-infinity) == "" );
+
+      const double nan = std::numeric_limits<double>::quiet_NaN();
+      REQUIRE( wind_direction_to_arrow(nan) == "" );
+    }
+  }
 }

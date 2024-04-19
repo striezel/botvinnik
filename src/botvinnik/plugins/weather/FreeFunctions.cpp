@@ -91,4 +91,30 @@ std::string wind_direction_to_text(const double direction)
     return "NW";
 }
 
+std::string wind_direction_to_arrow(const double direction)
+{
+  if ((direction > 360.0) || (direction < 0.0) || std::isnan(direction))
+  {
+    return "";
+  }
+
+  // 0° = N, 90° = E, 180° = S, 270° = W
+  if ((direction < 22.5) || (direction >= 337.5))
+    return "\xE2\x86\x93"; // N
+  if (direction < 67.5)
+    return "\xE2\x86\x99"; // NE
+  if (direction < 112.5)
+    return "\xE2\x86\x90"; // E
+  if (direction < 157.5)
+    return "\xE2\x86\x96"; // SE
+  if (direction < 202.5)
+    return "\xE2\x86\x91"; // S
+  if (direction < 247.5)
+    return "\xE2\x86\x97"; // SW
+  if (direction < 292.5)
+    return "\xE2\x86\x92"; // W
+  else // direction < 337.5
+    return "\xE2\x86\x98"; // NW
+}
+
 } // namespace
