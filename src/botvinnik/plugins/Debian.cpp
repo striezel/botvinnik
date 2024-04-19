@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -201,7 +201,7 @@ Message Debian::formatResult(const Packages& packs, const std::string& suite, co
   Message result(std::string("Result for package '").append(packageName)
                  .append("' in Debian ").append(suite).append("\n\n"),
                  std::string("Result for package '<strong>").append(htmlspecialchars(packageName))
-                 .append("</strong>' in Debian ").append(suite).append("<br >\n<br >\n"));
+                 .append("</strong>' in Debian ").append(suite).append("<br />\n<br />\n"));
   if (!packs.exact.first.empty())
   {
     result.body.append("Exact match: ").append(packs.exact.first);
@@ -214,7 +214,7 @@ Message Debian::formatResult(const Packages& packs, const std::string& suite, co
       result.formatted_body.append(", version ").append(htmlspecialchars(packs.exact.second));
     }
     result.body.append("\n");
-    result.formatted_body.append("<br>\n");
+    result.formatted_body.append("<br />\n");
   }
   else
   {

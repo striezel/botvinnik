@@ -595,7 +595,7 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     }
     result.body.append("\n\nData source: https://ourworldindata.org/coronavirus, ")
                 .append("provided by Our World in Data");
-    result.formatted_body.append("\n</ul><br>\n<b>Total cases: " + std::to_string(data.totalCases))
+    result.formatted_body.append("\n</ul><br />\n<b>Total cases: " + std::to_string(data.totalCases))
                 .append(", total deaths: " + std::to_string(data.totalDeaths));
     if (!percentage.empty())
       result.formatted_body.append(" (" + percentage + ")");
