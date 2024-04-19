@@ -34,6 +34,14 @@ namespace bvn::weather
  */
 std::string wmo_code_to_text(const int code);
 
+/** \brief Translates known WMO weather codes to icons for humans.
+ *
+ * \param code   the WMO weather code
+ * \return Returns an UTF-8-encoded icon of the coded weather condition.
+ *         Returns an empty string, if the weather code is unknown.
+ */
+std::string wmo_code_to_icon(const int code);
+
 /** \brief Translates wind direction in degrees to text for humans.
  *
  * \param direction   wind direction in degrees, with 0=N, 90=E, 180=S, 270=W

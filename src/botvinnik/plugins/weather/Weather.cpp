@@ -68,6 +68,7 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
 
   const WeatherData& data = weather.value();
   return Message("Weather for " + location.value().display_name + "\n"
+      + weather::wmo_code_to_icon(data.weather_code) + " "
       + weather::wmo_code_to_text(data.weather_code) + ", "
       + doubleToString(data.temperature_celsius) + " °C, feels like "
       + doubleToString(data.apparent_temperature) + " °C\n"
@@ -79,6 +80,7 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
       + "Precipitation: " + doubleToString(data.precipitation) + " mm\n\n"
       + "Weather data by Open-Meteo.com <https://open-meteo.com/>",
       "<strong>Weather for " + location.value().display_name + "</strong><br />\n"
+      + weather::wmo_code_to_icon(data.weather_code) + " "
       + weather::wmo_code_to_text(data.weather_code) + ", "
       + doubleToString(data.temperature_celsius) + " °C, feels like "
       + doubleToString(data.apparent_temperature) + " °C<br />\n"

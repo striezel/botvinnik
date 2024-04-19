@@ -67,6 +67,74 @@ TEST_CASE("plugin Weather: free functions")
     }
   }
 
+  SECTION("wmo_code_to_icon")
+  {
+    SECTION("some known codes")
+    {
+      // clear sky
+      REQUIRE( wmo_code_to_icon(0) == "\xE2\x98\x80" );
+      // Mainly clear
+      REQUIRE( wmo_code_to_icon(1) == "\xF0\x9F\x8C\xA4" );
+      // Partly cloudy
+      REQUIRE( wmo_code_to_icon(2) == "\xF0\x9F\x8C\xA5" );
+      // Overcast
+      REQUIRE( wmo_code_to_icon(3) == "\xE2\x98\x81" );
+      // Fog
+      REQUIRE( wmo_code_to_icon(45) == "\xF0\x9F\x8C\xAB" );
+      // Light drizzle
+      REQUIRE( wmo_code_to_icon(51) == "\xF0\x9F\x8C\xA7" );
+      // Moderate drizzle
+      REQUIRE( wmo_code_to_icon(53) == "\xF0\x9F\x8C\xA7" );
+      // Dense drizzle
+      REQUIRE( wmo_code_to_icon(55) == "\xF0\x9F\x8C\xA7" );
+      // Light freezing drizzle
+      REQUIRE( wmo_code_to_icon(56) == "\xF0\x9F\x8C\xA7" );
+      // Dense freezing drizzle
+      REQUIRE( wmo_code_to_icon(57) == "\xF0\x9F\x8C\xA7" );
+      // Slight rain
+      REQUIRE( wmo_code_to_icon(61) == "\xF0\x9F\x8C\xA6" );
+      // Moderate rain
+      REQUIRE( wmo_code_to_icon(63) == "\xF0\x9F\x8C\xA6" );
+      // Dense rain
+      REQUIRE( wmo_code_to_icon(65) == "\xF0\x9F\x8C\xA6" );
+      // Light freezing rain
+      REQUIRE( wmo_code_to_icon(66) == "\xF0\x9F\x8C\xA6" );
+      // Heavy freezing rain
+      REQUIRE( wmo_code_to_icon(67) == "\xF0\x9F\x8C\xA6" );
+      // Slight snow fall
+      REQUIRE( wmo_code_to_icon(71) == "\xE2\x9D\x84" );
+      // Moderate snow fall
+      REQUIRE( wmo_code_to_icon(73) == "\xE2\x9D\x84" );
+      // Heavy snow fall
+      REQUIRE( wmo_code_to_icon(75) == "\xE2\x9D\x84" );
+      // Snow grains
+      REQUIRE( wmo_code_to_icon(77) == "\xE2\x9D\x84" );
+      // Slight rain showers
+      REQUIRE( wmo_code_to_icon(80) == "\xF0\x9F\x8C\xA7" );
+      // Moderate rain showers
+      REQUIRE( wmo_code_to_icon(81) == "\xF0\x9F\x8C\xA7" );
+      // Heavy rain showers
+      REQUIRE( wmo_code_to_icon(82) == "\xF0\x9F\x8C\xA7" );
+      // Slight snow showers
+      REQUIRE( wmo_code_to_icon(85) == "\xF0\x9F\x8C\xA8" );
+      // Heavy snow showers
+      REQUIRE( wmo_code_to_icon(86) == "\xF0\x9F\x8C\xA8" );
+      // Thunderstorm
+      REQUIRE( wmo_code_to_icon(95) == "\xF0\x9F\x8C\xA9" );
+      // Thunderstorm with slight hail
+      REQUIRE( wmo_code_to_icon(96) == "\xF0\x9F\x8C\xA9" );
+      // Thunderstorm with heavy hail
+      REQUIRE( wmo_code_to_icon(99) == "\xF0\x9F\x8C\xA9" );
+    }
+
+    SECTION("unknown codes")
+    {
+      REQUIRE( wmo_code_to_icon(-1) == "" );
+      REQUIRE( wmo_code_to_icon(69) == "" );
+      REQUIRE( wmo_code_to_icon(100) == "" );
+    }
+  }
+
   SECTION("wind_direction_to_text")
   {
     SECTION("some usual values")

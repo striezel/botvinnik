@@ -65,6 +65,76 @@ std::string wmo_code_to_text(const int code)
   return iter->second;
 }
 
+std::string wmo_code_to_icon(const int code)
+{
+  // Comments on the entries state the following three things, in that order:
+  // name of the weather condition - name of icon - Unicode code point.
+  static const std::unordered_map<int, std::string> codes = {
+      // clear sky - "Black Sun with Rays" - U+2600
+      {  0, "\xE2\x98\x80" },
+      // mainly clear - "White Sun with Small Cloud" - U+1F324
+      {  1, "\xF0\x9F\x8C\xA4" },
+      // partly cloudy - "White Sun behind cloud" - U+1F325
+      {  2, "\xF0\x9F\x8C\xA5" },
+      // overcast - "Cloud" - U+2601
+      {  3, "\xE2\x98\x81" },
+      // fog - "fog" - U+1F32B
+      { 45, "\xF0\x9F\x8C\xAB" },
+      // Depositing rime fog - "fog" - U+1F32B
+      { 48, "\xF0\x9F\x8C\xAB" },
+      // light drizzle - "Cloud with rain" - U+1F327
+      { 51, "\xF0\x9F\x8C\xA7" },
+      // Moderate drizzle - "Cloud with rain" - U+1F327
+      { 53, "\xF0\x9F\x8C\xA7" },
+      // Dense drizzle - "Cloud with rain" - U+1F327
+      { 55, "\xF0\x9F\x8C\xA7" },
+      // light freezing drizzle - "Cloud with rain" - U+1F327
+      { 56, "\xF0\x9F\x8C\xA7" },
+      // dense freezing drizzle - "Cloud with rain" - U+1F327
+      { 57, "\xF0\x9F\x8C\xA7" },
+      // Slight rain - "White Sun Behind Cloud with Rain" - U+1F326
+      { 61, "\xF0\x9F\x8C\xA6" },
+      // Moderate rain - "White Sun Behind Cloud with Rain" - U+1F326
+      { 63, "\xF0\x9F\x8C\xA6" },
+      // Dense rain - "White Sun Behind Cloud with Rain" - U+1F326
+      { 65, "\xF0\x9F\x8C\xA6" },
+      // Light freezing rain - "White Sun Behind Cloud with Rain" - U+1F326
+      { 66, "\xF0\x9F\x8C\xA6" },
+      // Heavy freezing rain - "White Sun Behind Cloud with Rain" - U+1F326
+      { 67, "\xF0\x9F\x8C\xA6" },
+      // Slight snow fall - "Snowflake" - U+2744
+      { 71, "\xE2\x9D\x84" },
+      // Moderate snow fall - "Snowflake" - U+2744
+      { 73, "\xE2\x9D\x84" },
+      // Heavy snow fall - "Snowflake" - U+2744
+      { 75, "\xE2\x9D\x84" },
+      // Snow grains - "Snowflake" - U+2744
+      { 77, "\xE2\x9D\x84" },
+      // Slight rain showers - "Cloud with rain" - U+1F327
+      { 80, "\xF0\x9F\x8C\xA7" },
+      // Moderate rain showers - "Cloud with rain" - U+1F327
+      { 81, "\xF0\x9F\x8C\xA7" },
+      // Heavy rain showers - "Cloud with rain" - U+1F327
+      { 82, "\xF0\x9F\x8C\xA7" },
+      // Slight snow showers - "Cloud with snow" - U+1F328
+      { 85, "\xF0\x9F\x8C\xA8" },
+      // Heavy snow showers - "Cloud with snow" - U+1F328
+      { 86, "\xF0\x9F\x8C\xA8" },
+      // Thunderstorm - "Cloud with Lightning" - U+1F329
+      { 95, "\xF0\x9F\x8C\xA9" },
+      // Thunderstorm with slight hail - "Cloud with Lightning" - U+1F329
+      { 96, "\xF0\x9F\x8C\xA9" },
+      // Thunderstorm with heavy hail - "Cloud with Lightning" - U+1F329
+      { 99, "\xF0\x9F\x8C\xA9" },
+  };
+  const auto iter = codes.find(code);
+  if (iter == codes.end())
+  {
+    return "";
+  }
+  return iter->second;
+}
+
 std::string wind_direction_to_text(const double direction)
 {
   if ((direction > 360.0) || (direction < 0.0) || std::isnan(direction))
