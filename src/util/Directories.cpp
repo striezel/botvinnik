@@ -28,10 +28,7 @@
   #include <pwd.h> // for getpwuid_r()
 #endif
 
-namespace bvn
-{
-
-namespace filesystem
+namespace bvn::filesystem
 {
 
 bool getHome(std::string& result)
@@ -79,7 +76,5 @@ bool getHome(std::string& result)
     #error Unknown operating system!
   #endif
 }
-
-} // namespace
 
 } // namespace

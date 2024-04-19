@@ -23,10 +23,7 @@
 
 #include <string>
 
-namespace bvn
-{
-
-namespace filesystem
+namespace bvn::filesystem
 {
 
 #if defined(_WIN32)
@@ -47,8 +44,6 @@ namespace filesystem
  *         Returns false otherwise.
  */
 bool getHome(std::string& result);
-
-} // namespace
 
 } // namespace
 
