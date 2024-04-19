@@ -135,7 +135,9 @@ int64_t getCountryId(sql::database& db, const std::string& geoId,
 
   const auto rc = sqlite3_step(stmt.get());
   if (rc == SQLITE_ROW)
+  {
     return sqlite3_column_int64(stmt.get(), 0);
+  }
   if (rc == SQLITE_DONE)
   {
     // Not found - insert it.
@@ -160,7 +162,9 @@ int64_t getCountryId(sql::database& db, const std::string& geoId,
 
     const auto id = sqlite3_last_insert_rowid(db.get());
     if (id > 0)
+    {
       return id;
+    }
     else
     {
       std::cerr << "Error: Could not get id of last insert operation!" << std::endl;
@@ -177,19 +181,27 @@ std::optional<Country> getCountry(sql::database& db, const std::string& country)
 {
   sql::statement stmt = sql::prepare(db, "SELECT countryId, name, geoId, population FROM country WHERE lower(geoId)=lower(@country) OR lower(name)=lower(@country) LIMIT 1;");
   if (!stmt)
+  {
     return std::nullopt;
+  }
   if (!sql::bind(stmt, 1, country))
+  {
     return std::nullopt;
+  }
   const auto rc = sqlite3_step(stmt.get());
   if (rc == SQLITE_ROW)
   {
     Country result(sqlite3_column_int64(stmt.get(), 0));
     const char * name = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 1));
     if (name != nullptr)
+    {
       result.name = name;
+    }
     const char * geo = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2));
     if (geo != nullptr)
+    {
       result.geoId = geo;
+    }
     result.population = sqlite3_column_int64(stmt.get(), 3);
     return result;
   }
@@ -211,7 +223,9 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
   }
   int rc = sqlite3_step(stmt.get());
   if (rc != SQLITE_ROW)
+  {
     return CovidNumbers();
+  }
   CovidNumbers result;
   result.totalCases = sqlite3_column_int64(stmt.get(), 0);
   result.totalDeaths = sqlite3_column_int64(stmt.get(), 1);
@@ -235,7 +249,9 @@ CovidNumbers getCountryData(sql::database& db, const int64_t countryId)
     result.days.emplace_back(elem);
   }
   if ((rc != SQLITE_OK) && (rc != SQLITE_DONE))
+  {
     return CovidNumbers();
+  }
 
   return result;
 }
@@ -249,7 +265,9 @@ CovidNumbers getWorldData(sql::database& db)
   }
   int rc = sqlite3_step(stmt.get());
   if (rc != SQLITE_ROW)
+  {
     return CovidNumbers();
+  }
   CovidNumbers result;
   result.totalCases = sqlite3_column_int64(stmt.get(), 0);
   result.totalDeaths = sqlite3_column_int64(stmt.get(), 1);
@@ -269,7 +287,9 @@ CovidNumbers getWorldData(sql::database& db)
     result.days.emplace_back(elem);
   }
   if ((rc != SQLITE_OK) && (rc != SQLITE_DONE))
+  {
     return CovidNumbers();
+  }
 
   return result;
 }
@@ -322,7 +342,9 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
   {
     // Remove UTF-8 byte order mark. It just confuses the following checks.
     if (line.substr(0, 3) == "\xEF\xBB\xBF")
+    {
       line.erase(0, 3);
+    }
   }
 
   const std::string header("iso_code,continent,location,date,total_cases,new_cases,new_cases_smoothed,total_deaths,new_deaths,");
@@ -357,7 +379,9 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
   {
     ++lineCount;
     if (line.empty())
+    {
       continue;
+    }
 
     // check for possible carriage return at end (happens on Windows systems)
     if (line.at(line.length() - 1) == '\r')
@@ -512,7 +536,9 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     {
       const auto opt_msg = updateOldDatabase(roomId);
       if (opt_msg.has_value())
+      {
         return opt_msg.value();
+      }
     }
 
     auto db = sql::open(dbLocation.value().first);
@@ -588,7 +614,9 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     result.body.append("\nTotal cases: " + std::to_string(data.totalCases))
                 .append(", total deaths: " + std::to_string(data.totalDeaths));
     if (!percentage.empty())
+    {
       result.body.append(" (" + percentage + ")");
+    }
     if (hasIncidence)
     {
       result.body.append("\n\nThe 7-day incidence is the number of infections during the last seven days per 100000 inhabitants.");
@@ -598,7 +626,9 @@ Message Corona::handleCommand(const std::string_view& command, const std::string
     result.formatted_body.append("\n</ul><br />\n<b>Total cases: " + std::to_string(data.totalCases))
                 .append(", total deaths: " + std::to_string(data.totalDeaths));
     if (!percentage.empty())
+    {
       result.formatted_body.append(" (" + percentage + ")");
+    }
     result.formatted_body.append("</b>");
     if (hasIncidence)
     {

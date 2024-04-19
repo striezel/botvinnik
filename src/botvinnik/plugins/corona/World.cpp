@@ -309,7 +309,9 @@ std::optional<Country> World::find(const std::string& nameOrGeoId)
   };
   const auto iter = std::find_if(countries.begin(), countries.end(), predicate);
   if (iter != countries.end())
+  {
     return std::optional<Country>(*iter);
+  }
   // No match found.
   return std::optional<Country>();
 }

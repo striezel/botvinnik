@@ -92,10 +92,14 @@ Message Basic::handleCommand(const std::string_view& command,
       {
         txt.append(" with " + ver.ssl);
         if (!ver.libz.empty())
+        {
           txt.append(" and zlib/" + ver.libz);
+        }
       }
       else if (!ver.libz.empty())
-          txt.append(" with zlib/" + ver.libz);
+      {
+        txt.append(" with zlib/" + ver.libz);
+      }
     }
     else
     {
@@ -110,8 +114,10 @@ Message Basic::handleCommand(const std::string_view& command,
                    std::string("You are <strong>").append(userId).append("</strong>."));
   }
   else
+  {
     // unknown command
     return Message();
+  }
 }
 
 std::string Basic::helpOneLine(const std::string_view& command) const
@@ -129,7 +135,9 @@ std::string Basic::helpOneLine(const std::string_view& command) const
     return "shows the Matrix user id of the user who issued the command";
   }
   else
+  {
     return "";
+  }
 }
 
 Message Basic::helpExtended(const std::string_view& command,
@@ -156,7 +164,9 @@ Message Basic::helpExtended(const std::string_view& command,
                    "shows the Matrix user id of the user who issued the command");
   }
   else
+  {
     return Message();
+  }
 }
 
 bool Basic::allowDeactivation([[maybe_unused]] const std::string_view& command) const

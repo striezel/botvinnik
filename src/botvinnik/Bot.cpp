@@ -39,7 +39,9 @@ bool Bot::registerPlugin(Plugin& plug)
 {
   const auto pluginCommands = plug.commands();
   if (pluginCommands.empty())
+  {
     return false;
+  }
 
   // Check sanity + duplicates first.
   for (const std::string& cmd: pluginCommands)

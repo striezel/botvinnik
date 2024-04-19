@@ -149,8 +149,10 @@ Message Rooms::handleCommand(const std::string_view& command, const std::string_
     return Message("Bot has left the room " + leavingRoomId + " and has forgotten about it.");
   }
   else
+  {
     // unknown command
     return Message();
+  }
 }
 
 std::string Rooms::helpOneLine(const std::string_view& command) const

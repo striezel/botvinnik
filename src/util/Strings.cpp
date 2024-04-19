@@ -56,7 +56,10 @@ std::string toLowerString(std::string str)
 
 void trimLeft(std::string& str1)
 {
-  if (str1.empty()) return;
+  if (str1.empty())
+  {
+    return;
+  }
   // trim stuff at begin
   const int len = str1.length();
   int pos = 0;
@@ -88,7 +91,10 @@ void trimLeft(std::string& str1)
 
 void trimRight(std::string& str1)
 {
-  if (str1.empty()) return;
+  if (str1.empty())
+  {
+    return;
+  }
   // trim stuff at end
   const int len = str1.length();
   int pos = len - 1;
@@ -127,7 +133,9 @@ void trim(std::string& str1)
 bool stringToInt(const std::string& str, int& value)
 {
   if (str.empty())
+  {
     return false;
+  }
   value = 0;
   unsigned int i;
   constexpr int cTenthLimit = std::numeric_limits<int>::max() / 10;
@@ -150,12 +158,16 @@ bool stringToInt(const std::string& str, int& value)
       /* If the result of the multiplication in the next line would go out of
          the type range, then the result is not useful anyway, so quit here. */
       if (value > cTenthLimit)
+      {
         return false;
+      }
       value = value * 10;
       /* If the result of the addition in the next line would go out of the
          type's range, then the result is not useful anyway, so quit here. */
       if (value > cRealLimit - (str[i] - '0'))
+      {
         return false;
+      }
       value = value + (str[i] - '0');
     } // if
     else
@@ -165,7 +177,9 @@ bool stringToInt(const std::string& str, int& value)
     }
   } // for
   if (negative)
+  {
     value = -value;
+  }
   return true;
 }
 
@@ -174,7 +188,9 @@ bool endsWith(const std::string& str, const std::string& suffix)
   const std::string::size_type strLen = str.size();
   const std::string::size_type suffixLen = suffix.size();
   if (strLen < suffixLen)
+  {
     return false;
+  }
   return (str.substr(strLen - suffixLen).compare(suffix) == 0);
 }
 

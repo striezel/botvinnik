@@ -41,9 +41,13 @@ std::optional<XkcdData> XkcdData::get(unsigned int num)
   {
     Curly curl;
     if (num != 0)
+    {
       curl.setURL("https://xkcd.com/" + std::to_string(num) + "/info.0.json");
+    }
     else
+    {
       curl.setURL("https://xkcd.com/info.0.json");
+    }
     if (!curl.perform(response) || curl.getResponseCode() != 200)
     {
       return std::optional<XkcdData>();

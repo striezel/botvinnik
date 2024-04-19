@@ -35,7 +35,9 @@ bool looksLikeUserId(const std::string& str)
   // std::string::at(0) will not throw, because string is checked for emptiness
   // before it lands here.
   if (str.at(0) != '@')
+  {
     return false;
+  }
   // User id must contain a ':'.
   return str.find(':') != std::string::npos;
 }
@@ -195,7 +197,9 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
     trim(line);
     // skip empty lines and comment lines
     if (line.empty() || line[0] == commentCharacter)
+    {
       continue;
+    }
 
     // check for possible carriage return at end (happens on Windows systems)
     if (line.at(line.length() - 1) == '\r')
@@ -232,7 +236,9 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       }
       // Remove trailing slash.
       if (value.size() > 0 && value.at(value.size() - 1) == '/')
+      {
         value.erase(value.size() - 1);
+      }
 
       if (value.substr(0, 7) == "http://")
       {

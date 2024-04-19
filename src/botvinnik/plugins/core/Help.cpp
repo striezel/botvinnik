@@ -55,8 +55,10 @@ Message Help::handleCommand(const std::string_view& command,
     }
   }
   else
+  {
     // unknown command
     return Message();
+  }
 }
 
 std::string_view Help::extractRequestedCommand(const std::string_view& command,
@@ -157,7 +159,9 @@ std::string Help::helpOneLine(const std::string_view& command) const
     return "shows short help for available commands or detailed help for a specific command";
   }
   else
+  {
     return "";
+  }
 }
 
 Message Help::helpExtended(const std::string_view& command, const std::string_view& prefix) const
@@ -178,7 +182,9 @@ Message Help::helpExtended(const std::string_view& command, const std::string_vi
       .append(prefix) + "wiki</code> will show detailed help for the `!wiki` command.");
   }
   else
+  {
     return Message();
+  }
 }
 
 bool Help::allowDeactivation([[maybe_unused]] const std::string_view& command) const

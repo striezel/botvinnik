@@ -59,9 +59,13 @@ std::optional<sql::database> getDatabase()
     return std::optional<sql::database>();
   }
   if (!needsCreate || createDbStructure(db))
+  {
     return db;
+  }
   else
+  {
     return std::optional<sql::database>();
+  }
 }
 
 bool createDbStructure(sql::database& db)
@@ -96,10 +100,14 @@ std::optional<std::string> getMxcUri(sql::database& db, const unsigned int num)
   }
   const auto rc = sqlite3_step(stmt.get());
   if (rc == SQLITE_ROW)
+  {
     return std::optional<std::string>(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 0)));
+  }
   if (rc == SQLITE_DONE)
+  {
     // No match found!
     return std::optional<std::string>();
+  }
   // Some other unexpected error code occurred!
   std::cerr << "Error: Could not get result from xkcd database!" << std::endl
             << sqlite3_errmsg(db.get()) << std::endl;
@@ -126,8 +134,8 @@ bool insertMxcUri(sql::database& db, const unsigned int num, const std::string& 
               << " into database!" << std::endl;
     return false;
   }
-  else
-    return true;
+
+  return true;
 }
 
 } // namespace

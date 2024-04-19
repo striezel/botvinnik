@@ -148,7 +148,9 @@ nonstd::expected<std::vector<GiphyImageData>, Message> extract_images_from_json(
       const auto string = item_element.get<std::string_view>().value();
       int value = 0;
       if (stringToInt(std::string(string), value))
+      {
         current_data.info.width = value;
+      }
     }
 
     error = item.at_pointer("/images/original/height").get(item_element);
@@ -162,7 +164,9 @@ nonstd::expected<std::vector<GiphyImageData>, Message> extract_images_from_json(
       const auto string = item_element.get<std::string_view>().value();
       int value = 0;
       if (stringToInt(std::string(string), value))
+      {
         current_data.info.height = value;
+      }
     }
 
     error = item.at_pointer("/images/original/size").get(item_element);
@@ -176,7 +180,9 @@ nonstd::expected<std::vector<GiphyImageData>, Message> extract_images_from_json(
       const auto string = item_element.get<std::string_view>().value();
       int value = 0;
       if (stringToInt(std::string(string), value))
+      {
         current_data.info.size = value;
+      }
     }
 
     result.emplace_back(current_data);

@@ -98,7 +98,9 @@ bool Sync::parse(const std::string& json, std::string& nextBatch, std::vector<ma
       }
 
       if (parseJoinedRooms(joinObject, rooms) != 0)
+      {
         return false;
+      }
     }
   }
 

@@ -51,7 +51,9 @@ Matrix::Matrix(const Configuration& _conf)
 Matrix::~Matrix()
 {
   if (isLoggedIn())
+  {
     logout();
+  }
 }
 
 const Configuration& Matrix::configuration() const
@@ -145,7 +147,10 @@ bool Matrix::login()
 bool Matrix::logout()
 {
   if (!isLoggedIn())
+  {
+    // Our job here is done.
     return true;
+  }
 
   std::string response;
 
@@ -247,10 +252,14 @@ std::string Matrix::encodeRoomId(const std::string& roomId)
   // Note: This is not perfectly safe, but it works for valid room ids.
   auto pos = encodedRoomId.find(':');
   if (pos != std::string::npos)
+  {
     encodedRoomId.replace(pos, 1, "%3A");
+  }
   pos = encodedRoomId.find('!');
   if (pos != std::string::npos)
+  {
     encodedRoomId.replace(pos, 1, "%21");
+  }
 
   return encodedRoomId;
 }
@@ -580,7 +589,9 @@ bool Matrix::sendImage(const std::string& roomId, const std::string& mxcUri, con
 std::optional<int64_t> Matrix::getUploadLimit()
 {
   if (!isLoggedIn())
+  {
     return std::optional<int64_t>();
+  }
 
   Curly curl;
   curl.setURL(conf.homeServer() + "/_matrix/media/r0/config");
@@ -653,7 +664,9 @@ std::optional<std::string> Matrix::getSynapseVersion()
 std::optional<std::string> Matrix::uploadString(const std::string& data, const std::string& contentType, const std::string& fileName)
 {
   if (!isLoggedIn())
+  {
     return std::optional<std::string>();
+  }
 
   std::string encodedFileName;
   try
@@ -714,13 +727,19 @@ std::string extract_file_name_from_url(const std::string& url)
   std::string fileName;
   std::string::size_type pos = url.rfind('/');
   if ((pos != std::string::npos) && (url.size() > pos + 1))
+  {
     fileName = url.substr(pos + 1);
+  }
   else
+  {
     fileName = "image.data";
+  }
 
   pos = fileName.rfind('?');
   if ((pos != std::string::npos) && (pos > 3))
+  {
     fileName.erase(pos);
+  }
 
   return fileName;
 }
@@ -746,11 +765,17 @@ std::optional<std::string> Matrix::uploadImage(const std::string& imgUrl)
 
   std::string contentType("application/octet-stream");
   if (endsWith(imgUrl, ".png"))
+  {
     contentType = "image/png";
+  }
   else if (endsWith(imgUrl, ".jpg") || endsWith(imgUrl, ".jpeg"))
+  {
     contentType = "image/jpeg";
+  }
   else if (endsWith(imgUrl, ".gif") || (imgUrl.find(".gif") != std::string::npos))
+  {
     contentType = "image/gif";
+  }
 
   const std::string fileName = extract_file_name_from_url(imgUrl);
 
@@ -763,7 +788,9 @@ std::optional<std::string> Matrix::uploadImage(const std::string& imgUrl)
 std::optional<std::string> Matrix::encryptionAlgorithm(const std::string& roomId)
 {
   if (!isLoggedIn())
+  {
     return std::optional<std::string>();
+  }
 
   const auto encodedRoomId = encodeRoomId(roomId);
   Curly curl;

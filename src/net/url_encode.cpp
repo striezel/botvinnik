@@ -28,7 +28,9 @@ namespace bvn
 std::string urlencode(const std::string_view& str)
 {
   if (str.empty())
+  {
     return "";
+  }
 
   // The easiest way to encode a string is to fire up a curl_easy instance and
   // let it do the work. It may not be the fastest way, though, because a new
