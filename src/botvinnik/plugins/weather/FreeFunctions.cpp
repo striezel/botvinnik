@@ -19,6 +19,7 @@
 */
 
 #include "FreeFunctions.hpp"
+#include <cmath>
 #include <unordered_map>
 
 namespace bvn::weather
@@ -62,6 +63,32 @@ std::string wmo_code_to_text(const int code)
     return "Unknown weather condition (code " + std::to_string(code) + ")";
   }
   return iter->second;
+}
+
+std::string wind_direction_to_text(const double direction)
+{
+  if ((direction > 360.0) || (direction < 0.0) || std::isnan(direction))
+  {
+    return "";
+  }
+
+  // 0° = N, 90° = E, 180° = S, 270° = W
+  if ((direction < 22.5) || (direction >= 337.5))
+    return "N";
+  if (direction < 67.5)
+    return "NE";
+  if (direction < 112.5)
+    return "E";
+  if (direction < 157.5)
+    return "SE";
+  if (direction < 202.5)
+    return "S";
+  if (direction < 247.5)
+    return "SW";
+  if (direction < 292.5)
+    return "W";
+  else // direction < 337.5
+    return "NW";
 }
 
 } // namespace

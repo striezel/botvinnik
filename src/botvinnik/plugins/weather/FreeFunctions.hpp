@@ -34,6 +34,14 @@ namespace bvn::weather
  */
 std::string wmo_code_to_text(const int code);
 
+/** \brief Translates wind direction in degrees to text for humans.
+ *
+ * \param direction   wind direction in degrees, with 0=N, 90=E, 180=S, 270=W
+ * \return Returns a description of the wind direction, e. g. "N" for zero degrees.
+ *         Returns an empty string, if direction is not within [0.0;360.0].
+ */
+std::string wind_direction_to_text(const double direction);
+
 } // namespace
 
 #endif // BVN_PLUGIN_WEATHER_FREE_FUNCTIONS_HPP
