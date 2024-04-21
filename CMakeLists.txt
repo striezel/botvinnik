@@ -64,7 +64,8 @@ if (ENABLE_SANITIZER)
   endif()
   message(STATUS "Enabling address sanitizer and the undefined behaviour sanitizer.")
   add_compile_options(-fsanitize=address -fno-omit-frame-pointer
-                      -fsanitize=undefined -fno-sanitize-recover=all)
+                      -fsanitize=undefined -fno-sanitize-recover=all
+                      -g)
   link_libraries(-fsanitize=address -fno-omit-frame-pointer
                  -fsanitize=undefined -fno-sanitize-recover=all)
 endif (ENABLE_SANITIZER)
