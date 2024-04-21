@@ -10,7 +10,7 @@ set(test_urlencode_sources
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_definitions (-Wall -Wextra -Wpedantic -pedantic-errors -Wshadow -fexceptions)
-    if (CODE_COVERAGE)
+    if (CODE_COVERAGE OR ENABLE_SANITIZER)
         add_definitions (-O0)
     else ()
         add_definitions (-O2)
