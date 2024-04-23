@@ -66,7 +66,7 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
     return Message("Could get weather data for '" + location.value().name + "'.");
   }
 
-  const WeatherData& data = weather.value();
+  const CurrentData& data = weather.value();
   return Message("Weather for " + location.value().display_name + "\n"
       + weather::wmo_code_to_icon(data.weather_code) + " "
       + weather::wmo_code_to_text(data.weather_code) + ", "

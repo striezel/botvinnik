@@ -28,7 +28,7 @@
 namespace bvn
 {
 
-nonstd::expected<WeatherData, std::string> OpenMeteo::get_weather(const Location& location)
+nonstd::expected<CurrentData, std::string> OpenMeteo::get_weather(const Location& location)
 {
   if (std::isnan(location.latitude) || std::isnan(location.longitude))
   {
@@ -51,7 +51,7 @@ nonstd::expected<WeatherData, std::string> OpenMeteo::get_weather(const Location
   return parse_response(response);
 }
 
-nonstd::expected<WeatherData, std::string> OpenMeteo::parse_response(const std::string& response)
+nonstd::expected<CurrentData, std::string> OpenMeteo::parse_response(const std::string& response)
 {
   simdjson::dom::parser parser;
   simdjson::dom::element doc;
@@ -72,7 +72,7 @@ nonstd::expected<WeatherData, std::string> OpenMeteo::parse_response(const std::
   error = doc.at_pointer("/current").get(current);
   if (error || (current.type() != simdjson::dom::element_type::OBJECT))
   {
-    return nonstd::make_unexpected("Open-Meteo request returned invalid JSON: 'current' element is missing not an object!");
+    return nonstd::make_unexpected("Open-Meteo request returned invalid JSON: 'current' element is missing or not an object!");
   }
 
   simdjson::dom::element element;
@@ -81,7 +81,7 @@ nonstd::expected<WeatherData, std::string> OpenMeteo::parse_response(const std::
   {
     return nonstd::make_unexpected("Open-Meteo request returned invalid JSON: temperature_2m element is missing or not a floating-point number!");
   }
-  WeatherData data;
+  CurrentData data;
   data.temperature_celsius = element.get<double>().value();
 
   error = current["apparent_temperature"].get(element);

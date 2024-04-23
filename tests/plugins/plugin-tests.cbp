@@ -70,6 +70,8 @@
 		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/World.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/corona/World.hpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/CurrentData.cpp" />
+		<Unit filename="../../src/botvinnik/plugins/weather/CurrentData.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/ForecastData.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/ForecastData.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/FreeFunctions.cpp" />
@@ -86,8 +88,6 @@
 		<Unit filename="../../src/botvinnik/plugins/weather/OpenMeteo.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/Weather.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/Weather.hpp" />
-		<Unit filename="../../src/botvinnik/plugins/weather/WeatherData.cpp" />
-		<Unit filename="../../src/botvinnik/plugins/weather/WeatherData.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/Xkcd.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/xkcd/XkcdData.cpp" />
@@ -148,6 +148,7 @@
 		<Unit filename="core/Rooms.cpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="pluginRegistration.cpp" />
+		<Unit filename="weather/CurrentData.cpp" />
 		<Unit filename="weather/ForecastData.cpp" />
 		<Unit filename="weather/FreeFunctions.cpp" />
 		<Unit filename="weather/Location.cpp" />
@@ -156,7 +157,6 @@
 		<Unit filename="weather/LocationLookupOpenStreetMap.cpp" />
 		<Unit filename="weather/OpenMeteo.cpp" />
 		<Unit filename="weather/Weather.cpp" />
-		<Unit filename="weather/WeatherData.cpp" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

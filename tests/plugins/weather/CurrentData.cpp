@@ -1,6 +1,6 @@
 /*
  -------------------------------------------------------------------------------
-    This file is part of the botvinnik Matrix bot.
+    This file is part of the test suite for botvinnik.
     Copyright (C) 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
@@ -18,29 +18,25 @@
  -------------------------------------------------------------------------------
 */
 
-#ifndef BVN_PLUGIN_WEATHER_WEATHERDATA_HPP
-#define BVN_PLUGIN_WEATHER_WEATHERDATA_HPP
+#include "../../locate_catch.hpp"
+#include <cmath>
+#include "../../../src/botvinnik/plugins/weather/CurrentData.hpp"
 
-#include <string>
-
-namespace bvn
+TEST_CASE("plugin Weather: CurrentData")
 {
+  using namespace bvn;
 
-/// Contains basic weather data.
-struct WeatherData
-{
-  WeatherData();
+  SECTION("constructor")
+  {
+    CurrentData data;
 
-  double temperature_celsius;  /**< temperature in degrees Celsius */
-  double apparent_temperature; /**< apparent temperature in °C */
-  int relative_humidity;       /**< relativ humidity in percent */
-  int weather_code;            /**< WMO weather code */
-  double wind_speed;           /**< wind speed in km/h */
-  double wind_direction;       /**< direction of wind in degrees, with 0=N, 90=E, 180=S, 270=W */
-  double pressure;             /**< air pressure in hPa */
-  double precipitation;        /**< precipitation in millimeters */
-}; // struct
-
-} // namespace
-
-#endif // BVN_PLUGIN_WEATHER_WEATHERDATA_HPP
+    REQUIRE( std::isnan(data.temperature_celsius) );
+    REQUIRE( std::isnan(data.apparent_temperature) );
+    REQUIRE( data.relative_humidity == -1 );
+    REQUIRE( data.weather_code == -1 );
+    REQUIRE( std::isnan(data.wind_speed) );
+    REQUIRE( std::isnan(data.wind_direction) );
+    REQUIRE( std::isnan(data.pressure) );
+    REQUIRE( std::isnan(data.precipitation) );
+  }
+}

@@ -18,14 +18,14 @@
  -------------------------------------------------------------------------------
 */
 
-#include "WeatherData.hpp"
+#include "CurrentData.hpp"
 #include <cmath>
 #include <limits>
 
 namespace bvn
 {
 
-WeatherData::WeatherData()
+CurrentData::CurrentData()
 : temperature_celsius(std::numeric_limits<double>::quiet_NaN()),
   apparent_temperature(std::numeric_limits<double>::quiet_NaN()),
   relative_humidity(-1),

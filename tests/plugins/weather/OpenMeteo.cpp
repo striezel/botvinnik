@@ -146,7 +146,7 @@ TEST_CASE("plugin Weather: weather data from Open-Meteo")
 
       const auto data = OpenMeteo::parse_response(json);
       REQUIRE_FALSE( data.has_value() );
-      REQUIRE( data.error() == "Open-Meteo request returned invalid JSON: 'current' element is missing not an object!" );
+      REQUIRE( data.error() == "Open-Meteo request returned invalid JSON: 'current' element is missing or not an object!" );
     }
 
     SECTION("failure: current element is missing")
@@ -169,7 +169,7 @@ TEST_CASE("plugin Weather: weather data from Open-Meteo")
 
       const auto data = OpenMeteo::parse_response(json);
       REQUIRE_FALSE( data.has_value() );
-      REQUIRE( data.error() == "Open-Meteo request returned invalid JSON: 'current' element is missing not an object!" );
+      REQUIRE( data.error() == "Open-Meteo request returned invalid JSON: 'current' element is missing or not an object!" );
     }
 
     SECTION("failure: temperature_2m element is missing")

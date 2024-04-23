@@ -24,7 +24,7 @@
 #include <string>
 #include "../../../../third-party/nonstd/expected.hpp"
 #include "Location.hpp"
-#include "WeatherData.hpp"
+#include "CurrentData.hpp"
 
 namespace bvn
 {
@@ -40,7 +40,7 @@ class OpenMeteo
      * \return Returns the weather data for the location in case of success.
      *         Returns a string containing an error message in case of failure.
      */
-    static nonstd::expected<WeatherData, std::string> get_weather(const Location& location);
+    static nonstd::expected<CurrentData, std::string> get_weather(const Location& location);
 
 
     /** \brief Parses the JSON from an API response.
@@ -49,7 +49,7 @@ class OpenMeteo
      * \return Returns the parsed data for the location in case of success.
      *         Returns a string containing an error message in case of failure.
      */
-    static nonstd::expected<WeatherData, std::string> parse_response(const std::string& response);
+    static nonstd::expected<CurrentData, std::string> parse_response(const std::string& response);
 }; // class
 
 } // namespace
