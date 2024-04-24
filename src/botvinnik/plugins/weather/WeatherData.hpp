@@ -32,7 +32,6 @@ namespace bvn
 struct WeatherData
 {
   WeatherData();
-  WeatherData(CurrentData&& cur, std::vector<ForecastData>&& fore);
 
   CurrentData current;  /**< current weather data */
   std::vector<ForecastData> forecast; /**< forecast data */

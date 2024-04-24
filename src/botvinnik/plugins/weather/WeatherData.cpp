@@ -29,10 +29,4 @@ WeatherData::WeatherData()
 {
 }
 
-WeatherData::WeatherData(CurrentData&& cur, std::vector<ForecastData>&& fore)
-: current(cur),
-  forecast(fore)
-{
-}
-
 } // namespace
