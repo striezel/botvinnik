@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -78,14 +78,14 @@ Message Ping::handleCommand(const std::string_view& command,
     {
       msg.body += std::string("\n\nThis ping seems to be rather high. It may")
                + " be that you are using Synapse 1.62.0 or later as homeserver."
-               + " This versions may possibly cache requests for two minutes by"
+               + " This version may possibly cache requests for two minutes by"
                + " default, making the bot very slow to respond. If that is "
                + "the case, the server administrator should lower the setting\n\n"
                + "    sync_response_cache_duration\n\n"
                + "in the homeserver configuration.";
       msg.formatted_body += std::string("<br />\n<br />\nThis ping seems to ")
                + "be rather high. It may be that you are using Synapse 1.62.0"
-               + " or later as homeserver. This versions may possibly cache "
+               + " or later as homeserver. This version may possibly cache "
                + "requests for two minutes by default, making the bot very "
                + "slow to respond. If that is the case, the server "
                + "administrator should lower the setting<br />\n<br />\n"

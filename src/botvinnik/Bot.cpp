@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -201,7 +201,7 @@ void Bot::checkServerVersion()
   if (version.value() >= "1.62.0")
   {
     std::clog << "Warning: Matrix homeserver is Synapse 1.62.0 or later.\n"
-              << "This versions may possibly cache requests for two minutes by"
+              << "This version may possibly cache requests for two minutes by"
               << " default, making the bot very slow to respond. If that is "
               << "the case, the server administrator should lower the setting\n\n"
               << "    sync_response_cache_duration\n\n"
