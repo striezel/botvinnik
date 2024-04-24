@@ -28,6 +28,7 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/weather/LocationLookupOpenStreetMap.cpp
     ../../src/botvinnik/plugins/weather/OpenMeteo.cpp
     ../../src/botvinnik/plugins/weather/Weather.cpp
+    ../../src/botvinnik/plugins/weather/WeatherData.cpp
     ../../src/botvinnik/plugins/Wikipedia.cpp
     ../../src/botvinnik/plugins/xkcd/Xkcd.cpp
     ../../src/botvinnik/plugins/xkcd/XkcdData.cpp

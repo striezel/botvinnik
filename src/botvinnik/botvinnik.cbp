@@ -121,6 +121,8 @@
 		<Unit filename="plugins/corona/World.hpp" />
 		<Unit filename="plugins/weather/CurrentData.cpp" />
 		<Unit filename="plugins/weather/CurrentData.hpp" />
+		<Unit filename="plugins/weather/ForecastData.cpp" />
+		<Unit filename="plugins/weather/ForecastData.hpp" />
 		<Unit filename="plugins/weather/FreeFunctions.cpp" />
 		<Unit filename="plugins/weather/FreeFunctions.hpp" />
 		<Unit filename="plugins/weather/Location.cpp" />
@@ -135,6 +137,8 @@
 		<Unit filename="plugins/weather/OpenMeteo.hpp" />
 		<Unit filename="plugins/weather/Weather.cpp" />
 		<Unit filename="plugins/weather/Weather.hpp" />
+		<Unit filename="plugins/weather/WeatherData.cpp" />
+		<Unit filename="plugins/weather/WeatherData.hpp" />
 		<Unit filename="plugins/xkcd/Xkcd.cpp" />
 		<Unit filename="plugins/xkcd/Xkcd.hpp" />
 		<Unit filename="plugins/xkcd/XkcdData.cpp" />

@@ -23,8 +23,9 @@
 
 #include <string>
 #include "../../../../third-party/nonstd/expected.hpp"
+#include "../../../../third-party/simdjson/simdjson.h"
 #include "Location.hpp"
-#include "CurrentData.hpp"
+#include "WeatherData.hpp"
 
 namespace bvn
 {
@@ -40,7 +41,7 @@ class OpenMeteo
      * \return Returns the weather data for the location in case of success.
      *         Returns a string containing an error message in case of failure.
      */
-    static nonstd::expected<CurrentData, std::string> get_weather(const Location& location);
+    static nonstd::expected<WeatherData, std::string> get_weather(const Location& location);
 
 
     /** \brief Parses the JSON from an API response.
@@ -49,7 +50,25 @@ class OpenMeteo
      * \return Returns the parsed data for the location in case of success.
      *         Returns a string containing an error message in case of failure.
      */
-    static nonstd::expected<CurrentData, std::string> parse_response(const std::string& response);
+    static nonstd::expected<WeatherData, std::string> parse_response(const std::string& response);
+
+
+    /** \brief Extracts the current weather data from an API response's JSON.
+     *
+     * \param doc    the root element of the JSON document from the API response
+     * \return Returns current weather data in case of success.
+     *         Returns a string containing an error message in case of failure.
+     */
+    static nonstd::expected<CurrentData, std::string> parse_current_data(const simdjson::dom::element& doc);
+
+
+    /** \brief Extracts the forecast weather data from an API response's JSON.
+     *
+     * \param doc    the root element of the JSON document from the API response
+     * \return Returns forecast weather data (possibly for several days) in case of success.
+     *         Returns a string containing an error message in case of failure.
+     */
+    static nonstd::expected<std::vector<ForecastData>, std::string> parse_forecast_data(const simdjson::dom::element& doc);
 }; // class
 
 } // namespace
