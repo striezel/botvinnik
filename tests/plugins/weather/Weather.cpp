@@ -82,8 +82,36 @@ TEST_CASE("plugin Weather")
     {
       // Answer to commands must not be empty.
       const auto message = cmd + " Berlin";
-      REQUIRE_FALSE( plugin.handleCommand(cmd, message, mockUserId, mockRoomId, ts).body.empty() );
-      REQUIRE_FALSE( plugin.handleCommand(cmd, message, mockUserId, mockRoomId, ts).formatted_body.empty() );
+      const auto response = plugin.handleCommand(cmd, message, mockUserId, mockRoomId, ts);
+      REQUIRE_FALSE( response.body.empty() );
+      REQUIRE_FALSE( response.formatted_body.empty() );
+    }
+  }
+
+  SECTION("command handler: return error message when no location is given")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    for (const auto& cmd : commands)
+    {
+      const auto response = plugin.handleCommand(cmd, cmd, mockUserId, mockRoomId, ts);
+      REQUIRE_FALSE( response.body.empty() );
+      REQUIRE( response.body.find("Please enter a location") != std::string::npos );
+    }
+  }
+
+  SECTION("command handler: return error message when location cannot be found")
+  {
+    const std::string_view mockUserId = "@alice:bob.charlie.tld";
+    const std::string_view mockRoomId = "!AbcDeFgHiJk345:bob.charlie.tld";
+    const milliseconds ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    for (const auto& cmd : commands)
+    {
+      const auto message = cmd + " This location does not exist";
+      const auto response = plugin.handleCommand(cmd, message, mockUserId, mockRoomId, ts);
+      REQUIRE_FALSE( response.body.empty() );
+      REQUIRE( response.body.find("Could not find a geographical location named") != std::string::npos );
     }
   }
 
