@@ -6,7 +6,7 @@ show the current weather and weather forecast for given locations, get extracts
 from Wikipedia articles or show a random xkcd comic, just to name a few
 examples.
 
-See the [documentation](doc/getting-started.md) for more information on how to
+See the [documentation](doc/getting-started.md) for information on how to
 get started with the bot.
 
 _Note: So far the bot it has only been tested against the
