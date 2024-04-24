@@ -209,4 +209,4 @@ certain period of time. So please do not spam bot commands.
   version 0.1.10_.
 * `!weather` - _(since version 0.9.3)_ displays weather data for a given
   location. For example, `!weather Berlin` will show the current weather in
-  Berlin, Germany.
+  Berlin, Germany, as well as a forecast for the next few days.

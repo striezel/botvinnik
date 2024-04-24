@@ -66,8 +66,9 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
     return Message("Could get weather data for '" + location.value().name + "'.");
   }
 
+  // add current weather data
   const CurrentData& data = weather.value().current;
-  return Message("Weather for " + location.value().display_name + "\n"
+  Message msg = Message("Weather for " + location.value().display_name + "\n"
       + weather::wmo_code_to_icon(data.weather_code) + " "
       + weather::wmo_code_to_text(data.weather_code) + ", "
       + doubleToString(data.temperature_celsius) + " °C, feels like "
@@ -78,7 +79,7 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
                  + " " + weather::wind_direction_to_text(data.wind_direction) + "\n"
       + "Pressure: " + doubleToString(data.pressure) + " hPa\n"
       + "Precipitation: " + doubleToString(data.precipitation) + " mm\n\n"
-      + "Weather data by Open-Meteo.com <https://open-meteo.com/>",
+      + "Forecast:",
       "<strong>Weather for " + location.value().display_name + "</strong><br />\n"
       + weather::wmo_code_to_icon(data.weather_code) + " "
       + weather::wmo_code_to_text(data.weather_code) + ", "
@@ -90,7 +91,24 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
                  + " " + weather::wind_direction_to_text(data.wind_direction) + "<br />\n"
       + "Pressure: " + doubleToString(data.pressure) + " hPa<br />\n"
       + "Precipitation: " + doubleToString(data.precipitation) + " mm<br />\n<br />\n"
-      + "<a href=\"https://open-meteo.com/\">Weather data by Open-Meteo.com</a>");
+      + "<strong>Forecast:</strong>");
+  // add forecast weather data
+  const std::string spacer{"&emsp;&emsp;"};
+  for (const auto& elem: weather.value().forecast)
+  {
+    msg.body.append("\n" + elem.date + ":\t" + doubleToString(elem.temperature_min)
+                    + " °C / " + doubleToString(elem.temperature_max) + " °C\t"
+                    + weather::wmo_code_to_icon(data.weather_code) + " "
+                    + weather::wmo_code_to_text(data.weather_code));
+    msg.formatted_body.append("<br />\n" + elem.date + ":" + spacer + doubleToString(elem.temperature_min)
+                    + " °C / " + doubleToString(elem.temperature_max) + " °C"
+                    + spacer + weather::wmo_code_to_icon(data.weather_code)
+                     + " " + weather::wmo_code_to_text(data.weather_code));
+  }
+  // add Open-Meteo attribution
+  msg.body.append("\n\nWeather data by Open-Meteo.com <https://open-meteo.com/>");
+  msg.formatted_body.append("<br />\n<br />\n<a href=\"https://open-meteo.com/\">Weather data by Open-Meteo.com</a>");
+  return msg;
 }
 
 std::string Weather::helpOneLine(const std::string_view& command) const
@@ -110,9 +128,11 @@ Message Weather::helpExtended(const std::string_view& command, const std::string
   if (command == "weather")
   {
     return Message("displays weather data for a given location. For example, `"s
-        .append(prefix) + "weather Berlin` will show the current weather in Berlin, Germany.",
+        .append(prefix) + "weather Berlin` will show the current weather in "
+        + "Berlin, Germany, as well as a forecast for the next few days.",
         "displays weather data for a given location. For example, <code>"s
-        .append(prefix) + "weather Berlin</code> will show the current weather in Berlin, Germany.");
+        .append(prefix) + "weather Berlin</code> will show the current weather"
+        + " in Berlin, Germany, as well as a forecast for the next few days.");
   }
 
   return Message();
