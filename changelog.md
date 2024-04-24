@@ -6,6 +6,10 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2024-04-??)
 
+* __[fix]__
+  The bot will now handle configuration files with Windows-style line endings
+  (carriage return and line feed) containing empty lines properly.
+
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.8.0 to version 3.9.1.

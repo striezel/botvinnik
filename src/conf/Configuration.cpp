@@ -195,17 +195,16 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
   while (std::getline(stream, line))
   {
     trim(line);
+    // check for possible carriage return at end (happens on Windows systems)
+    if (!line.empty() && (line[line.size() - 1] == '\r'))
+    {
+      line.erase(line.size() - 1);
+    }
     // skip empty lines and comment lines
     if (line.empty() || line[0] == commentCharacter)
     {
       continue;
     }
-
-    // check for possible carriage return at end (happens on Windows systems)
-    if (line.at(line.length() - 1) == '\r')
-    {
-      line.erase(line.length() - 1);
-    } // if
 
     const auto sepPos = line.find('=');
     if (sepPos == std::string::npos)

@@ -179,6 +179,54 @@ TEST_CASE("Configuration")
       REQUIRE( conf.gifApiKey().empty() );
     }
 
+    SECTION("load minimal example configuration file with CRLF line terminators")
+    {
+      const std::filesystem::path path{"minimal-example-from-documentation-crlf.conf"};
+      const std::string content = "# Matrix server login settings\r\nmatrix.homeserver=https://matrix.example.tld/\r\nmatrix.userid=@alice:matrix.example.tld\r\nmatrix.password=secret, secret, top(!) secret\r\n# bot management settings\r\nbot.stop.allowed.userid=@bob:matrix.example.tld\r\n";
+      REQUIRE( writeConfiguration(path, content) );
+      FileGuard guard{path};
+
+      Configuration conf;
+      REQUIRE( conf.load(path.string()) );
+
+      REQUIRE( conf.homeServer() == "https://matrix.example.tld" );
+      REQUIRE( conf.userId() == "@alice:matrix.example.tld" );
+      REQUIRE( conf.password() == "secret, secret, top(!) secret" );
+      REQUIRE( conf.prefix() == "!" );
+      REQUIRE( conf.deactivatedCommands().empty() );
+      REQUIRE( conf.stopUsers().find("@alice:matrix.example.tld") != conf.stopUsers().end() );
+      REQUIRE( conf.stopUsers().find("@bob:matrix.example.tld") != conf.stopUsers().end() );
+      REQUIRE( conf.allowedFailures() == Configuration::default_allowed_failures );
+      REQUIRE( conf.syncDelay() == Configuration::default_sync_delay );
+      REQUIRE( conf.translationServer().empty() );
+      REQUIRE( conf.translationApiKey().empty() );
+      REQUIRE( conf.gifApiKey().empty() );
+    }
+
+    SECTION("load minimal configuration file with empty line and CRLF line terminators")
+    {
+      const std::filesystem::path path{"minimal-example-crlf-with-empty-line.conf"};
+      const std::string content = "matrix.homeserver=https://matrix.example.tld/\r\nmatrix.userid=@alice:matrix.example.tld\r\nmatrix.password=secret\r\n\r\nbot.stop.allowed.userid=@bob:matrix.example.tld";
+      REQUIRE( writeConfiguration(path, content) );
+      FileGuard guard{path};
+
+      Configuration conf;
+      REQUIRE( conf.load(path.string()) );
+
+      REQUIRE( conf.homeServer() == "https://matrix.example.tld" );
+      REQUIRE( conf.userId() == "@alice:matrix.example.tld" );
+      REQUIRE( conf.password() == "secret" );
+      REQUIRE( conf.prefix() == "!" );
+      REQUIRE( conf.deactivatedCommands().empty() );
+      REQUIRE( conf.stopUsers().find("@alice:matrix.example.tld") != conf.stopUsers().end() );
+      REQUIRE( conf.stopUsers().find("@bob:matrix.example.tld") != conf.stopUsers().end() );
+      REQUIRE( conf.allowedFailures() == Configuration::default_allowed_failures );
+      REQUIRE( conf.syncDelay() == Configuration::default_sync_delay );
+      REQUIRE( conf.translationServer().empty() );
+      REQUIRE( conf.translationApiKey().empty() );
+      REQUIRE( conf.gifApiKey().empty() );
+    }
+
     SECTION("invalid: multiple homeserver values")
     {
       const std::filesystem::path path{"multiple-homeservers.conf"};
