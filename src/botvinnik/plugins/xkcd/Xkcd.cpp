@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ namespace bvn
 {
 
 Xkcd::Xkcd(Matrix& mat)
-: mLatestNum(2865),
+: mLatestNum(2924),
   mLastUpdate(std::chrono::steady_clock::now() - std::chrono::hours(24)),
   theMatrix(mat)
 {
