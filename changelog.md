@@ -6,6 +6,15 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2024-04-??)
 
+* __[new feature]__
+  The new `!weather` command is introduced. It can show the current weather and
+  a weather forecast for the next few days for given locations. For example,
+  `!weather Berlin` will show the current weather in Berlin, Germany, as well as
+  a forecast for the next few days.
+
+  The weather data for that command is provided by
+  [Open-Meteo.com](https://open-meteo.com/).
+
 * __[fix]__
   The bot will now handle configuration files with Windows-style line endings
   (carriage return and line feed) containing empty lines properly.
