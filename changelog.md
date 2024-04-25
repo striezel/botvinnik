@@ -4,6 +4,12 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2024-04-??)
+
+* __[fix]__
+  Fix a bug where the `!weather` command would always show the wrong weather
+  condition (icon + description) in the forecast part.
+
 ## Version 0.9.3 (2024-04-24)
 
 * __[new feature]__

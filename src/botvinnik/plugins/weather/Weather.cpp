@@ -98,12 +98,12 @@ Message Weather::handleCommand(const std::string_view& command, const std::strin
   {
     msg.body.append("\n" + elem.date + ":\t" + doubleToString(elem.temperature_min)
                     + " °C / " + doubleToString(elem.temperature_max) + " °C\t"
-                    + weather::wmo_code_to_icon(data.weather_code) + " "
-                    + weather::wmo_code_to_text(data.weather_code));
+                    + weather::wmo_code_to_icon(elem.weather_code) + " "
+                    + weather::wmo_code_to_text(elem.weather_code));
     msg.formatted_body.append("<br />\n" + elem.date + ":" + spacer + doubleToString(elem.temperature_min)
                     + " °C / " + doubleToString(elem.temperature_max) + " °C"
-                    + spacer + weather::wmo_code_to_icon(data.weather_code)
-                     + " " + weather::wmo_code_to_text(data.weather_code));
+                    + spacer + weather::wmo_code_to_icon(elem.weather_code)
+                     + " " + weather::wmo_code_to_text(elem.weather_code));
   }
   // add Open-Meteo attribution
   msg.body.append("\n\nWeather data by Open-Meteo.com <https://open-meteo.com/>");
