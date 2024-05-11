@@ -19,6 +19,7 @@
 */
 
 #include "../locate_catch.hpp"
+#include <algorithm>
 #include "../../src/botvinnik/Bot.hpp"
 #include "../../src/conf/Configuration.hpp"
 #include "../../src/botvinnik/plugins/Giphy.hpp"
