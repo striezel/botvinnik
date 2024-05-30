@@ -5,7 +5,7 @@ on: push
 jobs:
   alpine:
     runs-on: ubuntu-22.04
-    container: alpine:latest
+    container: 'alpine:3.20'
     steps:
       - name: Install and prepare Git
         run: |
@@ -35,8 +35,8 @@ jobs:
       - name: Install statically linked libraries
         run: |
           apk add brotli-static c-ares-static curl-static libidn2-static
-          apk add libunistring-static nghttp2-static openssl-libs-static
-          apk add sqlite-static zlib-static
+          apk add libpsl-static libunistring-static nghttp2-static
+          apk add openssl-libs-static sqlite-static zlib-static zstd-static
       - name: Build statically linked executable
         run: |
           cd "$GITHUB_WORKSPACE"
