@@ -30,6 +30,17 @@ jobs:
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-sqlite3
+      - name: Switch to working version of curl
+        run: |
+          # The current newest packaged version 8.8.0-8 of mingw-w64-x86_64-curl-winssl
+          # causes some problems with static linking, so we downgrade to a known
+          # working version of curl until the issue is fixed. For related
+          # information see <https://github.com/msys2/MINGW-packages/issues/21028>.
+          export MSYSTEM=MINGW64
+          curl -L -O https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-curl-winssl-8.8.0-2-any.pkg.tar.zst
+          sha256sum --check ci/curl-winssl.sha256
+          pacman -U --noconfirm mingw-w64-x86_64-curl-winssl-8.8.0-2-any.pkg.tar.zst
+          unlink mingw-w64-x86_64-curl-winssl-8.8.0-2-any.pkg.tar.zst
       - name: Build
         run: |
           export MSYSTEM=MINGW64
