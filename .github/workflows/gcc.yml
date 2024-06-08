@@ -18,6 +18,10 @@ jobs:
             os: ubuntu-22.04
           - version: 12
             os: ubuntu-22.04
+          - version: 13
+            os: ubuntu-24.04
+          - version: 14
+            os: ubuntu-24.04
     runs-on: ${{ matrix.os }}
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE.
