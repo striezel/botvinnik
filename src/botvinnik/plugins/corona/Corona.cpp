@@ -371,13 +371,11 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
   std::string lastGeoId;
   int64_t countryId = -1;
 
-  unsigned long int lineCount = 0;
   std::string batch;
   unsigned int batchCount = 0;
   batch.reserve(160000);
   while (std::getline(stream, line))
   {
-    ++lineCount;
     if (line.empty())
     {
       continue;
