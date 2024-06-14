@@ -33,7 +33,7 @@ struct CurrentData
 
   double temperature_celsius;  /**< temperature in degrees Celsius */
   double apparent_temperature; /**< apparent temperature in °C */
-  int relative_humidity;       /**< relativ humidity in percent */
+  int relative_humidity;       /**< relative humidity in percent */
   int weather_code;            /**< WMO weather code */
   double wind_speed;           /**< wind speed in km/h */
   double wind_direction;       /**< direction of wind in degrees, with 0=N, 90=E, 180=S, 270=W */
