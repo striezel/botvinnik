@@ -11,7 +11,7 @@ Currently, the following libraries are here:
   by Niels Lohmann <http://nlohmann.me>,
   licensed under the MIT License <http://opensource.org/licenses/MIT>
 
-* **simdjson**: simdjson: parsing gigabytes of JSON per second, version 3.9.4,
+* **simdjson**: simdjson: parsing gigabytes of JSON per second, version 3.9.5,
   by Daniel Lemire <https://github.com/simdjson/simdjson>,
   licensed under the Apache License 2.0 <https://opensource.org/licenses/Apache-2.0>
 
