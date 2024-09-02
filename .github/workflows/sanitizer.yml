@@ -8,8 +8,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - version: 12
-            os: ubuntu-22.04
+          - version: 14
+            os: ubuntu-24.04
     runs-on: ${{ matrix.os }}
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE.
@@ -17,7 +17,7 @@ jobs:
       - name: Install Debian packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y catch cmake fortune-mod fortunes-min g++-${{ matrix.version }} git libcurl4-gnutls-dev libsqlite3-dev pkg-config
+          sudo apt-get install -y catch2 cmake fortune-mod fortunes-min g++-${{ matrix.version }} git libcurl4-gnutls-dev libsqlite3-dev pkg-config
           sudo apt-get install -y libasan8 libubsan1
       - name: Build with GNU GCC ${{ matrix.version }} and sanitizers enabled
         run: |
