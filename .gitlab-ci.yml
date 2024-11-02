@@ -1,8 +1,8 @@
 docker_image_gcc:
-  image: docker:20
+  image: docker:27
   stage: build
   services:
-    - docker:20-dind
+    - docker:27-dind
   script:
     - cd ci/
     - docker build -t $CI_REGISTRY/striezel/botvinnik/gcc:deb12 . -f Dockerfile_gcc
@@ -38,10 +38,10 @@ build_gcc:
     - ctest -V
 
 docker_image_clang:
-  image: docker:20
+  image: docker:27
   stage: build
   services:
-    - docker:20-dind
+    - docker:27-dind
   script:
     - cd ci/
     - docker build -t $CI_REGISTRY/striezel/botvinnik/clang:deb12 . -f Dockerfile_clang
@@ -77,10 +77,10 @@ build_clang:
     - ctest -V
 
 docker_image_coverage:
-  image: docker:20
+  image: docker:27
   stage: build
   services:
-    - docker:20-dind
+    - docker:27-dind
   script:
     - cd ci/
     - docker build -t $CI_REGISTRY/striezel/botvinnik/coverage:latest . -f Dockerfile_coverage
