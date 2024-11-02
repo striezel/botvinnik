@@ -23,10 +23,10 @@ jobs:
           - version: 13
             os: ubuntu-22.04
           - version: 14
-            os: ubuntu-22.04
-          - version: 15
             os: ubuntu-24.04
           - version: 16
+            os: ubuntu-24.04
+          - version: 18
             os: ubuntu-24.04
     runs-on: ${{ matrix.os }}
     steps:
