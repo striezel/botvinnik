@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.8...3.31)
 
 # test binary for URL-encoding
 project(test_urlencode)

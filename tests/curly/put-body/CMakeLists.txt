@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.8...3.31)
 
 # test binary for Curly PUT request with predefined body
 project(test_curly_put_body)
