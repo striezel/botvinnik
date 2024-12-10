@@ -1,4 +1,4 @@
-/* auto-generated on 2024-12-07 11:12:25 -0500. Do not edit! */
+/* auto-generated on 2024-12-09 21:36:12 -0500. Do not edit! */
 /* including simdjson.cpp:  */
 /* begin file simdjson.cpp */
 #define SIMDJSON_SRC_SIMDJSON_CPP
@@ -2736,14 +2736,14 @@ namespace details {
     };                                                                         \
   };
 
-SIMDJSON_IMPL_CONCEPT(emplace_back, emplace_back);
-SIMDJSON_IMPL_CONCEPT(emplace, emplace);
-SIMDJSON_IMPL_CONCEPT(push_back, push_back);
-SIMDJSON_IMPL_CONCEPT(add, add);
-SIMDJSON_IMPL_CONCEPT(push, push);
-SIMDJSON_IMPL_CONCEPT(append, append);
-SIMDJSON_IMPL_CONCEPT(insert, insert);
-SIMDJSON_IMPL_CONCEPT(op_append, operator+=);
+SIMDJSON_IMPL_CONCEPT(emplace_back, emplace_back)
+SIMDJSON_IMPL_CONCEPT(emplace, emplace)
+SIMDJSON_IMPL_CONCEPT(push_back, push_back)
+SIMDJSON_IMPL_CONCEPT(add, add)
+SIMDJSON_IMPL_CONCEPT(push, push)
+SIMDJSON_IMPL_CONCEPT(append, append)
+SIMDJSON_IMPL_CONCEPT(insert, insert)
+SIMDJSON_IMPL_CONCEPT(op_append, operator+=)
 
 #undef SIMDJSON_IMPL_CONCEPT
 } // namespace details
@@ -14165,6 +14165,7 @@ simdjson_warn_unused error_code dom_parser_implementation::stage2_next(dom::docu
   return stage2::tape_builder::parse_document<true>(*this, _doc);
 }
 
+SIMDJSON_NO_SANITIZE_MEMORY
 simdjson_warn_unused uint8_t *dom_parser_implementation::parse_string(const uint8_t *src, uint8_t *dst, bool allow_replacement) const noexcept {
   return arm64::stringparsing::parse_string(src, dst, allow_replacement);
 }
@@ -20392,6 +20393,7 @@ simdjson_warn_unused error_code dom_parser_implementation::stage2_next(dom::docu
   return stage2::tape_builder::parse_document<true>(*this, _doc);
 }
 
+SIMDJSON_NO_SANITIZE_MEMORY
 simdjson_warn_unused uint8_t *dom_parser_implementation::parse_string(const uint8_t *src, uint8_t *dst, bool replacement_char) const noexcept {
   return haswell::stringparsing::parse_string(src, dst, replacement_char);
 }
@@ -26646,6 +26648,7 @@ simdjson_warn_unused error_code dom_parser_implementation::stage2_next(dom::docu
   return stage2::tape_builder::parse_document<true>(*this, _doc);
 }
 
+SIMDJSON_NO_SANITIZE_MEMORY
 simdjson_warn_unused uint8_t *dom_parser_implementation::parse_string(const uint8_t *src, uint8_t *dst, bool replacement_char) const noexcept {
   return icelake::stringparsing::parse_string(src, dst, replacement_char);
 }
@@ -33070,6 +33073,7 @@ simdjson_warn_unused error_code dom_parser_implementation::stage2_next(dom::docu
   return stage2::tape_builder::parse_document<true>(*this, _doc);
 }
 
+SIMDJSON_NO_SANITIZE_MEMORY
 simdjson_warn_unused uint8_t *dom_parser_implementation::parse_string(const uint8_t *src, uint8_t *dst, bool replacement_char) const noexcept {
   return ppc64::stringparsing::parse_string(src, dst, replacement_char);
 }
@@ -40158,6 +40162,7 @@ simdjson_warn_unused error_code dom_parser_implementation::stage2_next(dom::docu
   return stage2::tape_builder::parse_document<true>(*this, _doc);
 }
 
+SIMDJSON_NO_SANITIZE_MEMORY
 simdjson_warn_unused uint8_t *dom_parser_implementation::parse_string(const uint8_t *src, uint8_t *dst, bool replacement_char) const noexcept {
   return westmere::stringparsing::parse_string(src, dst, replacement_char);
 }
@@ -46155,6 +46160,7 @@ simdjson_warn_unused error_code dom_parser_implementation::stage2_next(dom::docu
   return stage2::tape_builder::parse_document<true>(*this, _doc);
 }
 
+SIMDJSON_NO_SANITIZE_MEMORY
 simdjson_warn_unused uint8_t *dom_parser_implementation::parse_string(const uint8_t *src, uint8_t *dst, bool allow_replacement) const noexcept {
   return lsx::stringparsing::parse_string(src, dst, allow_replacement);
 }
@@ -52177,6 +52183,7 @@ simdjson_warn_unused error_code dom_parser_implementation::stage2_next(dom::docu
   return stage2::tape_builder::parse_document<true>(*this, _doc);
 }
 
+SIMDJSON_NO_SANITIZE_MEMORY
 simdjson_warn_unused uint8_t *dom_parser_implementation::parse_string(const uint8_t *src, uint8_t *dst, bool allow_replacement) const noexcept {
   return lasx::stringparsing::parse_string(src, dst, allow_replacement);
 }
@@ -56150,6 +56157,7 @@ simdjson_warn_unused error_code dom_parser_implementation::stage2_next(dom::docu
   return stage2::tape_builder::parse_document<true>(*this, _doc);
 }
 
+SIMDJSON_NO_SANITIZE_MEMORY
 simdjson_warn_unused uint8_t *dom_parser_implementation::parse_string(const uint8_t *src, uint8_t *dst, bool replacement_char) const noexcept {
   return fallback::stringparsing::parse_string(src, dst, replacement_char);
 }
