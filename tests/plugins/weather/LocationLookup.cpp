@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2024  Dirk Stolle
+    Copyright (C) 2024, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ TEST_CASE("plugin Weather: generic location lookup")
       REQUIRE( data.longitude <= 13.7 );
 
       REQUIRE( data.name == "Berlin" );
-      const bool match_OSM = data.display_name == "Berlin, Germany";
+      const bool match_OSM = data.display_name == "Berlin, Tempelhof-Schöneberg, Germany";
       const bool match_OpenMeteo = data.display_name == "Berlin, Land Berlin, Germany";
       const bool display_name_match = match_OSM || match_OpenMeteo;
       REQUIRE( display_name_match );
