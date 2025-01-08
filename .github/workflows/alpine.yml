@@ -19,7 +19,7 @@ jobs:
       - name: Install packages
         run: |
           apk update
-          apk add catch2 cmake curl-dev g++ git make pkgconf sqlite-dev
+          apk add catch2 cmake curl-dev fortune g++ git make pkgconf sqlite-dev
       - name: Build
         run: |
           cd "$GITHUB_WORKSPACE"
