@@ -37,20 +37,20 @@ TEST_CASE("plugin Weather: generic location lookup")
 
     SECTION("find existing location")
     {
-      const auto location = LocationLookup::find_location("Berlin");
+      const auto location = LocationLookup::find_location("Leipzig");
 
       REQUIRE( location.has_value() );
       const auto data = location.value();
 
-      REQUIRE( data.latitude >= 52.1 );
-      REQUIRE( data.latitude <= 52.9 );
+      REQUIRE( data.latitude >= 50.9 );
+      REQUIRE( data.latitude <= 51.7 );
 
-      REQUIRE( data.longitude >= 13.1 );
-      REQUIRE( data.longitude <= 13.7 );
+      REQUIRE( data.longitude >= 12.0 );
+      REQUIRE( data.longitude <= 12.6 );
 
-      REQUIRE( data.name == "Berlin" );
-      const bool match_OSM = data.display_name == "Berlin, Tempelhof-Schöneberg, Germany";
-      const bool match_OpenMeteo = data.display_name == "Berlin, Land Berlin, Germany";
+      REQUIRE( data.name == "Leipzig" );
+      const bool match_OSM = data.display_name == "Leipzig, Saxony, Germany";
+      const bool match_OpenMeteo = data.display_name == "Leipzig, Saxony, Germany";
       const bool display_name_match = match_OSM || match_OpenMeteo;
       REQUIRE( display_name_match );
     }

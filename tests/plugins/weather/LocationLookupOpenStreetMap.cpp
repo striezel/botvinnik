@@ -37,19 +37,19 @@ TEST_CASE("plugin Weather: location lookup via OpenStreetMap")
 
     SECTION("find existing location")
     {
-      const auto location = LocationLookupOpenStreetMap::find_location("Berlin");
+      const auto location = LocationLookupOpenStreetMap::find_location("Leipzig");
 
       REQUIRE( location.has_value() );
       const auto data = location.value();
 
-      REQUIRE( data.latitude >= 52.1 );
-      REQUIRE( data.latitude <= 52.9 );
+      REQUIRE( data.latitude >= 50.9 );
+      REQUIRE( data.latitude <= 51.7 );
 
-      REQUIRE( data.longitude >= 13.1 );
-      REQUIRE( data.longitude <= 13.7 );
+      REQUIRE( data.longitude >= 12.0 );
+      REQUIRE( data.longitude <= 12.6 );
 
-      REQUIRE( data.name == "Berlin" );
-      REQUIRE( data.display_name == "Berlin, Tempelhof-Schöneberg, Germany" );
+      REQUIRE( data.name == "Leipzig" );
+      REQUIRE( data.display_name == "Leipzig, Saxony, Germany" );
     }
 
     SECTION("find existing location, part 2")
