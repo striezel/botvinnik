@@ -6,6 +6,11 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2024-05-??)
 
+* __[change]__
+  The data source for the `!corona` command has been switched to the compact
+  COVID-19 dataset of Our World in Data. Reason for that switch is that the
+  previously used other dataset from Our World in Data no longer is updated.
+
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.9.1 to version 3.12.2.

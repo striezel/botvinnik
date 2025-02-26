@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -308,7 +308,7 @@ std::vector<std::string> Corona::commands() const
 std::optional<std::string> Corona::createDatabase()
 {
   Curly curl;
-  curl.setURL("https://covid.ourworldindata.org/data/owid-covid-data.csv");
+  curl.setURL("https://catalog.ourworldindata.org/garden/covid/latest/compact/compact.csv");
   curl.followRedirects(true);
   curl.setMaximumRedirects(5);
   std::string response;
@@ -347,8 +347,8 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     }
   }
 
-  const std::string header("iso_code,continent,location,date,total_cases,new_cases,new_cases_smoothed,total_deaths,new_deaths,");
-  if (line.find(header) != 0)
+  const std::string header("country,date,total_cases,new_cases,new_cases_smoothed,total_cases_per_million,new_cases_per_million,new_cases_smoothed_per_million,total_deaths,new_deaths,");
+  if ((line.find(header) != 0) || (line.find(",code,") == std::string::npos))
   {
     std::cerr << "Error: Header line of CSV data does not match the expected format!" << std::endl
               << "Header line is '" << line << "'." << std::endl;
@@ -367,6 +367,21 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     std::cerr << "Error: Database structure could not be created!" << std::endl;
     return std::nullopt;
   }
+
+  /// zero-based index of the column that contains the country's name
+  constexpr std::size_t idx_name = 0;
+
+  /// zero-based index of the column that contains the date
+  constexpr std::size_t idx_date = 1;
+
+  /// zero-based index of the column containing the number of new cases
+  constexpr std::size_t idx_cases = 3;
+
+  /// zero-based index of the column containing the number of new deaths
+  const std::size_t idx_deaths = 9;
+
+  /// zero-based index of the column containing the ISO-3166 ALPHA-3 country code
+  constexpr std::size_t idx_iso3 = 49;
 
   std::string lastGeoId;
   int64_t countryId = -1;
@@ -388,24 +403,24 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     }
 
     auto parts = split(line, ',');
-    if (parts.size() != 67)
+    if (parts.size() != 61)
     {
-      std::cerr << "Error: A line of CSV data does not have 67 data elements, but "
-                << parts.size() << " elements instead!" << std::endl
-                << "The line is '" << line << "'. It will be skipped." << std::endl;
+      std::cerr << "Error: A line of CSV data does not have 61 data elements, but "
+                << parts.size() << " elements instead!\n"
+                << "The line is '" << line << "'. It will be skipped.\n";
         continue;
     }
-    const std::string currentGeoId = parts.at(0);
+    const std::string currentGeoId = parts.at(idx_iso3);
     if (currentGeoId.empty())
     {
-      std::cerr << "Error: A line of CSV data does not have a iso3 id!" << std::endl
-                << "The line is '" << line << "'." << std::endl;
-      return std::nullopt;
+      // Some of the OWID categories (e. g. "High-income countries") have no
+      // proper ISO-3166 ALPHA-3 id. We can just skip those lines.
+      continue;
     }
     if (currentGeoId != lastGeoId)
     {
       // New country, insert it into database.
-      std::string name = parts[2];
+      std::string name = parts[idx_name];
       const auto opt_country = World::find(name);
       const auto& population = opt_country.has_value() ? opt_country.value().population : -1;
 
@@ -418,9 +433,9 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       lastGeoId = currentGeoId;
     }
 
-    const auto& date = parts[3];
-    const int64_t cases = !parts[5].empty() ? getInt64(parts[5]) : 0;
-    const int64_t deaths = !parts[8].empty() ? getInt64(parts[8]) : 0;
+    const auto& date = parts[idx_date];
+    const int64_t cases = !parts[idx_cases].empty() ? getInt64(parts[idx_cases]) : 0;
+    const int64_t deaths = !parts[idx_deaths].empty() ? getInt64(parts[idx_deaths]) : 0;
     if (cases == std::numeric_limits<int64_t>::min() || deaths == std::numeric_limits<int64_t>::min())
     {
       std::cerr << "Error: Got invalid case numbers in the following line:\n" << line << std::endl;
