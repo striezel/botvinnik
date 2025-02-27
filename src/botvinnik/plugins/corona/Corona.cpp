@@ -402,7 +402,11 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       line.erase(line.length() - 1);
     }
 
-    auto parts = split(line, ',');
+    const auto parts = split(line, ',');
+    if (parts[0].find("World excl.") != std::string::npos)
+    {
+      continue;
+    }
     if (parts.size() != 61)
     {
       std::cerr << "Error: A line of CSV data does not have 61 data elements, but "
@@ -411,7 +415,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
         continue;
     }
     const std::string currentGeoId = parts.at(idx_iso3);
-    if (currentGeoId.empty())
+    if (currentGeoId.empty() || (currentGeoId.find("OWID_") != std::string::npos))
     {
       // Some of the OWID categories (e. g. "High-income countries") have no
       // proper ISO-3166 ALPHA-3 id. We can just skip those lines.

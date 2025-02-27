@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2023  Dirk Stolle
+    Copyright (C) 2020, 2021, 2023, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ struct Country
    *
    * \param id     numeric countryId from database
    * \param _name  name of the country
-   * \param _geoId geoId from the database / ISO-3166 two letter code
+   * \param _geoId geoId from the database / ISO-3166 three letter code
    * \param pop    population of the country
    */
   Country(const int64_t id = -1, const std::string& _name = "", const std::string& _geoId = "", const int64_t pop = -1);

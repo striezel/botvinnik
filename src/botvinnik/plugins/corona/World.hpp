@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2021, 2023  Dirk Stolle
+    Copyright (C) 2021, 2023, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,9 +35,9 @@ struct World
      */
     static std::vector<Country> all();
   public:
-    /** \brief Finds country by name or ISO 3166 two letter code.
+    /** \brief Finds country by name or ISO 3166 three letter code.
      *
-     * \param nameOrGeoId  name OR ISO 3166 two letter code of the country
+     * \param nameOrGeoId  name OR ISO 3166 three letter code of the country
      * \return Returns an optional containing the matching country.
      *         Returns an empty optional, if no match was found.
      */
