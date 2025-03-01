@@ -402,7 +402,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       line.erase(line.length() - 1);
     }
 
-    const auto parts = split(line, ',');
+    auto parts = split(line, ',');
     if (parts[0].find("World excl.") != std::string::npos)
     {
       continue;
@@ -413,6 +413,11 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
                 << parts.size() << " elements instead!\n"
                 << "The line is '" << line << "'. It will be skipped.\n";
         continue;
+    }
+    // Workaround so that data for Kosovo is included.
+    if (parts[idx_iso3] == "OWID_KOS")
+    {
+      parts[idx_iso3] = "KOS";
     }
     const std::string currentGeoId = parts.at(idx_iso3);
     if (currentGeoId.empty() || (currentGeoId.find("OWID_") != std::string::npos))
