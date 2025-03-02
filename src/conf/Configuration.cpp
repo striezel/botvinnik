@@ -176,7 +176,7 @@ void Configuration::findConfigurationFile(std::string& realName)
       catch (const fs::filesystem_error& ex)
       {
         std::cerr << "File system error while checking existence of file "
-                  << file << ": " << ex.what() << std::endl;
+                  << file << ": " << ex.what() << '\n';
       } // try-catch
     } // for
   } // if
@@ -187,7 +187,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
   std::ifstream stream(fileName, std::ios_base::in | std::ios_base::binary);
   if (!stream.good())
   {
-    std::cerr << "Error: Could not open configuration file " << fileName << "!" << std::endl;
+    std::cerr << "Error: Could not open configuration file " << fileName << "!\n";
     return false;
   }
 
@@ -210,7 +210,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
     if (sepPos == std::string::npos)
     {
       std::cerr << "Error: Invalid line found: \"" << line <<"\".\n"
-                << "General format: \"Name of Setting=value\"" << std::endl;
+                << "General format: \"Name of Setting=value\"\n";
       return false;
     }
     std::string name = line.substr(0, sepPos);
@@ -230,7 +230,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (!mHomeServer.empty())
       {
         std::cerr << "Error: Matrix homeserver is specified more than once in file "
-                  << fileName << "!" << std::endl;
+                  << fileName << "!\n";
         return false;
       }
       // Remove trailing slash.
@@ -247,7 +247,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       {
         value = "https://" + value;
         std::cout << "Info: Prepending 'https://' to homeserver URL, it's now "
-                  << value <<"." << std::endl;
+                  << value << "." << std::endl;
       }
       mHomeServer = value;
     } // if matrix.homeserver
@@ -256,13 +256,13 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (!mUserId.empty())
       {
         std::cerr << "Error: Matrix user id is specified more than once in file "
-                  << fileName << "!" << std::endl;
+                  << fileName << "!\n";
         return false;
       }
       if (!looksLikeUserId(value))
       {
         std::cerr << "Error: Configuration value of " << name
-                  << " does not seem to be a Matrix user id!" << std::endl;
+                  << " does not seem to be a Matrix user id!\n";
         return false;
       }
       mUserId = value;
@@ -272,7 +272,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (!mPassword.empty())
       {
         std::cerr << "Error: Password is specified more than once in file "
-                  << fileName << "!" << std::endl;
+                  << fileName << "!\n";
         return false;
       }
       mPassword = value;
@@ -282,7 +282,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (!mPrefix.empty())
       {
         std::cerr << "Error: Command prefix is specified more than once in file "
-                  << fileName << "!" << std::endl;
+                  << fileName << "!\n";
         return false;
       }
       mPrefix = value;
@@ -292,14 +292,14 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (mDeactivatedCommands.find(value) != mDeactivatedCommands.end())
       {
         std::cerr << "Error: The command '" << value << "' is deactivated more"
-                  << " than once in file " << fileName << "!" << std::endl;
+                  << " than once in file " << fileName << "!\n";
         return false;
       }
       // Avoid adding non-existent commands over and over again.
       if (mDeactivatedCommands.size() >= 100)
       {
         std::cerr << "Error: There are too many deactivated commands in file "
-                  << fileName << "!" << std::endl;
+                  << fileName << "!\n";
         return false;
       }
       mDeactivatedCommands.insert(value);
@@ -310,13 +310,13 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       {
         std::cerr << "Error: Matrix user id '" << value << "' for user that is"
                   << " allowed to stop the bot is specified more than once in file "
-                  << fileName << "!" << std::endl;
+                  << fileName << "!\n";
         return false;
       }
       if (!looksLikeUserId(value))
       {
         std::cerr << "Error: Configuration value of " << name
-                  << " does not seem to be a Matrix user id!" << std::endl;
+                  << " does not seem to be a Matrix user id!\n";
         return false;
       }
       mStopUsers.insert(value);
@@ -326,20 +326,20 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (mAllowedFailsIn64 >= 0)
       {
         std::cerr << "Error: Number of allowed sync failures is specified more than once in file "
-                  << fileName << "!" << std::endl;
+                  << fileName << "!\n";
         return false;
       }
       if (!stringToInt(value, mAllowedFailsIn64))
       {
         std::cerr << "Error: Number of allowed sync failures in file "
-                  << fileName << " must be a non-negative integer!" << std::endl;
+                  << fileName << " must be a non-negative integer!\n";
         return false;
       }
       // If it is still below zero or above 63, the value is invalid.
       if (mAllowedFailsIn64 < 0 || mAllowedFailsIn64 > 63)
       {
         std::cerr << "Error: Number of allowed sync failures in file "
-                  << fileName << " must be between 0 and 63 (inclusive)!" << std::endl;
+                  << fileName << " must be between 0 and 63 (inclusive)!\n";
         return false;
       }
     } // if bot.sync.allowed_failures
@@ -348,14 +348,14 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (mSyncDelay != std::chrono::milliseconds::zero())
       {
         std::cerr << "Error: Synchronization delay is specified more than once"
-                  << " in file " << fileName << "!" << std::endl;
+                  << " in file " << fileName << "!\n";
         return false;
       }
       int amount_of_ms = 0;
       if (!stringToInt(value, amount_of_ms))
       {
         std::cerr << "Error: Synchronization delay in file " << fileName
-                  << " must be a non-negative integer!" << std::endl;
+                  << " must be a non-negative integer!\n";
         return false;
       }
       // If it is outside of the allowed minimum or maximum, the value is
@@ -365,7 +365,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
         std::clog << "Warning: Synchronization delay in file " << fileName
                   << " is lower than allowed and will be raised to the allowed"
                   << " minimum of " << min_sync_delay.count()
-                  << " milliseconds!" << std::endl;
+                  << " milliseconds!\n";
         amount_of_ms = min_sync_delay.count();
       }
       else if (amount_of_ms > max_sync_delay.count())
@@ -383,7 +383,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (!mLibreTranslateServer.empty())
       {
         std::cerr << "Error: Server URL for LibreTranslate is specified more than once in file "
-                  << fileName << "!" << std::endl;
+                  << fileName << "!\n";
         return false;
       }
       mLibreTranslateServer = value;
@@ -393,7 +393,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (!mLibreTranslateApiKey.empty())
       {
         std::cerr << "Error: API key for LibreTranslate is specified more than once in file "
-                  << fileName << "!" << std::endl;
+                  << fileName << "!\n";
         return false;
       }
       mLibreTranslateApiKey = value;
@@ -403,7 +403,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
       if (!mGiphyApiKey.empty())
       {
         std::cerr << "Error: API key for Giphy is specified more than once in file "
-                  << fileName << "!" << std::endl;
+                  << fileName << "!\n";
         return false;
       }
       mGiphyApiKey = value;
@@ -411,7 +411,7 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
     else
     {
       std::cerr << "Error while reading configuration file " << fileName
-                << ": There is no setting named \"" << name << "\"!" << std::endl;
+                << ": There is no setting named \"" << name << "\"!\n";
       return false;
     } // else (unrecognized setting name)
   } // while
@@ -421,14 +421,14 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
   {
     std::cerr << "Error: Some settings are missing in configuration file "
               << fileName << ", and thus botvinnik will not be able to work"
-              << " properly." << std::endl;
+              << " properly.\n";
     return false;
   } // if a setting is missing
 
   if (mStopUsers.empty())
   {
     std::cerr << "Error: bot.stop.allowed.userid has not been specified in "
-              << "configuration file " << fileName << "!" << std::endl;
+              << "configuration file " << fileName << "!\n";
     return false;
   }
 
@@ -471,7 +471,7 @@ bool Configuration::load(const std::string& fileName)
   findConfigurationFile(realName);
   if (realName.empty())
   {
-    std::cerr << "Error: No configuration file was found!" << std::endl;
+    std::cerr << "Error: No configuration file was found!\n";
     return false;
   }
   try
@@ -480,7 +480,7 @@ bool Configuration::load(const std::string& fileName)
     if (!fs::exists(p) || !fs::is_regular_file(p))
     {
       std::cerr << "Error: Configuration file " << realName
-                << " does not exist or is not a regular file!" << std::endl;
+                << " does not exist or is not a regular file!\n";
       return false;
     }
   }

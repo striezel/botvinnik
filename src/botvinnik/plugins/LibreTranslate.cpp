@@ -96,8 +96,8 @@ Message LibreTranslate::getLanguages() const
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Request to " + url + " failed!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Request to " + url + " failed!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return Message("The request to get a list of available languages failed. Server returned unexpected response.");
   }
@@ -107,13 +107,13 @@ Message LibreTranslate::getLanguages() const
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error while trying to parse JSON response from LibreTranslate server!" << std::endl
+    std::cerr << "Error while trying to parse JSON response from LibreTranslate server!\n"
               << "Response is: " << response << std::endl;
     return Message("The request to get a list of available languages for translation failed. LibreTranslate server returned invalid JSON.");
   }
   if (!doc.is_array())
   {
-    std::cerr << "Error while trying to parse JSON response from LibreTranslate server!" << std::endl
+    std::cerr << "Error while trying to parse JSON response from LibreTranslate server!\n"
               << "Response is not an array. Response is: " << response << std::endl;
     return Message("The request to get a list of available languages for translation failed. LibreTranslate server returned an invalid JSON structure.");
   }
@@ -125,14 +125,14 @@ Message LibreTranslate::getLanguages() const
     const auto error_name = item["name"].get(name);
     if (error_name || name.type() != simdjson::dom::element_type::STRING)
     {
-      std::cerr << "Error: JSON response from LibreTranslate does not contain 'name' element!" << std::endl;
+      std::cerr << "Error: JSON response from LibreTranslate does not contain 'name' element!\n";
       return Message("The request to get a list of available languages for translation failed. LibreTranslate server returned unexpected JSON format.");
     }
     simdjson::dom::element code;
     const auto error_code = item["code"].get(code);
     if (error_code || code.type() != simdjson::dom::element_type::STRING)
     {
-      std::cerr << "Error: JSON response from LibreTranslate does not contain 'code' element!" << std::endl;
+      std::cerr << "Error: JSON response from LibreTranslate does not contain 'code' element!\n";
       return Message("The request to get a list of available languages for translation failed. LibreTranslate server returned unexpected JSON format.");
     }
     const auto name_sv = name.get<std::string_view>().value();
@@ -176,14 +176,14 @@ Message LibreTranslate::getTranslation(const std::string_view& command, const st
     if (!curl.addPostField("api_key", key))
     {
       std::cerr << "Error: Could not add API key to Curly request for "
-                << "LibreTranslate!" << std::endl;
+                << "LibreTranslate!\n";
       return Message("Could not perform request to translation server!");
     }
   }
   std::string response;
   if (!curl.perform(response))
   {
-    std::cerr << "Error: Request to " + url + " failed!" << std::endl
+    std::cerr << "Error: Request to " + url + " failed!\n"
               << "HTTP status code: " << curl.getResponseCode() << std::endl
               << "Response: " << response << std::endl;
     return Message("The request to get a translation failed. Server returned unexpected response.");
@@ -211,7 +211,7 @@ Message LibreTranslate::getTranslation(const std::string_view& command, const st
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error while trying to parse JSON response from LibreTranslate server!" << std::endl
+    std::cerr << "Error while trying to parse JSON response from LibreTranslate server!\n"
               << "Response is: " << response << std::endl;
     return Message("The request to get a translation failed. LibreTranslate server returned invalid JSON.");
   }
@@ -220,7 +220,7 @@ Message LibreTranslate::getTranslation(const std::string_view& command, const st
   const auto tr_error = doc["translatedText"].get(translated);
   if (tr_error || translated.type() != simdjson::dom::element_type::STRING)
   {
-    std::cerr << "Error: JSON response from LibreTranslate does not contain 'translatedText' as string element!" << std::endl;
+    std::cerr << "Error: JSON response from LibreTranslate does not contain 'translatedText' as string element!\n";
     return Message("The request to get a translation failed. LibreTranslate server returned unexpected JSON structure.");
   }
 

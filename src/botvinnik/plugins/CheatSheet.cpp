@@ -58,7 +58,7 @@ Message CheatSheet::handleCommand(const std::string_view& command, const std::st
   }
   catch (const std::exception& ex)
   {
-    std::cerr << "Error: Could not URL-encode cheat.sh search topic!" << std::endl;
+    std::cerr << "Error: Could not URL-encode cheat.sh search topic!\n";
     return Message("Error: Could not get information for topic '" + topic + "'!");
   }
 
@@ -74,10 +74,10 @@ Message CheatSheet::handleCommand(const std::string_view& command, const std::st
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Request to cheat.sh failed!" << std::endl
-              << "URL: " << curl.getURL() << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
-              << "Response: " << response << std::endl;
+    std::cerr << "Error: Request to cheat.sh failed!\n"
+              << "URL: " << curl.getURL() << '\n'
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
+              << "Response: " << response << '\n';
     return Message("The request to get a cheat sheet for topic '" + topic + "' failed. Server returned unexpected response.");
   }
 

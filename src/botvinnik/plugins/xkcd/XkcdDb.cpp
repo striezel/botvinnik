@@ -90,12 +90,12 @@ std::optional<std::string> getMxcUri(sql::database& db, const unsigned int num)
   sql::statement stmt = sql::prepare(db, "SELECT mxcUri FROM xkcd WHERE comicId=@id LIMIT 1;");
   if (!stmt)
   {
-    std::cerr << "Error: Failed to prepare select statement for comic id!" << std::endl;
+    std::cerr << "Error: Failed to prepare select statement for comic id!\n";
     return std::optional<std::string>();
   }
   if (!sql::bind(stmt, 1, num))
   {
-    std::cerr << "Error: Could not bind value of comic Id to prepared statement!" << std::endl;
+    std::cerr << "Error: Could not bind value of comic Id to prepared statement!\n";
     return std::optional<std::string>();
   }
   const auto rc = sqlite3_step(stmt.get());
@@ -109,7 +109,7 @@ std::optional<std::string> getMxcUri(sql::database& db, const unsigned int num)
     return std::optional<std::string>();
   }
   // Some other unexpected error code occurred!
-  std::cerr << "Error: Could not get result from xkcd database!" << std::endl
+  std::cerr << "Error: Could not get result from xkcd database!\n"
             << sqlite3_errmsg(db.get()) << std::endl;
   return std::optional<std::string>();
 }
@@ -119,19 +119,19 @@ bool insertMxcUri(sql::database& db, const unsigned int num, const std::string& 
   auto insert = sql::prepare(db, "INSERT INTO xkcd (comicId, mxcUri) VALUES (@cid, @uri);");
   if (!insert)
   {
-    std::cerr << "Error: Could not prepare insert statement for MXC URI!" << std::endl;
+    std::cerr << "Error: Could not prepare insert statement for MXC URI!\n";
     return false;
   }
   if (!sql::bind(insert, 1, num) || !sql::bind(insert, 2, mxcUri))
   {
-    std::cerr << "Error: Could not bind values to prepared statement!" << std::endl;
+    std::cerr << "Error: Could not bind values to prepared statement!\n";
     return false;
   }
   const auto ret = sqlite3_step(insert.get());
   if ((ret != SQLITE_OK) && (ret != SQLITE_DONE))
   {
     std::cerr << "Error: Could not insert URI data for comic #" << num
-              << " into database!" << std::endl;
+              << " into database!\n";
     return false;
   }
 

@@ -59,7 +59,7 @@ int64_t getInt64(const std::string& value)
   }
   catch (const std::exception& ex)
   {
-    std::cerr << "Error: Could not convert value '" << value << "' to int64_t!" << std::endl;
+    std::cerr << "Error: Could not convert value '" << value << "' to int64_t!\n";
     return std::numeric_limits<int64_t>::min();
   }
 }
@@ -110,7 +110,7 @@ bool createDbStructure(sql::database& db)
         )SQL";
   if (!sql::exec(db, statement))
   {
-    std::cerr << "Error: Could not create tables in sqlite3 database!" << std::endl;
+    std::cerr << "Error: Could not create tables in sqlite3 database!\n";
     return false;
   }
 
@@ -124,12 +124,12 @@ int64_t getCountryId(sql::database& db, const std::string& geoId,
   sql::statement stmt = sql::prepare(db, "SELECT countryId FROM country WHERE geoId=@id LIMIT 1;");
   if (!stmt)
   {
-    std::cerr << "Error: Failed to prepare select statement for geoId!" << std::endl;
+    std::cerr << "Error: Failed to prepare select statement for geoId!\n";
     return -1;
   }
   if (!sql::bind(stmt, 1, geoId))
   {
-    std::cerr << "Error: Could not bind value of geoId to prepared statement!" << std::endl;
+    std::cerr << "Error: Could not bind value of geoId to prepared statement!\n";
     return -1;
   }
 
@@ -144,19 +144,19 @@ int64_t getCountryId(sql::database& db, const std::string& geoId,
     auto insert = sql::prepare(db, "INSERT INTO country (name, population, geoId) VALUES (@countryname, @pop, @geo);");
     if (!insert)
     {
-      std::cerr << "Error: Could not prepare insert statement for geoId!" << std::endl;
+      std::cerr << "Error: Could not prepare insert statement for geoId!\n";
       return -1;
     }
     if (!sql::bind(insert, 1, name) || !sql::bind(insert, 2, pop) || !sql::bind(insert, 3, geoId))
     {
-      std::cerr << "Error: Could not bind values to prepared statement!" << std::endl;
+      std::cerr << "Error: Could not bind values to prepared statement!\n";
       return -1;
     }
     const auto ret = sqlite3_step(insert.get());
     if ((ret != SQLITE_OK) && (ret != SQLITE_DONE))
     {
       std::cerr << "Error: Could not insert country data for " << name << " / "
-                << geoId << " into database!" << std::endl;
+                << geoId << " into database!\n";
       return -1;
     }
 
@@ -167,13 +167,13 @@ int64_t getCountryId(sql::database& db, const std::string& geoId,
     }
     else
     {
-      std::cerr << "Error: Could not get id of last insert operation!" << std::endl;
+      std::cerr << "Error: Could not get id of last insert operation!\n";
       return -1;
     }
   }
 
   // Something unexpected happened here!
-  std::cerr << "Error: Unexpected return value from sqlite3_step: " << rc << "!" << std::endl;
+  std::cerr << "Error: Unexpected return value from sqlite3_step: " << rc << "!\n";
   return -1;
 }
 
@@ -314,9 +314,9 @@ std::optional<std::string> Corona::createDatabase()
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Failed to get COVID-19 case numbers from Our World in Data!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
-              << "Response: " << response << std::endl;
+    std::cerr << "Error: Failed to get COVID-19 case numbers from Our World in Data!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
+              << "Response: " << response << '\n';
     return std::optional<std::string>();
   }
 
@@ -325,13 +325,13 @@ std::optional<std::string> Corona::createDatabase()
 
 std::optional<std::string> Corona::buildDatabase(const std::string& csv)
 {
-  std::clog << nowToString() << " Info: Building new database from CSV..." << std::endl;
+  std::clog << nowToString() << " Info: Building new database from CSV...\n";
   std::istringstream stream(csv);
   std::string line;
 
   if (!std::getline(stream, line))
   {
-    std::cerr << "Error: Failed to read first line from CSV data!" << std::endl;
+    std::cerr << "Error: Failed to read first line from CSV data!\n";
     return std::optional<std::string>();
   }
   if (line.at(line.length() - 1) == '\r')
@@ -350,8 +350,8 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
   const std::string header("country,date,total_cases,new_cases,new_cases_smoothed,total_cases_per_million,new_cases_per_million,new_cases_smoothed_per_million,total_deaths,new_deaths,");
   if ((line.find(header) != 0) || (line.find(",code,") == std::string::npos))
   {
-    std::cerr << "Error: Header line of CSV data does not match the expected format!" << std::endl
-              << "Header line is '" << line << "'." << std::endl;
+    std::cerr << "Error: Header line of CSV data does not match the expected format!\n"
+              << "Header line is '" << line << "'.\n";
     return std::nullopt;
   }
   const std::string dbFileName = getTempFileName();
@@ -359,12 +359,12 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
   sql::database db = sql::open(dbFileName);
   if (!db)
   {
-    std::cerr << "Error: Could not create a new sqlite3 database!" << std::endl;
+    std::cerr << "Error: Could not create a new sqlite3 database!\n";
     return std::nullopt;
   }
   if (!createDbStructure(db))
   {
-    std::cerr << "Error: Database structure could not be created!" << std::endl;
+    std::cerr << "Error: Database structure could not be created!\n";
     return std::nullopt;
   }
 
@@ -436,7 +436,8 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       countryId = getCountryId(db, currentGeoId, name, population);
       if (countryId == -1)
       {
-        std::cerr << "Error: Could not find id for geographic code '" << currentGeoId << "'!" << std::endl;
+        std::cerr << "Error: Could not find id for geographic code '"
+                  << currentGeoId << "'!\n";
         return std::nullopt;
       }
       lastGeoId = currentGeoId;
@@ -447,7 +448,8 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     const int64_t deaths = !parts[idx_deaths].empty() ? getInt64(parts[idx_deaths]) : 0;
     if (cases == std::numeric_limits<int64_t>::min() || deaths == std::numeric_limits<int64_t>::min())
     {
-      std::cerr << "Error: Got invalid case numbers in the following line:\n" << line << std::endl;
+      std::cerr << "Error: Got invalid case numbers in the following line:\n"
+                << line << '\n';
       return std::nullopt;
     }
 
@@ -471,7 +473,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
       batch[batch.size() - 1] = ';';
       if (!sql::exec(db, batch))
       {
-        std::cerr << "Error: Could not batch-insert case numbers into database!" << std::endl;
+        std::cerr << "Error: Could not batch-insert case numbers into database!\n";
         return std::nullopt;
       }
 
@@ -485,7 +487,7 @@ std::optional<std::string> Corona::buildDatabase(const std::string& csv)
     batch[batch.size() - 1] = ';';
     if (!sql::exec(db, batch))
     {
-      std::cerr << "Error: Could not batch-insert case numbers into database!" << std::endl;
+      std::cerr << "Error: Could not batch-insert case numbers into database!\n";
       return std::nullopt;
     }
     batch.clear();
@@ -503,7 +505,7 @@ std::optional<Message> Corona::updateOldDatabase(const std::string_view& roomId)
   const auto db = createDatabase();
   if (!db)
   {
-    std::cerr << "Error: Database creation failed!" << std::endl;
+    std::cerr << "Error: Database creation failed!\n";
     return Message("Could not get case numbers for COVID-19.");
   }
   std::string home;

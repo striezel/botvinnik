@@ -177,8 +177,8 @@ Message Wikipedia::extract(const std::string& lang, const std::string_view& comm
   std::string response;
   if (!curl.perform(response))
   {
-    std::cerr << "Error: Request to Mediawiki API failed!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Request to Mediawiki API failed!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return Message("The request to get information from Wikipedia failed. Wikipedia server returned unexpected response.");
   }
@@ -188,7 +188,7 @@ Message Wikipedia::extract(const std::string& lang, const std::string_view& comm
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error while trying to parse JSON response from Wikipedia!" << std::endl
+    std::cerr << "Error while trying to parse JSON response from Wikipedia!\n"
               << "Response is: " << response << std::endl;
     return Message("The request to get information from Wikipedia failed. Wikipedia server returned invalid JSON.");
   }
@@ -196,7 +196,7 @@ Message Wikipedia::extract(const std::string& lang, const std::string_view& comm
   const auto pagesError = doc.at_pointer("/query/pages").get(pages);
   if (pagesError || pages.type() != simdjson::dom::element_type::OBJECT)
   {
-    std::cerr << "Error while trying to parse JSON response from Wikipedia! JSON data does not contain a '/query/pages' object!" << std::endl;
+    std::cerr << "Error while trying to parse JSON response from Wikipedia! JSON data does not contain a '/query/pages' object!\n";
     return Message("The request to get information from Wikipedia failed. Wikipedia server returned invalid JSON.");
   }
 
@@ -205,7 +205,7 @@ Message Wikipedia::extract(const std::string& lang, const std::string_view& comm
   pages.get<simdjson::dom::object>().tie(pagesObject, e);
   if (e)
   {
-    std::cerr << "Error while trying to parse JSON response from Wikipedia: 'pages' is not an object!" << std::endl;
+    std::cerr << "Error while trying to parse JSON response from Wikipedia: 'pages' is not an object!\n";
     return Message("The request to get information from Wikipedia failed. Wikipedia server returned invalid JSON.");
   }
 
@@ -221,21 +221,21 @@ Message Wikipedia::extract(const std::string& lang, const std::string_view& comm
     keyValue.value.get<simdjson::dom::object>().tie(page, e);
     if (e)
     {
-      std::cerr << "Error while trying to parse JSON response from Wikipedia: 'pages' element is not an object!" << std::endl;
+      std::cerr << "Error while trying to parse JSON response from Wikipedia: 'pages' element is not an object!\n";
       return Message("The request to get information from Wikipedia failed. Wikipedia server returned invalid JSON.");
     }
     simdjson::dom::element titleJson;
     page["title"].tie(titleJson, e);
     if (e || titleJson.type() != simdjson::dom::element_type::STRING)
     {
-      std::cerr << "Error while trying to parse JSON response from Wikipedia: 'title' element is missing or not a string!" << std::endl;
+      std::cerr << "Error while trying to parse JSON response from Wikipedia: 'title' element is missing or not a string!\n";
       return Message("The request to get information from Wikipedia failed. Wikipedia server returned invalid JSON.");
     }
     simdjson::dom::element jsonExtract;
     page["extract"].tie(jsonExtract, e);
     if (e || jsonExtract.type() != simdjson::dom::element_type::STRING)
     {
-      std::cerr << "Error while trying to parse JSON response from Wikipedia: 'extract' element is missing or not a string!" << std::endl;
+      std::cerr << "Error while trying to parse JSON response from Wikipedia: 'extract' element is missing or not a string!\n";
       return Message("The request to get information from Wikipedia failed. Wikipedia server returned invalid JSON.");
     }
 
@@ -246,7 +246,7 @@ Message Wikipedia::extract(const std::string& lang, const std::string_view& comm
     }
     catch (const std::exception& ex)
     {
-      std::cerr << "Error: URL-escaping threw an exception: " << ex.what() << std::endl;
+      std::cerr << "Error: URL-escaping threw an exception: " << ex.what() << '\n';
       // Fallback: Return info about invalid chars.
       return Message("The response from Wikipedia API contains invalid characters in it's title.");
     }

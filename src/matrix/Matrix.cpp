@@ -67,7 +67,7 @@ bool Matrix::login()
   {
     // In theory a new login could be attempted here, but this way we would
     // loose the old access token and leave a dangling session on the server.
-    std::cerr << "Error while trying to log in: Already logged in!" << std::endl;
+    std::cerr << "Error while trying to log in: Already logged in!\n";
     return false;
   }
 
@@ -97,8 +97,8 @@ bool Matrix::login()
     curl.setPostBody(body.dump());
     if (!curl.perform(response))
     {
-      std::cerr << "Error: Login failed!" << std::endl
-                << "HTTP status code: " << curl.getResponseCode() << std::endl
+      std::cerr << "Error: Login failed!\n"
+                << "HTTP status code: " << curl.getResponseCode() << '\n'
                 << "Response: " << response << std::endl;
       return false;
     }
@@ -129,7 +129,7 @@ bool Matrix::login()
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error while trying to log in: Unable to parse JSON data!" << std::endl
+    std::cerr << "Error while trying to log in: Unable to parse JSON data!\n"
               << "Response is: " << response << std::endl;
     return false;
   }
@@ -137,7 +137,7 @@ bool Matrix::login()
   const auto tokenError = doc["access_token"].get(token);
   if (tokenError || !token.is<std::string_view>())
   {
-    std::cerr << "Error while trying to log in: JSON data does not contain an access_token element string!" << std::endl;
+    std::cerr << "Error while trying to log in: JSON data does not contain an access_token element string!\n";
     return false;
   }
   accessToken = std::string(token.get<std::string_view>().value());
@@ -163,8 +163,8 @@ bool Matrix::logout()
   curl.setPostBody("");
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Logout failed!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Logout failed!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return false;
   }
@@ -183,7 +183,7 @@ bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
 {
   if (!isLoggedIn())
   {
-    std::cerr << "Error: Need to be logged in to get current rooms!" << std::endl;
+    std::cerr << "Error: Need to be logged in to get current rooms!\n";
     return false;
   }
 
@@ -197,8 +197,8 @@ bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
   #endif
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Listing joined rooms failed!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Listing joined rooms failed!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return false;
   }
@@ -208,7 +208,7 @@ bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error while trying to list rooms: Unable to parse JSON data!" << std::endl
+    std::cerr << "Error while trying to list rooms: Unable to parse JSON data!\n"
               << "Response is: " << response << std::endl;
     return false;
   }
@@ -217,7 +217,7 @@ bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
   if (jsonError || !joined_rooms.is_array())
   {
     std::cerr << "Error while trying to list rooms: JSON data does not contain"
-              << " a joined_rooms element or it's not an array!" << std::endl;
+              << " a joined_rooms element or it's not an array!\n";
     return false;
   }
 
@@ -226,7 +226,7 @@ bool Matrix::joinedRooms(std::vector<std::string>& roomIds)
   {
     if (elem.type() != simdjson::dom::element_type::STRING)
     {
-      std::cerr << "Error: Returned room id is not a string!" << std::endl;
+      std::cerr << "Error: Returned room id is not a string!\n";
       return false;
     }
     roomIds.emplace_back(std::string(elem.get<std::string_view>().value()));
@@ -245,7 +245,7 @@ std::string Matrix::encodeRoomId(const std::string& roomId)
   {
     std::cerr << "Error: URL-encoding of room id failed!\n"
               << ex.what() << std::endl
-              << "Falling back to simpler encoding algorithm." << std::endl;
+              << "Falling back to simpler encoding algorithm.\n";
   }
 
   std::string encodedRoomId = roomId;
@@ -268,7 +268,7 @@ std::optional<std::string> Matrix::roomName(const std::string& roomId)
 {
   if (!isLoggedIn())
   {
-    std::cerr << "Error: Need to be logged in to get room name!" << std::endl;
+    std::cerr << "Error: Need to be logged in to get room name!\n";
     return std::optional<std::string>();
   }
 
@@ -288,8 +288,8 @@ std::optional<std::string> Matrix::roomName(const std::string& roomId)
       // Not found means that no name has been set.
       return std::string();
     }
-    std::cerr << "Error: Listing joined rooms failed!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Listing joined rooms failed!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return std::optional<std::string>();
   }
@@ -299,7 +299,7 @@ std::optional<std::string> Matrix::roomName(const std::string& roomId)
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error while trying get room name: Unable to parse JSON data!" << std::endl
+    std::cerr << "Error while trying get room name: Unable to parse JSON data!\n"
               << "Response is: " << response << std::endl;
     return std::optional<std::string>();
   }
@@ -308,7 +308,7 @@ std::optional<std::string> Matrix::roomName(const std::string& roomId)
   if (jsonError || jsonName.type() != simdjson::dom::element_type::STRING)
   {
     std::cerr << "Error while trying to get room name: JSON data does not contain"
-              << " a name element or it's not a string!" << std::endl;
+              << " a name element or it's not a string!\n";
     return std::optional<std::string>();
   }
 
@@ -335,17 +335,17 @@ bool Matrix::roomMembershipChange(const std::string& roomId, const std::string& 
   if (change != "join" && change != "leave" && change != "forget")
   {
     std::cerr << "Error: Room membership action must be one of  must be one of"
-              << " 'join', 'leave' or 'forget'!" << std::endl;
+              << " 'join', 'leave' or 'forget'!\n";
     return false;
   }
   if (roomId.empty())
   {
-    std::cerr << "Error: Id of the room to " << change << " must not be empty!" << std::endl;
+    std::cerr << "Error: Id of the room to " << change << " must not be empty!\n";
     return false;
   }
   if (!isLoggedIn())
   {
-    std::cerr << "Error: Need to be logged in to " << change << " a room!" << std::endl;
+    std::cerr << "Error: Need to be logged in to " << change << " a room!\n";
     return false;
   }
 
@@ -356,8 +356,8 @@ bool Matrix::roomMembershipChange(const std::string& roomId, const std::string& 
   }
   catch(const std::exception& ex)
   {
-    std::cerr << "Error: URL-encoding of room id failed!"
-              << std::endl << ex.what() << std::endl;
+    std::cerr << "Error: URL-encoding of room id failed!\n"
+              << ex.what() << std::endl;
     return false;
   }
 
@@ -371,7 +371,7 @@ bool Matrix::roomMembershipChange(const std::string& roomId, const std::string& 
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Failed to " << change << " room '" << roomId << "'!" << std::endl
+    std::cerr << "Error: Failed to " << change << " room '" << roomId << "'!\n"
               << "HTTP status code: " << curl.getResponseCode() << std::endl
               << "Response: " << response << std::endl;
     return false;
@@ -384,12 +384,12 @@ std::optional<matrix::PowerLevels> Matrix::powerLevels(const std::string& roomId
 {
   if (roomId.empty())
   {
-    std::cerr << "Error: Room id for power level retrieval must not be empty!" << std::endl;
+    std::cerr << "Error: Room id for power level retrieval must not be empty!\n";
     return std::optional<matrix::PowerLevels>();
   }
   if (!isLoggedIn())
   {
-    std::cerr << "Error: Need to be logged in to get room power levels!" << std::endl;
+    std::cerr << "Error: Need to be logged in to get room power levels!\n";
     return std::optional<matrix::PowerLevels>();
   }
   std::string encodedRoomId;
@@ -399,8 +399,8 @@ std::optional<matrix::PowerLevels> Matrix::powerLevels(const std::string& roomId
   }
   catch(const std::exception& ex)
   {
-    std::cerr << "Error: URL-encoding of room id failed!"
-              << std::endl << ex.what() << std::endl;
+    std::cerr << "Error: URL-encoding of room id failed!\n"
+              << ex.what() << std::endl;
     return std::optional<matrix::PowerLevels>();
   }
 
@@ -413,8 +413,8 @@ std::optional<matrix::PowerLevels> Matrix::powerLevels(const std::string& roomId
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Failed to get power levels of room '" << roomId << "'!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Failed to get power levels of room '" << roomId << "'!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return std::optional<matrix::PowerLevels>();
   }
@@ -426,7 +426,7 @@ bool Matrix::sync(std::string& nextBatch, std::vector<matrix::Room>& rooms, std:
 {
   if (!isLoggedIn())
   {
-    std::cerr << "Error: Need to be logged in to sync events!" << std::endl;
+    std::cerr << "Error: Need to be logged in to sync events!\n";
     return false;
   }
 
@@ -443,8 +443,8 @@ bool Matrix::sync(std::string& nextBatch, std::vector<matrix::Room>& rooms, std:
     }
     catch (const std::exception& ex)
     {
-      std::cerr << "Error: URL-encoding of parameter 'since' failed!"
-                << std::endl << ex.what() << std::endl;
+      std::cerr << "Error: URL-encoding of parameter 'since' failed!\n"
+                << ex.what() << std::endl;
       return false;
     }
     curl.setURL(conf.homeServer() + "/_matrix/client/r0/sync?since=" + encodedSince);
@@ -461,8 +461,8 @@ bool Matrix::sync(std::string& nextBatch, std::vector<matrix::Room>& rooms, std:
   #endif
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Syncing events failed!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Syncing events failed!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return false;
   }
@@ -474,13 +474,13 @@ bool Matrix::sendMessage(const std::string& roomId, const Message& message)
 {
   if (!isLoggedIn())
   {
-    std::cerr << "Error: Need to be logged in to send messages!" << std::endl;
+    std::cerr << "Error: Need to be logged in to send messages!\n";
     return false;
   }
 
   if (message.body.empty())
   {
-    std::cerr << "Error: Sending empty messages is useless!" << std::endl;
+    std::cerr << "Error: Sending empty messages is useless!\n";
     return false;
   }
 
@@ -508,8 +508,8 @@ bool Matrix::sendMessage(const std::string& roomId, const Message& message)
   curl.setPutData(body.dump());
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Sending text message failed!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Sending text message failed!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return false;
   }
@@ -521,19 +521,19 @@ bool Matrix::sendImage(const std::string& roomId, const std::string& mxcUri, con
 {
   if (!isLoggedIn())
   {
-    std::cerr << "Error: Need to be logged in to send images!" << std::endl;
+    std::cerr << "Error: Need to be logged in to send images!\n";
     return false;
   }
 
   if (mxcUri.empty())
   {
-    std::cerr << "Error: Sending empty MXC URIs is useless!" << std::endl;
+    std::cerr << "Error: Sending empty MXC URIs is useless!\n";
     return false;
   }
 
   if (mxcUri.find("mxc://") != 0)
   {
-    std::cerr << "Error: Given image URL is not an MXC URI!" << std::endl;
+    std::cerr << "Error: Given image URL is not an MXC URI!\n";
     return false;
   }
 
@@ -577,8 +577,8 @@ bool Matrix::sendImage(const std::string& roomId, const std::string& mxcUri, con
   curl.setPutData(message.dump());
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Sending image message failed!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Sending image message failed!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return false;
   }
@@ -602,8 +602,8 @@ std::optional<int64_t> Matrix::getUploadLimit()
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Could not retrieve upload limit!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Could not retrieve upload limit!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return std::optional<int64_t>();
   }
@@ -613,7 +613,7 @@ std::optional<int64_t> Matrix::getUploadLimit()
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error retrieving upload limit: Unable to parse JSON data!" << std::endl
+    std::cerr << "Error retrieving upload limit: Unable to parse JSON data!\n"
               << "Response is: " << response << std::endl;
     return std::optional<int64_t>();
   }
@@ -646,7 +646,7 @@ std::optional<std::string> Matrix::getSynapseVersion()
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error retrieving server version: Unable to parse JSON data!" << std::endl
+    std::cerr << "Error retrieving server version: Unable to parse JSON data!\n"
               << "Response is: " << response << std::endl;
     return std::nullopt;
   }
@@ -675,8 +675,8 @@ std::optional<std::string> Matrix::uploadString(const std::string& data, const s
   }
   catch(const std::exception& ex)
   {
-    std::cerr << "Error: URL-encoding of file name for upload failed!"
-              << std::endl << ex.what() << std::endl;
+    std::cerr << "Error: URL-encoding of file name for upload failed!\n"
+              << ex.what() << std::endl;
     return std::optional<std::string>();
   }
 
@@ -696,8 +696,8 @@ std::optional<std::string> Matrix::uploadString(const std::string& data, const s
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Could not upload file data to content repository!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Could not upload file data to content repository!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return std::optional<std::string>();
   }
@@ -707,7 +707,7 @@ std::optional<std::string> Matrix::uploadString(const std::string& data, const s
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error upload file: Unable to parse JSON response!" << std::endl
+    std::cerr << "Error upload file: Unable to parse JSON response!\n"
               << "Response is: " << response << std::endl;
     return std::optional<std::string>();
   }
@@ -753,11 +753,11 @@ std::optional<std::string> Matrix::uploadImage(const std::string& imgUrl)
     #ifdef BVN_USER_AGENT
     addUserAgent(curl);
     #endif
-    std::clog << "Info: Downloading image " << imgUrl << "..." << std::endl;
+    std::clog << "Info: Downloading image " << imgUrl << " ..." << std::endl;
     if (!curl.perform(imageData) || curl.getResponseCode() != 200)
     {
-      std::cerr << "Error: Could get image from " + imgUrl + "!" << std::endl
-                << "HTTP status code: " << curl.getResponseCode() << std::endl
+      std::cerr << "Error: Could get image from " + imgUrl + "!\n"
+                << "HTTP status code: " << curl.getResponseCode() << '\n'
                 << "Response: " << imageData << std::endl;
       return std::optional<std::string>();
     }
@@ -803,8 +803,8 @@ std::optional<std::string> Matrix::encryptionAlgorithm(const std::string& roomId
   std::string response;
   if (!curl.perform(response))
   {
-    std::cerr << "Error: Could not get room encryption algorithm!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Could not get room encryption algorithm!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return std::optional<std::string>();
   }
@@ -818,8 +818,8 @@ std::optional<std::string> Matrix::encryptionAlgorithm(const std::string& roomId
 
   if (curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Could not get room encryption algorithm!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Could not get room encryption algorithm!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return std::optional<std::string>();
   }
@@ -830,16 +830,14 @@ std::optional<std::string> Matrix::encryptionAlgorithm(const std::string& roomId
   if (error)
   {
     std::cerr << "Error getting room's encryption algorithm: Unable to parse "
-              << "JSON response!" << std::endl << "Response is: " << response
-              << std::endl;
+              << "JSON response!\nResponse is: " << response << std::endl;
     return std::optional<std::string>();
   }
   simdjson::dom::element algorithm;
   const auto jsonError = doc["algorithm"].get(algorithm);
   if (jsonError || algorithm.type() != simdjson::dom::element_type::STRING)
   {
-    std::cerr << "Error: Server did not respond with encryption algorithm!"
-              << std::endl;
+    std::cerr << "Error: Server did not respond with encryption algorithm!\n";
     return std::optional<std::string>();
   }
 

@@ -43,7 +43,7 @@ void Debian::getVersion(Packages::nameVersion& pack, const std::string& suite)
   }
   catch (const std::exception& ex)
   {
-    std::cerr << "Error: Could not URL-encode package name!" << std::endl;
+    std::cerr << "Error: Could not URL-encode package name!\n";
     return;
   }
 
@@ -53,10 +53,10 @@ void Debian::getVersion(Packages::nameVersion& pack, const std::string& suite)
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Request to Debian package API (versions) failed!" << std::endl
-              << "URL: " << curl.getURL() << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
-              << "Response: " << response << std::endl;
+    std::cerr << "Error: Request to Debian package API (versions) failed!\n"
+              << "URL: " << curl.getURL() << '\n'
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
+              << "Response: " << response << '\n';
     return;
   }
 
@@ -65,7 +65,7 @@ void Debian::getVersion(Packages::nameVersion& pack, const std::string& suite)
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error while trying to parse JSON response from Debian!" << std::endl
+    std::cerr << "Error while trying to parse JSON response from Debian!\n"
               << "Response is: " << response << std::endl;
     return;
   }
@@ -110,7 +110,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
   }
   catch (const std::exception& ex)
   {
-    std::cerr << "Error: Could not URL-encode package name!" << std::endl;
+    std::cerr << "Error: Could not URL-encode package name!\n";
     return Message("Error: Could not get information for package '" + packageName + "'!");
   }
 
@@ -121,10 +121,10 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Request to Debian package search API failed!" << std::endl
-              << "URL: " << curl.getURL() << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
-              << "Response: " << response << std::endl;
+    std::cerr << "Error: Request to Debian package search API failed!\n"
+              << "URL: " << curl.getURL() << '\n'
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
+              << "Response: " << response << '\n';
     return Message("The request to get information about Debian packages failed. Debian server returned unexpected response.");
   }
 
@@ -133,7 +133,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
   const auto error = parser.parse(response).get(doc);
   if (error)
   {
-    std::cerr << "Error while trying to parse JSON response from Debian!" << std::endl
+    std::cerr << "Error while trying to parse JSON response from Debian!\n"
               << "Response is: " << response << std::endl;
     return Message("The request to get information about Debian packages failed. Debian server returned invalid JSON.");
   }
@@ -144,7 +144,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
     const auto exactError = doc.at_pointer("/results/exact").get(exact);
     if (exactError)
     {
-      std::cerr << "Error: JSON response from Debian does not contain '/results/exact' element!" << std::endl
+      std::cerr << "Error: JSON response from Debian does not contain '/results/exact' element!\n"
                 << "Response is: " << response << std::endl;
       return Message("The request to get information about Debian packages failed. Debian server returned unexpected JSON format.");
     }
@@ -154,7 +154,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
       const auto error2 = exact["name"].get(exactName);
       if (error2 || exactName.type() != simdjson::dom::element_type::STRING)
       {
-        std::cerr << "Error: JSON response from Debian does not contain '/results/exact/name' element!" << std::endl
+        std::cerr << "Error: JSON response from Debian does not contain '/results/exact/name' element!\n"
                   << "Response is: " << response << std::endl;
         return Message("The request to get information about Debian packages failed. Debian server returned unexpected JSON format.");
       }
@@ -166,7 +166,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
   const auto otherError = doc.at_pointer("/results/other").get(other);
   if (otherError || other.type() != simdjson::dom::element_type::ARRAY)
   {
-    std::cerr << "Error: JSON response from Debian does not contain '/results/other' element!" << std::endl
+    std::cerr << "Error: JSON response from Debian does not contain '/results/other' element!\n"
               << "Response is: " << response << std::endl;
     return Message("The request to get information about Debian packages failed. Debian server returned unexpected JSON format.");
   }
@@ -177,7 +177,7 @@ Message Debian::packageSearch(const std::string_view& command, const std::string
     const auto itemError = item["name"].get(itemName);
     if (itemError || itemName.type() != simdjson::dom::element_type::STRING)
     {
-      std::cerr << "Error: JSON response from Debian does not contain '/results/other/name' element!" << std::endl
+      std::cerr << "Error: JSON response from Debian does not contain '/results/other/name' element!\n"
                 << "Response is: " << response << std::endl;
       return Message("The request to get information about Debian packages failed. Debian server returned unexpected JSON format.");
     }

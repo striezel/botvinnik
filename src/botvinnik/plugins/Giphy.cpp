@@ -105,7 +105,7 @@ nonstd::expected<std::vector<GiphyImageData>, Message> extract_images_from_json(
   const auto parseError = parser.parse(json).get(doc);
   if (parseError)
   {
-    std::cerr << "Error while trying to parse JSON response from Giphy API!" << std::endl
+    std::cerr << "Error while trying to parse JSON response from Giphy API!\n"
               << "Response is: " << json << std::endl;
     return nonstd::make_unexpected(Message("The API request to get information from Giphy failed (invalid JSON)."));
   }
@@ -113,7 +113,7 @@ nonstd::expected<std::vector<GiphyImageData>, Message> extract_images_from_json(
   const auto dataError = doc.at_pointer("/data").get(data);
   if (dataError || data.type() != simdjson::dom::element_type::ARRAY)
   {
-    std::cerr << "Error: JSON response from Giphy does not contain data array!" << std::endl
+    std::cerr << "Error: JSON response from Giphy does not contain data array!\n"
               << "Response is: " << json << std::endl;
     return nonstd::make_unexpected(Message("The request to get images from Giphy failed. Giphy server returned unexpected JSON format."));
   }
@@ -126,7 +126,7 @@ nonstd::expected<std::vector<GiphyImageData>, Message> extract_images_from_json(
     auto error = item.at_pointer("/images/original/url").get(item_element);
     if (error || item_element.type() != simdjson::dom::element_type::STRING)
     {
-      std::cerr << "Error: JSON response from Giphy does not contain '/images/original/url' element!" << std::endl
+      std::cerr << "Error: JSON response from Giphy does not contain '/images/original/url' element!\n"
                 << "Response is: " << json << std::endl;
       return nonstd::make_unexpected(Message("The request to get images from Giphy failed. Giphy server returned unexpected JSON format."));
     }
@@ -140,7 +140,7 @@ nonstd::expected<std::vector<GiphyImageData>, Message> extract_images_from_json(
     // width value (e. g. "400") instead of the real value (e. g. 400).
     if (error || !item_element.is_string())
     {
-      std::clog << "Error: JSON response from Giphy does not contain '/images/original/width' element!" << std::endl
+      std::clog << "Error: JSON response from Giphy does not contain '/images/original/width' element!\n"
                 << "Response is: " << json << std::endl;
     }
     else
@@ -156,7 +156,7 @@ nonstd::expected<std::vector<GiphyImageData>, Message> extract_images_from_json(
     error = item.at_pointer("/images/original/height").get(item_element);
     if (error || !item_element.is_string())
     {
-      std::clog << "Error: JSON response from Giphy does not contain '/images/original/width' element!" << std::endl
+      std::clog << "Error: JSON response from Giphy does not contain '/images/original/width' element!\n"
                 << "Response is: " << json << std::endl;
     }
     else
@@ -172,7 +172,7 @@ nonstd::expected<std::vector<GiphyImageData>, Message> extract_images_from_json(
     error = item.at_pointer("/images/original/size").get(item_element);
     if (error || !item_element.is_string())
     {
-      std::clog << "Error: JSON response from Giphy does not contain '/images/original/width' element!" << std::endl
+      std::clog << "Error: JSON response from Giphy does not contain '/images/original/width' element!\n"
                 << "Response is: " << json << std::endl;
     }
     else
@@ -202,7 +202,7 @@ Message Giphy::performQuery(const std::string& query, const std::string_view& ro
   }
   catch (const std::exception& ex)
   {
-    std::cerr << "Error: Failed to URL-encode Giphy query!\n" << ex.what() << std::endl;
+    std::cerr << "Error: Failed to URL-encode Giphy query!\n" << ex.what() << '\n';
     return Message("Could not request image from Giphy.");
   }
 
@@ -211,8 +211,8 @@ Message Giphy::performQuery(const std::string& query, const std::string_view& ro
   std::string response;
   if (!curl.perform(response) || curl.getResponseCode() != 200)
   {
-    std::cerr << "Error: Request to Giphy API failed!" << std::endl
-              << "HTTP status code: " << curl.getResponseCode() << std::endl
+    std::cerr << "Error: Request to Giphy API failed!\n"
+              << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return Message("The API request to get information from Giphy failed.");
   }

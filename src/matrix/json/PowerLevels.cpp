@@ -33,7 +33,7 @@ std::optional<PowerLevels> parsePowerLevels(const std::string& json)
   const auto error = parser.parse(json).get(doc);
   if (error)
   {
-    std::cerr << "Error while parsing power levels: Unable to parse JSON data!" << std::endl
+    std::cerr << "Error while parsing power levels: Unable to parse JSON data!\n"
               << "JSON is: " << json << std::endl;
     return std::optional<matrix::PowerLevels>();
   }
@@ -50,7 +50,7 @@ std::optional<PowerLevels> parsePowerLevels(const std::string& json)
     }
     else
     {
-      std::cerr << "Error: 'ban' is not an integer!" << std::endl;
+      std::cerr << "Error: 'ban' is not an integer!\n";
       return std::optional<matrix::PowerLevels>();
     }
   }
@@ -63,7 +63,7 @@ std::optional<PowerLevels> parsePowerLevels(const std::string& json)
     }
     else
     {
-      std::cerr << "Error: 'kick' is not an integer!" << std::endl;
+      std::cerr << "Error: 'kick' is not an integer!\n";
       return std::optional<matrix::PowerLevels>();
     }
   }
@@ -76,7 +76,7 @@ std::optional<PowerLevels> parsePowerLevels(const std::string& json)
     }
     else
     {
-      std::cerr << "Error: 'users_default' is not an integer!" << std::endl;
+      std::cerr << "Error: 'users_default' is not an integer!\n";
       return std::optional<matrix::PowerLevels>();
     }
   }
@@ -90,7 +90,7 @@ std::optional<PowerLevels> parsePowerLevels(const std::string& json)
       users.get<simdjson::dom::object>().tie(usersObject, err);
       if (err)
       {
-        std::cerr << "Error: 'users' is not an object!" << std::endl;
+        std::cerr << "Error: 'users' is not an object!\n";
         return std::optional<matrix::PowerLevels>();
       }
 
@@ -99,7 +99,7 @@ std::optional<PowerLevels> parsePowerLevels(const std::string& json)
       {
         if (value.type() != simdjson::dom::element_type::INT64)
         {
-          std::cerr << "Error: 'users' is not an object with string keys and integer values!" << std::endl;
+          std::cerr << "Error: 'users' is not an object with string keys and integer values!\n";
           return std::optional<matrix::PowerLevels>();
         }
         result.users[std::string(key)] = value.get<int64_t>();
@@ -107,7 +107,7 @@ std::optional<PowerLevels> parsePowerLevels(const std::string& json)
     }
     else
     {
-      std::cerr << "Error: 'users' is not an object!" << std::endl;
+      std::cerr << "Error: 'users' is not an object!\n";
       return std::optional<matrix::PowerLevels>();
     }
   }

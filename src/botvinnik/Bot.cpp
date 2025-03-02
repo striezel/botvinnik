@@ -48,13 +48,13 @@ bool Bot::registerPlugin(Plugin& plug)
   {
     if (cmd.empty())
     {
-      std::cerr << "Error: Empty plugin commands are not allowed!" << std::endl;
+      std::cerr << "Error: Empty plugin commands are not allowed!\n";
       return false;
     }
     if (commands.find(cmd) != commands.end())
     {
       std::cerr << "Error: Command '" << cmd << "' is already registered for "
-                << "another plugin!" << std::endl;
+                << "another plugin!\n";
       return false;
     }
   }
@@ -77,7 +77,7 @@ bool Bot::handleCommandDeactivations()
     if (iter == commands.end())
     {
       std::cerr << "Error: No command by the name '" << cmd << "' is active. "
-                << "Therefore, it cannot be deactivated." << std::endl;
+                << "Therefore, it cannot be deactivated.\n";
       return false;
     }
     if (!iter->second.get().allowDeactivation(cmd))
@@ -85,10 +85,10 @@ bool Bot::handleCommandDeactivations()
       std::cerr << "Error: Deactivating the command '" << cmd << "' is not "
                 << "allowed. This may be due to the fact that this command is "
                 << "a core command which is essential to operate the bot "
-                << "properly." << std::endl;
+                << "properly.\n";
       return false;
     }
-    std::clog << "Info: Command '" << cmd << "' is deactivated." << std::endl;
+    std::clog << "Info: Command '" << cmd << "' is deactivated.\n";
     commands.erase(iter);
   }
 
@@ -100,13 +100,13 @@ void Bot::start()
   if (commands.empty())
   {
     std::cout << "Info: No plugins / commands have been registered."
-              << " Bot will not start." << std::endl;
+              << " Bot will not start.\n";
     return;
   }
 
   if (!mat.login())
   {
-    std::cerr << "Error: Login on Matrix homeserver failed!" << std::endl;
+    std::cerr << "Error: Login on Matrix homeserver failed!\n";
     return;
   }
 
@@ -115,17 +115,18 @@ void Bot::start()
   const auto uploadSize = mat.getUploadLimit();
   if (!uploadSize.has_value())
   {
-    std::clog << "Warning: Could not get upload size limit from server." << std::endl;
+    std::clog << "Warning: Could not get upload size limit from server.\n";
   }
   else
   {
     if (uploadSize.value() == -1)
     {
-      std::clog << "Info: Server did not disclose its upload size limit." << std::endl;
+      std::clog << "Info: Server did not disclose its upload size limit.\n";
     }
     else
     {
-      std::clog << "Info: Server upload size limit is " << uploadSize.value() << " bytes." << std::endl;
+      std::clog << "Info: Server upload size limit is " << uploadSize.value()
+                << " bytes.\n";
     }
   }
 
@@ -134,13 +135,13 @@ void Bot::start()
   std::vector<std::string> invites;
   if (!mat.sync(next_batch, rooms, invites, ""))
   {
-    std::cerr << "Error: Initial sync request failed!" << std::endl;
+    std::cerr << "Error: Initial sync request failed!\n";
     mat.logout();
     return;
   }
   if (next_batch.empty())
   {
-    std::cerr << "Error: Initial sync request did not return a 'next_batch' value!" << std::endl;
+    std::cerr << "Error: Initial sync request did not return a 'next_batch' value!\n";
     mat.logout();
     return;
   }
@@ -171,7 +172,7 @@ void Bot::start()
     }
     else
     {
-      std::clog << nowToString() << " Info: Sync request was successful." << std::endl;
+      std::clog << nowToString() << " Info: Sync request was successful.\n";
     }
 
     // Iterate over events of all rooms.
@@ -185,7 +186,7 @@ void Bot::start()
 
     if (stopRequested())
     {
-      std::clog << nowToString() << " Info: Bot stop was requested, exiting sync loop." << std::endl;
+      std::clog << nowToString() << " Info: Bot stop was requested, exiting sync loop.\n";
       break;
     }
   }
@@ -205,7 +206,7 @@ void Bot::checkServerVersion()
               << " default, making the bot very slow to respond. If that is "
               << "the case, the server administrator should lower the setting\n\n"
               << "    sync_response_cache_duration\n\n"
-              << "in the homeserver configuration." << std::endl;
+              << "in the homeserver configuration.\n";
   }
 }
 
@@ -248,7 +249,7 @@ void Bot::handleRoomEvents(const std::string& prefix, const std::vector<matrix::
           if (!mat.sendMessage(room.id, answer))
           {
             // Sending messages could fail due to rate limit or because the bot has left the room.
-            std::cerr << "Error: Could not send answer for command " + command + "!" << std::endl;
+            std::cerr << "Error: Could not send answer for command " + command + "!\n";
           }
         }
       }
@@ -260,11 +261,11 @@ void Bot::joinRoom(const std::string& roomId)
 {
   if (!mat.joinRoom(roomId))
   {
-    std::cerr << "Error: Could not join room " << roomId << "!" << std::endl;
+    std::cerr << "Error: Could not join room " << roomId << "!\n";
   }
   else
   {
-    std::clog << "Info: Joined room " << roomId << "." << std::endl;
+    std::clog << "Info: Joined room " << roomId << ".\n";
     const auto encryption = mat.encryptionAlgorithm(roomId);
     Message leaveMessage;
     if (encryption.has_value() && !encryption.value().empty())
@@ -272,13 +273,13 @@ void Bot::joinRoom(const std::string& roomId)
       // Room uses encryption, but the bot cannot handle this yet.
       std::clog << "Info: The room " << roomId << " uses encryption ("
                 << encryption.value() << "), but the bot cannot handle "
-                << "encrypted messages (yet)." << std::endl;
+                << "encrypted messages (yet).\n";
       leaveMessage = Message("This room uses encryption, but the bot cannot decipher such messages (yet). Therefore, it will leave the room.");
     }
     if (!encryption.has_value())
     {
       std::cerr << "Error: Encryption of the room " << roomId
-                << " could not be determined!" << std::endl;
+                << " could not be determined!\n";
       leaveMessage = Message("This room may use encryption, but the bot cannot decipher encrypted messages (yet). Therefore, it will leave the room.");
     }
     // If the message has a body, then there is a reason to leave the room.
@@ -288,17 +289,16 @@ void Bot::joinRoom(const std::string& roomId)
       {
         std::cerr << "Error: Could not send message to indicate why the "
                   << "bot is leaving the room " << roomId
-                  << ". Attempting to leave anyway." << std::endl;
+                  << ". Attempting to leave anyway.\n";
       }
       if (!mat.leaveRoom(roomId))
       {
         std::cerr << "Error: Could not leave the encrypted room " << roomId
-                  << "!" << std::endl;
+                  << "!\n";
       }
       else
       {
-        std::clog << "Info: Bot left the encrypted room " << roomId << "."
-                  << std::endl;
+        std::clog << "Info: Bot left the encrypted room " << roomId << ".\n";
       }
     }
   } // else

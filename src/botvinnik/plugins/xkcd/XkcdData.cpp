@@ -59,7 +59,7 @@ std::optional<XkcdData> XkcdData::get(unsigned int num)
   const auto parseError = parser.parse(response).get(doc);
   if (parseError)
   {
-    std::cerr << "Error while trying to parse JSON response from xkcd.com!" << std::endl
+    std::cerr << "Error while trying to parse JSON response from xkcd.com!\n"
               << "Response is: " << response << std::endl;
     return std::optional<XkcdData>();
   }
@@ -70,7 +70,7 @@ std::optional<XkcdData> XkcdData::get(unsigned int num)
   auto error = doc["num"].get(value);
   if (error || value.type() != simdjson::dom::element_type::INT64)
   {
-    std::cerr << "Error while trying to parse JSON response from xkcd.com! JSON data does not contain a 'num' member!" << std::endl;
+    std::cerr << "Error while trying to parse JSON response from xkcd.com! JSON data does not contain a 'num' member!\n";
     return std::optional<XkcdData>();
   }
   data.num = value.get<int64_t>();
@@ -86,7 +86,7 @@ std::optional<XkcdData> XkcdData::get(unsigned int num)
     doc["title"].tie(value, error);
     if (error || value.type() != simdjson::dom::element_type::STRING)
     {
-      std::cerr << "Error while trying to parse JSON response from xkcd.com! JSON data does not contain a title!" << std::endl;
+      std::cerr << "Error while trying to parse JSON response from xkcd.com! JSON data does not contain a title!\n";
       return std::optional<XkcdData>();
     }
     data.title = value.get<std::string_view>().value();
@@ -95,7 +95,7 @@ std::optional<XkcdData> XkcdData::get(unsigned int num)
   doc["img"].tie(value, error);
   if (error || value.type() != simdjson::dom::element_type::STRING)
   {
-    std::cerr << "Error while trying to parse JSON response from xkcd.com! JSON data does not contain a image URL!" << std::endl;
+    std::cerr << "Error while trying to parse JSON response from xkcd.com! JSON data does not contain a image URL!\n";
     return std::optional<XkcdData>();
   }
   data.img = value.get<std::string_view>().value();
@@ -103,7 +103,7 @@ std::optional<XkcdData> XkcdData::get(unsigned int num)
   doc["alt"].tie(value, error);
   if (error || value.type() != simdjson::dom::element_type::STRING)
   {
-    std::cerr << "Error while trying to parse JSON response from xkcd.com! JSON data does not contain an alternative text!" << std::endl;
+    std::cerr << "Error while trying to parse JSON response from xkcd.com! JSON data does not contain an alternative text!\n";
     return std::optional<XkcdData>();
   }
   data.alt = value.get<std::string_view>().value();
