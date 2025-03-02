@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -421,7 +421,12 @@ bool Configuration::loadCoreConfiguration(const std::string& fileName)
   {
     std::cerr << "Error: Some settings are missing in configuration file "
               << fileName << ", and thus botvinnik will not be able to work"
-              << " properly.\n";
+              << " properly.\n\nA minimal configuration file could look like "
+              << "this:\n\n"
+              << "    matrix.homeserver=https://matrix.example.tld/\n"
+              << "    matrix.userid=@alice:matrix.example.tld\n"
+              << "    matrix.password=secret password\n"
+              << "    bot.stop.allowed.userid=@bob:matrix.example.tld\n\n";
     return false;
   } // if a setting is missing
 
