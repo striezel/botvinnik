@@ -28,6 +28,29 @@ jobs:
           cd build
           cmake ../ -DENABLE_SANITIZER=ON
           make -j2
+      - name: Download Mocktrix as homeserver for tests
+        run: |
+          cd $GITHUB_WORKSPACE
+          sudo apt-get install -y wget tar bzip2
+          wget https://github.com/striezel/Mocktrix/releases/download/v0.1.0/Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2
+          CHECKSUM=$(sha256sum Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2)
+          echo "Checksum calculation: $CHECKSUM"
+          CHECKSUM_BITS=$(echo $CHECKSUM | cut -c1-64)
+          if [ "$CHECKSUM_BITS" != "f95a0928d0f8d7b22f3729021d1de12e06812e6ff48b9adcb399be27dcf95833" ]
+          then
+            echo "Checksum of downloaded homeserver is wrong."
+            exit 1
+          fi
+          tar xf Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2
+      - name: Start Mocktrix homeserver for tests
+        run: |
+          cd "$GITHUB_WORKSPACE/Mocktrix-v0.1.0-linux-x64-self-contained"
+          ./Mocktrix &
+          while ! netstat -tna | grep LISTEN | grep --silent 5000
+          do
+              echo Waiting for Kestrel server to start ...
+              sleep 5
+          done
       - name: Tests
         run: |
           cd "$GITHUB_WORKSPACE"/build

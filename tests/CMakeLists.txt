@@ -22,6 +22,10 @@ add_subdirectory (curly)
 # Recurse into subdirectory for JSON parsing tests.
 add_subdirectory (json)
 
+# Recurse into subdirectory for Matrix-related tests.
+# These tests require a local Matrix homeserver.
+add_subdirectory (matrix)
+
 # Recurse into subdirectory for plugin tests.
 add_subdirectory (plugins)
 
