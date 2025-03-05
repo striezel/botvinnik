@@ -28,6 +28,29 @@ jobs:
           export GIT_DISCOVERY_ACROSS_FILESYSTEM=1
           cmake ../
           cmake --build . -j2
+      - name: Download Mocktrix as homeserver for tests
+        run: |
+          cd $GITHUB_WORKSPACE
+          apk add bzip2 grep icu-libs tar wget
+          wget https://github.com/striezel/Mocktrix/releases/download/v0.1.0/Mocktrix-v0.1.0-linux-musl-x64-self-contained.tar.bz2
+          CHECKSUM=$(sha256sum Mocktrix-v0.1.0-linux-musl-x64-self-contained.tar.bz2)
+          echo "Checksum calculation: $CHECKSUM"
+          CHECKSUM_BITS=$(echo $CHECKSUM | cut -c1-64)
+          if [ "$CHECKSUM_BITS" != "4ac5f6e2b56547f7462ca6f9e9278ae1d3c1b781b960908e64e24d00741214d5" ]
+          then
+            echo "Checksum of downloaded homeserver is wrong."
+            exit 1
+          fi
+          tar xf Mocktrix-v0.1.0-linux-musl-x64-self-contained.tar.bz2
+      - name: Start Mocktrix homeserver for tests
+        run: |
+          cd "$GITHUB_WORKSPACE/Mocktrix-v0.1.0-linux-musl-x64-self-contained"
+          ./Mocktrix &
+          while ! netstat -tna | grep LISTEN | grep --silent 5000
+          do
+              echo Waiting for Kestrel server to start ...
+              sleep 5
+          done
       - name: Run tests
         run: |
           cd "$GITHUB_WORKSPACE/build"
