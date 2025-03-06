@@ -40,6 +40,30 @@ jobs:
           cd build
           cmake ../
           cmake --build . -j2
+      - name: Download Mocktrix as homeserver for tests
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          curl -L --output Mocktrix-v0.1.0-win-x64-self-contained.tar.bz2 https://github.com/striezel/Mocktrix/releases/download/v0.1.0/Mocktrix-v0.1.0-win-x64-self-contained.tar.bz2
+          CHECKSUM=$(sha256sum Mocktrix-v0.1.0-win-x64-self-contained.tar.bz2)
+          echo "Checksum calculation: $CHECKSUM"
+          CHECKSUM_BITS=$(echo $CHECKSUM | cut -c1-64)
+          if [ "$CHECKSUM_BITS" != "c106fa62739460cbd063e612999a77965911a425400c0c9cfac1e0721bc02b7d" ]
+          then
+            echo "Checksum of downloaded homeserver is wrong."
+            exit 1
+          fi
+          tar xf Mocktrix-v0.1.0-win-x64-self-contained.tar.bz2
+      - name: Start Mocktrix homeserver for tests
+        shell: bash
+        run: |
+          cd "$GITHUB_WORKSPACE/Mocktrix-v0.1.0-win-x64-self-contained"
+          ./Mocktrix &
+          while ! netstat -tna | grep LISTEN | grep --silent 5000
+          do
+              echo Waiting for Kestrel server to start ...
+              sleep 5
+          done
       - name: Tests
         run: |
           export MSYSTEM=MINGW64
