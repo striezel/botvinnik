@@ -35,6 +35,19 @@ build_gcc:
     - cd ./build
     - cmake ../
     - make -j2
+    # download Mocktrix as homeserver for tests
+    - wget https://gitlab.com/-/project/57986004/uploads/a29d72c738b01f005531592d19d7c69b/Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2
+    - export CHECKSUM=$(sha256sum Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2)
+    - echo "Checksum is $CHECKSUM."
+    - export CHECKSUM_BITS=$(echo $CHECKSUM | cut -c1-64)
+    - if [ "$CHECKSUM_BITS" != "f95a0928d0f8d7b22f3729021d1de12e06812e6ff48b9adcb399be27dcf95833" ] ; then echo "Checksum of downloaded homeserver is wrong."; exit 1; fi
+    - tar xf Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2
+    # start homeserver for tests
+    - cd Mocktrix-v0.1.0-linux-x64-self-contained
+    - ./Mocktrix &
+    - while ! netstat -tna | grep LISTEN | grep --silent 5000; do echo Waiting for Kestrel server to start ... ; sleep 5; done
+    - cd ..
+    # test
     - ctest -V
 
 docker_image_clang:
@@ -74,6 +87,19 @@ build_clang:
     - cd ./build
     - cmake ../
     - make -j2
+    # download Mocktrix as homeserver for tests
+    - wget https://gitlab.com/-/project/57986004/uploads/a29d72c738b01f005531592d19d7c69b/Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2
+    - export CHECKSUM=$(sha256sum Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2)
+    - echo "Checksum is $CHECKSUM."
+    - export CHECKSUM_BITS=$(echo $CHECKSUM | cut -c1-64)
+    - if [ "$CHECKSUM_BITS" != "f95a0928d0f8d7b22f3729021d1de12e06812e6ff48b9adcb399be27dcf95833" ] ; then echo "Checksum of downloaded homeserver is wrong."; exit 1; fi
+    - tar xf Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2
+    # start homeserver for tests
+    - cd Mocktrix-v0.1.0-linux-x64-self-contained
+    - ./Mocktrix &
+    - while ! netstat -tna | grep LISTEN | grep --silent 5000; do echo Waiting for Kestrel server to start ... ; sleep 5; done
+    - cd ..
+    # tests
     - ctest -V
 
 docker_image_coverage:
@@ -107,6 +133,18 @@ coverage:
     - cd build-coverage
     - cmake -DCODE_COVERAGE=ON ../
     - make -j2
+    # download Mocktrix as homeserver for tests
+    - wget https://gitlab.com/-/project/57986004/uploads/a29d72c738b01f005531592d19d7c69b/Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2
+    - export CHECKSUM=$(sha256sum Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2)
+    - echo "Checksum is $CHECKSUM."
+    - export CHECKSUM_BITS=$(echo $CHECKSUM | cut -c1-64)
+    - if [ "$CHECKSUM_BITS" != "f95a0928d0f8d7b22f3729021d1de12e06812e6ff48b9adcb399be27dcf95833" ] ; then echo "Checksum of downloaded homeserver is wrong."; exit 1; fi
+    - tar xf Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2
+    # start homeserver for tests
+    - cd Mocktrix-v0.1.0-linux-x64-self-contained
+    - ./Mocktrix &
+    - while ! netstat -tna | grep LISTEN | grep --silent 5000; do echo Waiting for Kestrel server to start ... ; sleep 5; done
+    - cd ..
     # tests
     - ctest -V
     # collect code coverage data

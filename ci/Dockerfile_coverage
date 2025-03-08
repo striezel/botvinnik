@@ -6,6 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get upgrade -y
 # Install build toolchain and dependencies.
 RUN apt-get install -y catch2 cmake fortune-mod fortunes-min g++ lcov libcurl4-gnutls-dev libsqlite3-dev pkg-config
+RUN apt-get install -y bzip2 coreutils net-tools tar wget
 ENV CXX=g++
 ENV CC=gcc
 RUN export CXX=g++

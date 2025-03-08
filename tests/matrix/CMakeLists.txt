@@ -75,7 +75,7 @@ endif ()
 
 
 # add test case
-if (NOT DEFINED ENV{GITHUB_ACTIONS})
+if (NOT DEFINED ENV{GITHUB_ACTIONS} AND NOT DEFINED ENV{GITLAB_CI})
   message ( STATUS "Skipping Matrix-related tests, because this is no CI environment.")
 else ()
   add_test(NAME test_matrix_with_server
