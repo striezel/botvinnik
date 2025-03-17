@@ -477,6 +477,17 @@ bool Configuration::load(const std::string& fileName)
   if (realName.empty())
   {
     std::cerr << "Error: No configuration file was found!\n";
+    std::cerr << "Hint: It looks like no location for the configuration file "
+              << "has been specified. If no location is given, the program will"
+              << " search in the following locations:\n\n";
+    for (const auto& path: Configuration::potentialFileNames())
+    {
+      std::cerr << "    " << path << '\n';
+    }
+    const auto example = std::filesystem::path("path") / "to" / "botvinnik.conf";
+    std::cerr << "\nHint: You can also use the --conf option to specify the "
+              << "location of the configuration file, for example:\n\n\t"
+              << "botvinnik --conf " << example.string() << "\n\n";
     return false;
   }
   try
