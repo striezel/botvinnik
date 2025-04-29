@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2022  Dirk Stolle
+    Copyright (C) 2020, 2022, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #ifndef BVN_UTIL_SQLITE3_HPP
 #define BVN_UTIL_SQLITE3_HPP
 
+#include <cstdint>
 #include <memory>
 #include <sqlite3.h>
 

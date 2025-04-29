@@ -6,6 +6,9 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2025-03-??)
 
+* __[fix]__
+  Fix build failure with new GCC 15.1.0 on MSYS2.
+
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.12.2 to version 3.12.3.
