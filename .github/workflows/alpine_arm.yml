@@ -6,7 +6,7 @@ jobs:
   alpine_arm:
     runs-on: ubuntu-24.04-arm
     container:
-      image: 'alpine:3.20'
+      image: 'alpine:3.22'
       # Needed for Monkey-patch step.
       volumes:
         - /:/host
@@ -75,7 +75,7 @@ jobs:
           ctest -V
       - name: Install statically linked libraries
         run: |
-          apk add brotli-static c-ares-static curl-static libidn2-static
+          apk add brotli-static c-ares-dev curl-static libidn2-static
           apk add libpsl-static libunistring-static nghttp2-static
           apk add openssl-libs-static sqlite-static zlib-static zstd-static
       - name: Build statically linked executable

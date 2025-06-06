@@ -5,7 +5,7 @@ on: push
 jobs:
   alpine:
     runs-on: ubuntu-24.04
-    container: 'alpine:3.20'
+    container: 'alpine:3.22'
     steps:
       - name: Install and prepare Git
         run: |
@@ -57,7 +57,7 @@ jobs:
           ctest -V
       - name: Install statically linked libraries
         run: |
-          apk add brotli-static c-ares-static curl-static libidn2-static
+          apk add brotli-static c-ares-dev curl-static libidn2-static
           apk add libpsl-static libunistring-static nghttp2-static
           apk add openssl-libs-static sqlite-static zlib-static zstd-static
       - name: Build statically linked executable
