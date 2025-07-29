@@ -3,7 +3,7 @@ name: Sanitizers
 on: push
 
 jobs:
-  gcc:
+  sanitizer:
     strategy:
       fail-fast: false
       matrix:
@@ -13,7 +13,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE.
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Install Debian packages
         run: |
           sudo apt-get update
