@@ -135,6 +135,9 @@ packages:
 
 * `!deb` - _(since version 0.1.3)_ alias for package searches for the current
   stable release of Debian, currently equal to the `!deb12` command
+* `!deb14` - _(since version 0.9.6)_ searches for packages for Debian 14
+  ("forky"), e.g. `!deb14 grep` will find Debian 14 packages where "grep" is
+  part of the name
 * `!deb13` - _(since version 0.6.2)_ searches for packages for Debian 13
   ("trixie"), e.g. `!deb13 grep` will find Debian 13 packages where "grep" is
   part of the name

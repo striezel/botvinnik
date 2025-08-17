@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2020, 2022, 2023, 2024, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ TEST_CASE("plugin Debian")
 
     // deb commands have to be there.
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "deb") == commands.end() );
+    REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "deb14") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "deb13") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "deb12") == commands.end() );
     REQUIRE_FALSE( std::find(commands.begin(), commands.end(), "deb11") == commands.end() );

@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ namespace bvn
 
 std::vector<std::string> Debian::commands() const
 {
-  return { "deb", "deb13", "deb12", "deb11", "deb10", "deb9", "deb8" };
+  return { "deb", "deb14", "deb13", "deb12", "deb11", "deb10", "deb9", "deb8" };
 }
 
 void Debian::getVersion(Packages::nameVersion& pack, const std::string& suite)
@@ -281,11 +281,15 @@ Message Debian::handleCommand(const std::string_view& command, const std::string
         .append(command).append("' command."));
   }
 
-  if (command == "deb13")
+  if (command == "deb14")
+  {
+    return packageSearch(command, message, "forky");
+  }
+  if (command == "deb" || command == "deb13")
   {
     return packageSearch(command, message, "trixie");
   }
-  if (command == "deb" || command == "deb12")
+  if (command == "deb12")
   {
     return packageSearch(command, message, "bookworm");
   }
@@ -314,23 +318,27 @@ std::string Debian::helpOneLine(const std::string_view& command) const
 {
   if (command == "deb")
   {
-    return "gets a list of available packages in Debian 12 (a.k.a \"bookworm\"), the current stable release (alias for deb12)";
+    return "gets a list of available packages in Debian 13 (a.k.a \"trixie\"), the current stable release (alias for deb13)";
+  }
+  if (command == "deb14")
+  {
+    return "gets a list of available packages in Debian 14 (a.k.a \"forky\"), the future stable release";
   }
   if (command == "deb13")
   {
-    return "gets a list of available packages in Debian 13 (a.k.a \"trixie\"), the future stable release";
+    return "gets a list of available packages in Debian 13 (a.k.a \"trixie\"), the current stable release";
   }
   if (command == "deb12")
   {
-    return "gets a list of available packages in Debian 12 (a.k.a \"bookworm\"), the current stable release";
+    return "gets a list of available packages in Debian 12 (a.k.a \"bookworm\"), the old stable release";
   }
   if (command == "deb11")
   {
-    return "gets a list of available packages in Debian 11 (a.k.a \"bullseye\"), the old stable release";
+    return "gets a list of available packages in Debian 11 (a.k.a \"bullseye\"), the twice old stable release";
   }
   if (command == "deb10")
   {
-    return "gets a list of available packages in Debian 10 (a.k.a \"buster\"), the twice old stable release";
+    return "gets a list of available packages in Debian 10 (a.k.a \"buster\")";
   }
   if (command == "deb9")
   {
@@ -349,6 +357,7 @@ Message Debian::helpExtended(const std::string_view& command, const std::string_
   using namespace std::string_literals;
 
   const std::unordered_map<std::string, std::string> code_names = {
+    { "deb14", "forky" },
     { "deb13", "trixie" },
     { "deb12", "bookworm" },
     { "deb11", "bullseye" },
@@ -358,16 +367,17 @@ Message Debian::helpExtended(const std::string_view& command, const std::string_
   };
   if (command == "deb")
   {
-    // `!deb` is currently an alias for `!deb12`.
-    return Message("searches for packages for Debian 12 (\"bookworm\"), e.g. `"s
-        .append(prefix).append(command) + " grep` will find Debian 12"s
+    // `!deb` is currently an alias for `!deb13`.
+    return Message("searches for packages for Debian 13 (\"trixie\"), e.g. `"s
+        .append(prefix).append(command) + " grep` will find Debian 13"s
         + " packages where \"grep\" is part of the name",
-        "searches for packages for Debian 12 (\"bookworm\"), e.g. <code>"s
-        .append(prefix).append(command) + " grep</code> will find Debian 12"s
+        "searches for packages for Debian 13 (\"trixie\"), e.g. <code>"s
+        .append(prefix).append(command) + " grep</code> will find Debian 13"s
         + " packages where \"grep\" is part of the name");
   }
-  if ((command == "deb13") || (command == "deb12") || (command == "deb11")
-      || (command == "deb10") || (command == "deb9") || (command == "deb8"))
+  if ((command == "deb14") || (command == "deb13") || (command == "deb12")
+      || (command == "deb11") || (command == "deb10") || (command == "deb9")
+      || (command == "deb8"))
   {
     const auto code_name = code_names.find(std::string(command))->second;
     const auto release = command.substr(3);

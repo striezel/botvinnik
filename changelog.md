@@ -6,6 +6,15 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2025-03-??)
 
+* __[new feature]__
+  The Debian package search is extended by adding the `!deb14` command to search
+  for packages in Debian 14 (a.k.a. "forky").
+
+* __[change]__
+  Furthermore, the `!deb` command is now an alias for `!deb13` instead for
+  `!deb12`. In other words: `!deb` does now search packages of Debian 13 instead
+  of Debian 12 as before.
+
 * __[fix]__
   Fix build failure with new GCC 15.1.0 on MSYS2.
 
