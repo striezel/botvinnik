@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <iostream>
 #include "../../../third-party/simdjson/simdjson.h"
+#include "../../Version.hpp"
 #include "../../net/Curly.hpp"
 #include "../../net/url_encode.hpp"
 
@@ -174,10 +175,12 @@ Message Wikipedia::extract(const std::string& lang, const std::string_view& comm
   Curly curl;
   // URL is something like https://de.wikipedia.org/w/api.php?format=json&redirects=true&action=query&prop=extracts&exintro=true&exchars=1200&titles=Einstein.
   curl.setURL("https://" + lang + ".wikipedia.org/w/api.php?format=json&redirects=true&action=query&prop=extracts&exintro=true&exchars=1200&titles=" + escapedTitle);
+  // Wikipedia demands User-Agent header when a lot of requests are made.
+  curl.addHeader("User-Agent: " + bvn::userAgent + " (https://github.com/striezel/botvinnik)");
   std::string response;
   if (!curl.perform(response))
   {
-    std::cerr << "Error: Request to Mediawiki API failed!\n"
+    std::cerr << "Error: Request to MediaWiki API failed!\n"
               << "HTTP status code: " << curl.getResponseCode() << '\n'
               << "Response: " << response << std::endl;
     return Message("The request to get information from Wikipedia failed. Wikipedia server returned unexpected response.");
