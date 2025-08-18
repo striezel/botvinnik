@@ -5,9 +5,9 @@ docker_image_gcc:
     - docker:27-dind
   script:
     - cd ci/
-    - docker build -t $CI_REGISTRY/striezel/botvinnik/gcc:deb12 . -f Dockerfile_gcc
+    - docker build -t $CI_REGISTRY/striezel/botvinnik/gcc:deb13 . -f Dockerfile_gcc
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push $CI_REGISTRY/striezel/botvinnik/gcc:deb12
+    - docker push $CI_REGISTRY/striezel/botvinnik/gcc:deb13
     - docker logout $CI_REGISTRY
   # Only build new image when the Dockerfile or the GitLab CI configuration
   # changes.
@@ -18,7 +18,7 @@ docker_image_gcc:
 
 # Build with GCC / G++.
 build_gcc:
-  image: registry.gitlab.com/striezel/botvinnik/gcc:deb12
+  image: registry.gitlab.com/striezel/botvinnik/gcc:deb13
   stage: test
   before_script:
     - apt-get update && apt-get -y upgrade
@@ -57,9 +57,9 @@ docker_image_clang:
     - docker:27-dind
   script:
     - cd ci/
-    - docker build -t $CI_REGISTRY/striezel/botvinnik/clang:deb12 . -f Dockerfile_clang
+    - docker build -t $CI_REGISTRY/striezel/botvinnik/clang:deb13 . -f Dockerfile_clang
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push $CI_REGISTRY/striezel/botvinnik/clang:deb12
+    - docker push $CI_REGISTRY/striezel/botvinnik/clang:deb13
     - docker logout $CI_REGISTRY
   # Only build new image when the Dockerfile or the GitLab CI configuration
   # changes.
@@ -70,7 +70,7 @@ docker_image_clang:
 
 # Build with Clang / Clang++.
 build_clang:
-  image: registry.gitlab.com/striezel/botvinnik/clang:deb12
+  image: registry.gitlab.com/striezel/botvinnik/clang:deb13
   stage: test
   before_script:
     - apt-get update && apt-get -y upgrade
@@ -148,7 +148,7 @@ coverage:
     # tests
     - ctest -V
     # collect code coverage data
-    - lcov -c --directory . --output-file main_coverage.info
+    - lcov -c --ignore-errors inconsistent,inconsistent --directory . --output-file main_coverage.info
     - lcov --remove main_coverage.info '/usr/*' '*tests/*' '*third-party/*' -o main_coverage_filtered.info
     - genhtml main_coverage_filtered.info --output-directory ../public
   coverage: /^[\t ]*lines\.*:\s*\d+.\d+\%/
@@ -159,7 +159,7 @@ coverage:
       - public
 
 pages:
-  image: debian:12-slim
+  image: debian:13-slim
   stage: deploy
   needs: ["coverage"]
   dependencies:
