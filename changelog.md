@@ -15,9 +15,6 @@ improvements may be omitted.)_
   `!deb12`. In other words: `!deb` does now search packages of Debian 13 instead
   of Debian 12 as before.
 
-* __[fix]__
-  Fix build failure with new GCC 15.1.0 on MSYS2.
-
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 3.12.2 to version 3.13.0.
