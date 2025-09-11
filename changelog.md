@@ -23,6 +23,11 @@ improvements may be omitted.)_
   The library that does the JSON serialization (nlohmann/json) has been updated
   from version 3.11.3 to version 3.12.0.
 
+* __[maintenance]__
+  The base image for the Docker build is updated from `debian:12-slim` to
+  `debian:13-slim`, i. e. from Debian 12 (codename "bookworm") to Debian 13
+  (codename "trixie").
+
 ## Version 0.9.5 (2025-03-17)
 
 * __[change]__
