@@ -15,7 +15,7 @@ Currently, the following libraries are here:
   by Daniel Lemire <https://github.com/simdjson/simdjson>,
   licensed under the Apache License 2.0 <https://opensource.org/licenses/Apache-2.0>
 
-* **nonstd/expected.hpp**: expected lite, version 0.8.0,
+* **nonstd/expected.hpp**: expected lite, version 0.9.0,
   by Martin Moene <https://github.com/martinmoene>,
   licensed under the Boost Software License 1.0
   <https://opensource.org/licenses/BSL-1.0>
