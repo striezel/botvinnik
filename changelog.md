@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2025-03-??)
+## Version 0.9.6 (2025-09-13)
 
 * __[new feature]__
   The Debian package search is extended by adding the `!deb14` command to search
