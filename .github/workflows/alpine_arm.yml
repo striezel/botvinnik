@@ -117,7 +117,7 @@ jobs:
           mv artifacts botvinnik-$VERSION
           tar czf botvinnik_${VERSION}_linux-arm64-generic.tar.gz botvinnik-$VERSION
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: botvinnik_linux-arm64-generic
           path: botvinnik_*_linux-arm64-generic.tar.gz
