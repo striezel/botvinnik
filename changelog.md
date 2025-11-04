@@ -6,6 +6,12 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2025-09-??)
 
+* _[breaking change]__
+  The `!corona` command is removed from the bot.
+  Reason for the removal is that there is no good current COVID-19 case data
+  available anymore, it's often outdated or inaccurate. Therefore, the feature
+  is not really as useful anymore as it was in 2020 or 2021.
+
 * __[maintenance]__
   The library that does the JSON parsing (simdjson) has been updated from
   version 4.0.1 to version 4.2.1.

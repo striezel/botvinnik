@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@
 #include "../../src/botvinnik/plugins/core/Help.hpp"
 #include "../../src/botvinnik/plugins/core/Rooms.hpp"
 #include "../../src/botvinnik/plugins/convert/Conversion.hpp"
-#include "../../src/botvinnik/plugins/corona/Corona.hpp"
 #include "../../src/botvinnik/plugins/CheatSheet.hpp"
 #include "../../src/botvinnik/plugins/Debian.hpp"
 #include "../../src/botvinnik/plugins/Fortune.hpp"
@@ -50,7 +49,6 @@ TEST_CASE("plugin registration for all known plugins")
   // other plugins
   CheatSheet cheat;
   Conversion convert;
-  Corona cov(bot.matrix());
   Debian deb;
   Fortune fortune;
   Giphy giphy("key", bot.matrix());
@@ -68,7 +66,6 @@ TEST_CASE("plugin registration for all known plugins")
     REQUIRE( bot.registerPlugin(rooms) );
     REQUIRE( bot.registerPlugin(cheat) );
     REQUIRE( bot.registerPlugin(convert) );
-    REQUIRE( bot.registerPlugin(cov) );
     REQUIRE( bot.registerPlugin(deb) );
     REQUIRE( bot.registerPlugin(fortune) );
     REQUIRE( bot.registerPlugin(giphy) );

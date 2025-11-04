@@ -34,8 +34,6 @@
 		<Unit filename="../../src/Version.hpp" />
 		<Unit filename="../../src/botvinnik/FailCounter.cpp" />
 		<Unit filename="../../src/botvinnik/FailCounter.hpp" />
-		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.cpp" />
-		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.hpp" />
 		<Unit filename="../../src/conf/Configuration.cpp" />
 		<Unit filename="../../src/conf/Configuration.hpp" />
 		<Unit filename="../../src/matrix/ImageInfo.cpp" />
@@ -55,7 +53,6 @@
 		<Unit filename="../locate_catch.hpp" />
 		<Unit filename="Version.cpp" />
 		<Unit filename="botvinnik/FailCounter.cpp" />
-		<Unit filename="calculate_incidence.cpp" />
 		<Unit filename="conf/Configuration.cpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="matrix/ImageInfo.cpp" />

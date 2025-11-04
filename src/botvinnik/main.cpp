@@ -33,7 +33,6 @@
 #include "plugins/core/Help.hpp"
 #include "plugins/core/Rooms.hpp"
 #include "plugins/convert/Conversion.hpp"
-#include "plugins/corona/Corona.hpp"
 #include "plugins/CheatSheet.hpp"
 #include "plugins/Debian.hpp"
 #if defined(__linux__) || defined(linux)
@@ -234,14 +233,6 @@ int main(int argc, char** argv)
   {
     // Should never happen!
     std::cerr << "Error: Registration of Debian plugin failed!\n"
-              << "The bot will not start.\n";
-    return bvn::rcPluginRegistrationError;
-  }
-  bvn::Corona covid(bot.matrix());
-  if (!bot.registerPlugin(covid))
-  {
-    // Should never happen!
-    std::cerr << "Error: Registration of plugin failed!\n"
               << "The bot will not start.\n";
     return bvn::rcPluginRegistrationError;
   }

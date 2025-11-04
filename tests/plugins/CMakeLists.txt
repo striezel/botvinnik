@@ -9,9 +9,6 @@ set(plugin_tests_sources
     ../../src/botvinnik/plugins/core/Help.cpp
     ../../src/botvinnik/plugins/core/Rooms.cpp
     ../../src/botvinnik/plugins/convert/Conversion.cpp
-    ../../src/botvinnik/plugins/corona/Corona.cpp
-    ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
-    ../../src/botvinnik/plugins/corona/World.cpp
     ../../src/botvinnik/plugins/CheatSheet.cpp
     ../../src/botvinnik/plugins/DeactivatablePlugin.cpp
     ../../src/botvinnik/plugins/Debian.cpp
@@ -55,7 +52,6 @@ set(plugin_tests_sources
     CheatSheet.cpp
     CommandDeactivation.cpp
     Conversion.cpp
-    Corona.cpp
     Debian.cpp
     Fortune.cpp
     Giphy.cpp

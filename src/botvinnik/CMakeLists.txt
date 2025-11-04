@@ -25,9 +25,6 @@ set(botvinnik_sources
     plugins/core/Help.cpp
     plugins/core/Rooms.cpp
     plugins/convert/Conversion.cpp
-    plugins/corona/Corona.cpp
-    plugins/corona/CovidNumbers.cpp
-    plugins/corona/World.cpp
     plugins/CheatSheet.cpp
     plugins/DeactivatablePlugin.cpp
     plugins/Debian.cpp

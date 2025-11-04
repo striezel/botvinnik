@@ -64,12 +64,6 @@
 		<Unit filename="../../src/botvinnik/plugins/core/Help.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Rooms.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/core/Rooms.hpp" />
-		<Unit filename="../../src/botvinnik/plugins/corona/Corona.cpp" />
-		<Unit filename="../../src/botvinnik/plugins/corona/Corona.hpp" />
-		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.cpp" />
-		<Unit filename="../../src/botvinnik/plugins/corona/CovidNumbers.hpp" />
-		<Unit filename="../../src/botvinnik/plugins/corona/World.cpp" />
-		<Unit filename="../../src/botvinnik/plugins/corona/World.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/CurrentData.cpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/CurrentData.hpp" />
 		<Unit filename="../../src/botvinnik/plugins/weather/ForecastData.cpp" />
@@ -136,7 +130,6 @@
 		<Unit filename="CheatSheet.cpp" />
 		<Unit filename="CommandDeactivation.cpp" />
 		<Unit filename="Conversion.cpp" />
-		<Unit filename="Corona.cpp" />
 		<Unit filename="Debian.cpp" />
 		<Unit filename="Fortune.cpp" />
 		<Unit filename="Giphy.cpp" />

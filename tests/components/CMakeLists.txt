@@ -5,7 +5,6 @@ project(component_tests)
 
 set(component_tests_sources
     ../../src/botvinnik/FailCounter.cpp
-    ../../src/botvinnik/plugins/corona/CovidNumbers.cpp
     ../../src/conf/Configuration.cpp
     ../../src/matrix/ImageInfo.cpp
     ../../src/matrix/events/PowerLevels.cpp
@@ -21,7 +20,6 @@ set(component_tests_sources
     util/Directories.cpp
     util/sqlite3.cpp
     util/Strings.cpp
-    calculate_incidence.cpp
     Version.cpp
     main.cpp)
 

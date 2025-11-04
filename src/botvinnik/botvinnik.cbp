@@ -113,12 +113,6 @@
 		<Unit filename="plugins/core/Help.hpp" />
 		<Unit filename="plugins/core/Rooms.cpp" />
 		<Unit filename="plugins/core/Rooms.hpp" />
-		<Unit filename="plugins/corona/Corona.cpp" />
-		<Unit filename="plugins/corona/Corona.hpp" />
-		<Unit filename="plugins/corona/CovidNumbers.cpp" />
-		<Unit filename="plugins/corona/CovidNumbers.hpp" />
-		<Unit filename="plugins/corona/World.cpp" />
-		<Unit filename="plugins/corona/World.hpp" />
 		<Unit filename="plugins/weather/CurrentData.cpp" />
 		<Unit filename="plugins/weather/CurrentData.hpp" />
 		<Unit filename="plugins/weather/ForecastData.cpp" />
