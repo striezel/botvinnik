@@ -6,7 +6,7 @@ improvements may be omitted.)_
 
 ## Version 0.?.? (2025-09-??)
 
-* _[breaking change]__
+* __[breaking change]__
   The `!corona` command is removed from the bot.
   Reason for the removal is that there is no good current COVID-19 case data
   available anymore, it's often outdated or inaccurate. Therefore, the feature
