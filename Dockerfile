@@ -10,11 +10,14 @@
 FROM debian:13-slim AS builder
 LABEL maintainer="Dirk Stolle <striezel-dev@web.de>"
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y catch2 cmake g++ git libcurl4-gnutls-dev libsqlite3-dev pkg-config
+RUN apt-get install -y catch2 cmake g++ git libcurl4-gnutls-dev libsqlite3-dev fortune-mod fortunes-min pkg-config
+RUN apt-get install -y python3-httpbin
 RUN mkdir -p /opt/bvn
 COPY ./ /opt/bvn
 WORKDIR /opt/bvn
-RUN mkdir build && cd build && cmake .. && make -j4 && ctest
+RUN mkdir build && cd build && cmake .. && make -j4 && \
+    gunicorn --bind=127.0.0.1:8080 httpbin:app --daemon && sleep 5 && \
+    export USE_LOCAL_HTTPBIN=1 && ctest -V
 
 # runtime stage
 FROM debian:13-slim AS runner
