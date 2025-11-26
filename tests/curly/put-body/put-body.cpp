@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik test suite.
-    Copyright (C) 2016, 2020  Dirk Stolle
+    Copyright (C) 2016, 2020, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,18 +18,33 @@
  -------------------------------------------------------------------------------
 */
 
+#include <cstdlib> // for std::getenv()
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include "../../../third-party/nlohmann/json.hpp"
 #include "../../../src/net/Curly.hpp"
 
+bool hasEnvVar(const std::string& name)
+{
+  return std::getenv(name.c_str()) != nullptr;
+}
+
+bool useLocalHttpbin()
+{
+  // Check whether environment variable USE_LOCAL_HTTPBIN is set. This is the
+  // indicator to switch to a local httpbin instance.
+  return hasEnvVar("USE_LOCAL_HTTPBIN");
+}
+
 int main()
 {
   // This is a test for setting PUT body directly.
 
   // basic URL
-  const std::string HeadToThisPlaceSecurely = "https://httpbin.org/put";
+  const std::string HeadToThisPlaceSecurely = useLocalHttpbin()
+      ? "http://127.0.0.1:8080/put"
+      : "https://httpbin.org/put";
 
   //test data
   const std::vector<std::string> testData = {

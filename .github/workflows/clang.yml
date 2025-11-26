@@ -81,7 +81,17 @@ jobs:
               echo Waiting for Kestrel server to start ...
               sleep 5
           done
+      - name: Start local httpbin instance for tests
+        run: |
+          sudo apt-get install -y python3-httpbin
+          gunicorn --bind=127.0.0.1:8080 httpbin:app --daemon
+          while ! netstat -tna | grep LISTEN | grep --silent 8080
+          do
+              echo Waiting for httpbin server to start ...
+              sleep 5
+          done
       - name: Tests
         run: |
           cd "$GITHUB_WORKSPACE"/build
+          export USE_LOCAL_HTTPBIN=1
           ctest -V
