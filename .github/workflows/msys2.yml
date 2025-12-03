@@ -32,6 +32,8 @@ jobs:
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-sqlite3
+            mingw-w64-x86_64-httpbin
+            mingw-w64-x86_64-hypercorn
       - name: Build
         run: |
           export MSYSTEM=MINGW64
@@ -66,10 +68,20 @@ jobs:
               echo Waiting for Kestrel server to start ...
               sleep 5
           done
+      - name: Start local httpbin instance for tests
+        shell: bash
+        run: |
+          hypercorn -b 127.0.0.1:8080 httpbin:app --daemon
+          while ! netstat -tna | grep LISTEN | grep --silent 8080
+          do
+              echo Waiting for httpbin server to start ...
+              sleep 5
+          done
       - name: Tests
         run: |
           export MSYSTEM=MINGW64
           cd "$GITHUB_WORKSPACE"/build
+          export USE_LOCAL_HTTPBIN=1
           ctest -V
       - name: Build statically linked executable
         run: |
@@ -85,6 +97,7 @@ jobs:
         run: |
           export MSYSTEM=MINGW64
           cd "$GITHUB_WORKSPACE/build-static"
+          export USE_LOCAL_HTTPBIN=1
           ctest -V
       - name: Collect build artifacts
         run: |
