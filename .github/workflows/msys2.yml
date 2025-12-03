@@ -69,9 +69,9 @@ jobs:
               sleep 5
           done
       - name: Start local httpbin instance for tests
-        shell: bash
         run: |
-          hypercorn -b 127.0.0.1:8080 httpbin:app --daemon
+          export MSYSTEM=MINGW64
+          hypercorn.exe -b 127.0.0.1:8080 httpbin:app --daemon &
           while ! netstat -tna | grep LISTEN | grep --silent 8080
           do
               echo Waiting for httpbin server to start ...
