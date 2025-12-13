@@ -46,6 +46,8 @@ int main()
       ? "http://127.0.0.1:8080/put"
       : "https://httpbin.org/put";
 
+  std::cout << "URL is set to " << HeadToThisPlaceSecurely << ".\n";
+
   //test data
   const std::vector<std::string> testData = {
     "", //empty string
