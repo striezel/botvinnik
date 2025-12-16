@@ -47,7 +47,11 @@ build_gcc:
     - ./Mocktrix &
     - while ! netstat -tna | grep LISTEN | grep --silent 5000; do echo Waiting for Kestrel server to start ... ; sleep 5; done
     - cd ..
+    # start local httpbin instance for tests
+    - gunicorn --bind=127.0.0.1:8080 httpbin:app --daemon
+    - while ! netstat -tna | grep LISTEN | grep --silent 8080; do echo Waiting for httpbin server to start ... ; sleep 5; done
     # test
+    - export USE_LOCAL_HTTPBIN=1
     - ctest -V
 
 docker_image_clang:
@@ -99,7 +103,11 @@ build_clang:
     - ./Mocktrix &
     - while ! netstat -tna | grep LISTEN | grep --silent 5000; do echo Waiting for Kestrel server to start ... ; sleep 5; done
     - cd ..
+    # start local httpbin instance for tests
+    - gunicorn --bind=127.0.0.1:8080 httpbin:app --daemon
+    - while ! netstat -tna | grep LISTEN | grep --silent 8080; do echo Waiting for httpbin server to start ... ; sleep 5; done
     # tests
+    - export USE_LOCAL_HTTPBIN=1
     - ctest -V
 
 docker_image_coverage:
@@ -145,7 +153,11 @@ coverage:
     - ./Mocktrix &
     - while ! netstat -tna | grep LISTEN | grep --silent 5000; do echo Waiting for Kestrel server to start ... ; sleep 5; done
     - cd ..
+    # start local httpbin instance for tests
+    - gunicorn --bind=127.0.0.1:8080 httpbin:app --daemon
+    - while ! netstat -tna | grep LISTEN | grep --silent 8080; do echo Waiting for httpbin server to start ... ; sleep 5; done
     # tests
+    - export USE_LOCAL_HTTPBIN=1
     - ctest -V
     # collect code coverage data
     - lcov -c --ignore-errors inconsistent,inconsistent --directory . --output-file main_coverage.info
