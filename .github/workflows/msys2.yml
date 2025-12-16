@@ -106,7 +106,7 @@ jobs:
           mv artifacts botvinnik-$VERSION
           "C:\Program Files\7-Zip\7z.exe" a -r botvinnik_${VERSION}_win64.zip botvinnik-$VERSION
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: botvinnik_win64
           path: botvinnik_*_win64.zip
