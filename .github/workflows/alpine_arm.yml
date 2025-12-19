@@ -25,17 +25,26 @@ jobs:
         run: |
           apk add nodejs
           sed -i 's~ID=alpine~ID=nopine~g' /etc/os-release
-          cd /host/home/runner/actions-runner/*/externals/
-          rm -rf node20/*
-          mkdir node20/bin
-          ln -s /usr/bin/node node20/bin/node
-          # Fake Node.js 24 for actions/checkout@v6.
-          # Currently, Alpine 3.20 has Node.js 20.15.0, but that seems to work,
-          # too, because it looks like checkout is not using any stuff specific
-          # to Node.js 24.
-          rm -rf node24/*
-          mkdir node24/bin
-          ln -s /usr/bin/node node24/bin/node
+          # Runner images contain folders like /host/home/runner/actions-runner/*/external
+          # where folders like node20 or node24 are located, containing the
+          # corresponding Node.js installation. However, that will not work with
+          # the Alpine / musl stuff, so let's replace it.
+          # Instead of hard-coding the (partial) path as in previous versions of
+          # this step, we use find to find and replace the Node.js
+          # installations, because ARM partner images do not have a reliable
+          # directory structure. There seem to be at least two different kinds,
+          # and only one worked with the previous hard-coded paths.
+          # Note: This may break once Node.js 100 (or later) is released and
+          # used in those images, but that should take more than 35 years from
+          # now with the current Node.js release schedule.
+          nodes=$(find /host/home/runner/actions-runner -type d -name 'node??')
+          for n in $nodes
+          do
+            cd $n/..
+            rm -rf $n/*
+            mkdir $n/bin
+            ln -s /usr/bin/node $n/bin/node
+          done
       # Checks-out the repository under $GITHUB_WORKSPACE.
       - name: Git checkout
         uses: actions/checkout@v6
