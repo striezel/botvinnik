@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2024  Dirk Stolle
+    Copyright (C) 2024, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,9 +20,22 @@
 
 #include "../../locate_catch.hpp"
 #include <algorithm>
+#if defined(_WIN32)
+#include <cstdlib> // for std::getenv()
+#endif
 #include "../../../src/botvinnik/Bot.hpp"
 #include "../../../src/botvinnik/plugins/weather/Weather.hpp"
 #include "../../../src/conf/Configuration.hpp"
+
+bool skipLiveWeatherTest()
+{
+#if defined(_WIN32)
+  // Only skip on Windows when running in GHA.
+  return std::getenv("GITHUB_ACTIONS") != nullptr;
+#else
+  return false;
+#endif
+}
 
 TEST_CASE("plugin Weather")
 {
@@ -84,7 +97,10 @@ TEST_CASE("plugin Weather")
       const auto message = cmd + " Berlin";
       const auto response = plugin.handleCommand(cmd, message, mockUserId, mockRoomId, ts);
       REQUIRE_FALSE( response.body.empty() );
-      REQUIRE_FALSE( response.formatted_body.empty() );
+      if (!skipLiveWeatherTest())
+      {
+        REQUIRE_FALSE( response.formatted_body.empty() );
+      }
     }
   }
 

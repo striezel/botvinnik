@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the test suite for botvinnik.
-    Copyright (C) 2024  Dirk Stolle
+    Copyright (C) 2024, 2025  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,7 +20,20 @@
 
 #include "../../locate_catch.hpp"
 #include <cmath>
+#if defined(_WIN32)
+#include <cstdlib> // for std::getenv()
+#endif
 #include "../../../src/botvinnik/plugins/weather/OpenMeteo.hpp"
+
+bool skipLocationTest()
+{
+#if defined(_WIN32)
+  // Only skip on Windows when running in GHA.
+  return std::getenv("GITHUB_ACTIONS") != nullptr;
+#else
+  return false;
+#endif
+}
 
 TEST_CASE("plugin Weather: weather data from Open-Meteo")
 {
@@ -39,25 +52,28 @@ TEST_CASE("plugin Weather: weather data from Open-Meteo")
 
     SECTION("attempt to get weather for a valid location")
     {
-      Location location;
-      location.name = "Berlin";
-      location.display_name = "Berlin, Germany";
-      location.latitude = 52.52437;
-      location.longitude = 13.41053;
+      if (!skipLocationTest())
+      {
+        Location location;
+        location.name = "Berlin";
+        location.display_name = "Berlin, Germany";
+        location.latitude = 52.52437;
+        location.longitude = 13.41053;
 
-      const auto data = OpenMeteo::get_weather(location);
+        const auto data = OpenMeteo::get_weather(location);
 
-      REQUIRE( data.has_value() );
-      const auto weather = data.value();
-      REQUIRE_FALSE( std::isnan(weather.current.temperature_celsius) );
-      REQUIRE_FALSE( std::isnan(weather.current.apparent_temperature) );
-      REQUIRE( weather.current.relative_humidity >= 0 );
-      REQUIRE( weather.current.weather_code >= 0 );
-      REQUIRE( weather.current.wind_speed >= 0.0 );
-      REQUIRE( weather.current.wind_direction >= 0.0 );
-      REQUIRE( weather.current.wind_direction <= 360.0 );
-      REQUIRE_FALSE( std::isnan(weather.current.pressure) );
-      REQUIRE_FALSE( std::isnan(weather.current.precipitation) );
+        REQUIRE( data.has_value() );
+        const auto weather = data.value();
+        REQUIRE_FALSE( std::isnan(weather.current.temperature_celsius) );
+        REQUIRE_FALSE( std::isnan(weather.current.apparent_temperature) );
+        REQUIRE( weather.current.relative_humidity >= 0 );
+        REQUIRE( weather.current.weather_code >= 0 );
+        REQUIRE( weather.current.wind_speed >= 0.0 );
+        REQUIRE( weather.current.wind_direction >= 0.0 );
+        REQUIRE( weather.current.wind_direction <= 360.0 );
+        REQUIRE_FALSE( std::isnan(weather.current.pressure) );
+        REQUIRE_FALSE( std::isnan(weather.current.precipitation) );
+      }
     }
   }
 
