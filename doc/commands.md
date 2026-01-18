@@ -208,7 +208,7 @@ certain period of time. So please do not spam bot commands.
   its English name (e. g. `!corona Germany`) or by its three letter code from
   ISO 3166 (e. g. `!corona DEU` for Germany's data). If you want to show
   summarized worldwide case numbers, just type `!corona world` or `!corona all`
-  to show the total amount of COVID-19 cases in the world. Worldwide data is
+  to show the total amount of COVID-19 cases in the world. Worldwide data was
   available _since version 0.1.10_.
 * `!weather` - _(since version 0.9.3)_ displays weather data for a given
   location. For example, `!weather Berlin` will show the current weather in
