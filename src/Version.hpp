@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik Matrix bot.
-    Copyright (C) 2020, 2021, 2022, 2023, 2024, 2025  Dirk Stolle
+    Copyright (C) 2020, 2021, 2022, 2023, 2024, 2025, 2026  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -27,13 +27,13 @@ namespace bvn
 {
 
 /** \brief version information */
-const std::string version = "version 0.9.6, 2025-09-13";
+const std::string version = "version 0.10.0, 2026-01-18";
 
 /** \brief the User-Agent to use when sending requests to the Matrix server
  *
  * \remark User-Agent is disabled by default.
  */
-const std::string userAgent = "botvinnik/0.9.6";
+const std::string userAgent = "botvinnik/0.10.0";
 
 } // namespace
 

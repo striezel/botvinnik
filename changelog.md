@@ -4,7 +4,7 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
-## Version 0.?.? (2025-09-??)
+## Version 0.10.0 (2026-01-18)
 
 * __[breaking change]__
   The `!corona` command is removed from the bot.
