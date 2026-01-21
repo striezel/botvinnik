@@ -4,6 +4,11 @@ _(Note: This changelog focuses on the major changes between the different
 versions. Therefore, it may not contain all changes. Especially smaller fixes or
 improvements may be omitted.)_
 
+## Version 0.?.? (2026-01-??)
+
+* __[maintenance]__
+Fix displayed years in version information output.
+
 ## Version 0.10.0 (2026-01-18)
 
 * __[breaking change]__
