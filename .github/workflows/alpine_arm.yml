@@ -47,7 +47,7 @@ jobs:
           done
       # Checks-out the repository under $GITHUB_WORKSPACE.
       - name: Git checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
