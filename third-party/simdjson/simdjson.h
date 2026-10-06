@@ -1,4 +1,4 @@
-/* auto-generated on 2026-09-28 12:06:03 -0400. version 5.0.1 Do not edit! */
+/* auto-generated on 2026-10-04 09:02:57 -0400. version 5.0.2 Do not edit! */
 /* including simdjson.h:  */
 /* begin file simdjson.h */
 #ifndef SIMDJSON_H
@@ -243,6 +243,18 @@
 #define SIMDJSON_CONSTEVAL 0
 #endif // defined(__cpp_consteval) && __cpp_consteval >= 201811L && defined(__cpp_lib_constexpr_string) && __cpp_lib_constexpr_string >= 201907L
 #endif // !defined(SIMDJSON_CONSTEVAL)
+
+// SIMDJSON_CONSTEXPR_STRING is 'constexpr' when the standard library supports
+// constexpr std::string (e.g., libstdc++ 12 or better), and empty otherwise. It
+// lets functions that build a std::string be constant expressions when possible
+// while still compiling against older standard libraries.
+#if !defined(SIMDJSON_CONSTEXPR_STRING)
+#if defined(__cpp_lib_constexpr_string) && __cpp_lib_constexpr_string >= 201907L
+#define SIMDJSON_CONSTEXPR_STRING constexpr
+#else
+#define SIMDJSON_CONSTEXPR_STRING
+#endif // defined(__cpp_lib_constexpr_string) && __cpp_lib_constexpr_string >= 201907L
+#endif // !defined(SIMDJSON_CONSTEXPR_STRING)
 #endif // SIMDJSON_COMPILER_CHECK_H
 /* end file simdjson/compiler_check.h */
 /* including simdjson/portability.h: #include "simdjson/portability.h" */
@@ -2703,7 +2715,7 @@ namespace std {
 #define SIMDJSON_SIMDJSON_VERSION_H
 
 /** The version of simdjson being used (major.minor.revision) */
-#define SIMDJSON_VERSION "5.0.1"
+#define SIMDJSON_VERSION "5.0.2"
 
 namespace simdjson {
 enum {
@@ -2718,7 +2730,7 @@ enum {
   /**
    * The revision (major.minor.REVISION) of simdjson being used.
    */
-  SIMDJSON_VERSION_REVISION = 1
+  SIMDJSON_VERSION_REVISION = 2
 };
 } // namespace simdjson
 
@@ -7128,15 +7140,11 @@ public:
    *   size_t truncated = stream.truncated_bytes();
    *
    * IMPORTANT: this value is only meaningful under the conditions below. It is
-   * computed from stage-1 bookkeeping that the other stream formats do not
-   * maintain, and outside these conditions it is not merely imprecise, it is
+   * computed from stage-1 bookkeeping, and outside these conditions it is not
+   * merely imprecise, it is
    * arbitrary -- it can exceed size_in_bytes() or wrap around to a huge value.
    * Check it only when all of the following hold:
    *
-   *   - the format is whitespace_delimited or newline_delimited. In
-   *     json_sequence and comma_delimited mode the stage-1 filter rewrites the
-   *     structural index in place and the bookkeeping is lost, so the value is
-   *     meaningless even for a stream that parsed completely;
    *   - you iterated all the way to the end of the stream;
    *   - no document reported an error. Iteration stops at the first failed
    *     document, which can leave the bookkeeping from a mid-stream batch.
@@ -7144,6 +7152,9 @@ public:
    * If you need to know about a truncated tail outside those conditions, track
    * it yourself from the last successful document (see iterator::current_index()
    * and iterator::source()).
+   *
+   * An empty input (zero bytes) or an input made only of white space contains
+   * no document: truncated_bytes() returns zero.
    */
   inline size_t truncated_bytes() const noexcept;
   /**
@@ -9364,7 +9375,6 @@ inline void array::process_json_path_of_child_elements(std::vector<element>::ite
     if(error) {
       continue;
     }
-    accumulator.reserve(accumulator.size() + child_result.size());
     accumulator.insert(accumulator.end(),
                         std::make_move_iterator(child_result.begin()),
                         std::make_move_iterator(child_result.end()));
@@ -9705,7 +9715,6 @@ inline void object::process_json_path_of_child_elements(std::vector<element>::it
     if(error) {
       continue;
     }
-    accumulator.reserve(accumulator.size() + child_result.size());
     accumulator.insert(accumulator.end(),
                         std::make_move_iterator(child_result.begin()),
                         std::make_move_iterator(child_result.end()));
@@ -10999,6 +11008,7 @@ inline void document_stream::start() noexcept {
   if (error) { return; }
   error = parser->ensure_capacity(batch_size);
   if (error) { return; }
+  parser->implementation->_number_as_string = parser->number_as_string();
   // Always run the first stage 1 parse immediately
   batch_start = 0;
   error = run_stage1(*parser, batch_start);
@@ -11038,6 +11048,32 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
   } else {
     size_t next_doc_index = stream->batch_start + stream->parser->implementation->structural_indexes[stream->parser->implementation->next_structural_index];
     size_t svlen = next_doc_index - current_index();
+    // When the scalar is followed by a truncated document, the structural
+    // indexes of that document were dropped and next_doc_index is the end of
+    // the input, so we bound the scalar by scanning the token itself.
+    size_t token_len = 0;
+    if (*start == '"') {
+      token_len = 1;
+      while (token_len < svlen) {
+        char c = start[token_len++];
+        if (c == '\\') {
+          token_len++;
+        } else if (c == '"') {
+          break;
+        }
+      }
+    } else {
+      while (token_len < svlen) {
+        char c = start[token_len];
+        if (std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == '{' || c == '[' || c == '\0' || static_cast<uint8_t>(c) == 0x1E) {
+          break;
+        }
+        token_len++;
+      }
+    }
+    if (token_len > 0 && token_len < svlen) {
+      svlen = token_len;
+    }
     // Trim trailing whitespace, NUL, and RS (0x1E). In RFC 7464 json_sequence
     // mode the scanner classifies RS as a scalar character, so an RS-prefixed
     // scalar document (number/true/false/null/string) has no closing structural
@@ -11085,6 +11121,9 @@ inline size_t document_stream::size_in_bytes() const noexcept {
 }
 
 inline size_t document_stream::truncated_bytes() const noexcept {
+  // Stage 1 returns EMPTY on zero-length input before it writes the index
+  // sentinels read below, so they would still hold a previous stream's values.
+  if (len == 0) { return 0; }
   if(error == CAPACITY) { return len - batch_start; }
   return parser->implementation->structural_indexes[parser->implementation->n_structural_indexes] - parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
@@ -13723,19 +13762,6 @@ std::string fractured_json(simdjson_result<T> x, const fractured_json_options& o
   }
   return fractured_json(x.value(), options);
 }
-#endif
-
-// Explicit template instantiations for common types
-template std::string fractured_json(dom::element x);
-template std::string fractured_json(dom::element x, const fractured_json_options& options);
-template std::string fractured_json(dom::array x);
-template std::string fractured_json(dom::array x, const fractured_json_options& options);
-template std::string fractured_json(dom::object x);
-template std::string fractured_json(dom::object x, const fractured_json_options& options);
-
-#if SIMDJSON_EXCEPTIONS
-template std::string fractured_json(simdjson_result<dom::element> x);
-template std::string fractured_json(simdjson_result<dom::element> x, const fractured_json_options& options);
 #endif
 
 //
@@ -17405,7 +17431,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -20231,7 +20262,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -23534,7 +23570,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -26837,7 +26878,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -30255,7 +30301,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -33980,7 +34031,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -37221,7 +37277,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -40440,7 +40501,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -43675,7 +43741,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -46641,8 +46712,15 @@ namespace builder {
 // name lookup falls back to the wrong outer namespace).
 namespace internal {
 simdjson_really_inline char *write_uint_jeaiii(char *p, uint64_t v) noexcept;
+simdjson_inline char *write_double(char *p, double v) noexcept;
 } // namespace internal
-inline size_t write_string_escaped(const std::string_view input, char *out);
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out);
+
+SIMDJSON_PUSH_DISABLE_WARNINGS
+SIMDJSON_DISABLE_GCC_WARNING(-Warray-bounds)
+#if !defined(__clang__)
+SIMDJSON_DISABLE_GCC_WARNING(-Wstringop-overflow)
+#endif
 
 // =============================================================
 // `writer`: position-as-local hot-path writer used by the reflection
@@ -46655,8 +46733,14 @@ inline size_t write_string_escaped(const std::string_view input, char *out);
 // breaks the strict-aliasing penalty on every char* write through the
 // buffer, which forces a reload of `b.position` and `b.capacity`
 // after every byte.
+//
+// basic_writer<false> (below) is the unchecked variant: the caller has
+// already reserved enough capacity for everything the write chain can
+// produce (see bound_detail::size_bound), so ensure() compiles away.
 // =============================================================
-struct writer {
+template <bool Checked>
+struct basic_writer {
+  static constexpr bool checked = Checked;
   char *ptr;        // buffer pointer (refreshed after a grow)
   size_t pos;       // write position (local)
   size_t cap;       // capacity (refreshed after a grow)
@@ -46664,7 +46748,7 @@ struct writer {
 
   // Snapshot string_builder state into a writer for the duration of
   // a write chain.
-  simdjson_really_inline writer(string_builder &builder) noexcept
+  simdjson_really_inline basic_writer(string_builder &builder) noexcept
       : ptr(builder.unsafe_data())
       , pos(builder.unsafe_position())
       , cap(builder.unsafe_capacity())
@@ -46690,9 +46774,7 @@ struct writer {
     return grow_slow(n);
   }
 
-  // Slow path of ensure(). Out-of-line via simdjson_inline (not
-  // simdjson_really_inline) to keep the hot path short.
-  simdjson_inline bool grow_slow(size_t n) noexcept {
+  simdjson_never_inline bool grow_slow(size_t n) noexcept {
     // Detect overflow.
     // This is pedantic except maybe on 32-bit targets.
     if (simdjson_unlikely(pos + n < pos)) return false;
@@ -46715,14 +46797,40 @@ struct writer {
   }
 };
 
+// The unchecked writer writes into a raw buffer that the caller sized with
+// serialized_size_bound: it never grows and needs no string_builder.
+template <>
+struct basic_writer<false> {
+  static constexpr bool checked = false;
+  char *ptr;
+  size_t pos;
+
+  simdjson_really_inline basic_writer(char *buffer, size_t position) noexcept
+      : ptr(buffer), pos(position) {}
+
+  simdjson_really_inline bool ensure(size_t) const noexcept { return true; }
+};
+
+using writer = basic_writer<true>;
+using unchecked_writer = basic_writer<false>;
+
+// Bytes reserved past the size bound for an unchecked writer: it may then
+// write a little past the end of what it produces (e.g., copy keys as whole
+// 16-byte blocks).
+inline constexpr size_t unchecked_slack = 64;
+
+consteval size_t padded_key_length(size_t length) {
+  return (length + 15) / 16 * 16;
+}
+
 // === Helper: invoke a string_builder member that writes variable-length
 // content (escape_and_append_with_quotes etc), syncing the writer's local
 // state before the call and reloading after. Used for string fields where
 // rewriting the entire SIMD escape path through the writer would be a much
 // bigger refactor. f may be user code (a with<Adapter> serializer) that
 // throws: the exception then propagates to the caller.
-template <class F>
-simdjson_really_inline void call_through_string_builder(writer &w, F &&f) noexcept(noexcept(f(w.sb))) {
+template <class W, class F>
+simdjson_really_inline void call_through_string_builder(W &w, F &&f) noexcept(noexcept(f(w.sb))) {
   w.sync();
   f(w.sb);
   w.ptr = w.sb.unsafe_data();
@@ -46756,8 +46864,8 @@ simdjson_really_inline bool should_serialize(const V &value) {
 
 // Serialize a member value, through its with<Adapter> annotation when the
 // adapter provides a serialize function.
-template <auto dm, typename V>
-simdjson_really_inline void atom_member(writer &w, const V &value) {
+template <auto dm, class W, typename V>
+simdjson_really_inline void atom_member(W &w, const V &value) {
   constexpr std::meta::info with_type = simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t);
   if constexpr (with_type != std::meta::info{}) {
     using adapter = typename [: with_type :]::adapter;
@@ -46774,8 +46882,8 @@ simdjson_really_inline void atom_member(writer &w, const V &value) {
 // Write the "key":value pairs of the members of t (without the braces), each
 // preceded by a comma unless it is the first one. The members of a member
 // annotated with flatten are written in its place.
-template <class T>
-simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
+template <class W, class T>
+simdjson_really_inline void atom_fields(W &w, const T &t, bool &first) {
   // Per-field block: ensure key+value worst case, then write key + value
   // through the writer's local pos. For arithmetic fields, the integer
   // write happens directly via write_uint_jeaiii on w.ptr+w.pos, so pos
@@ -46793,19 +46901,24 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
                         "simdjson::flatten requires a member whose type is a structure serialized member by member");
           atom_fields(w, t.[:dm:], first);
         } else {
+          // Copy the key as whole 16-byte blocks from a zero-padded copy (one
+          // load and one store); ensure() reserves the padded length, and the
+          // unchecked writer has slack past its bound.
           constexpr const char* key_name = simdjson::get_json_key_name<dm>();
+          constexpr size_t first_key_len = constevalutil::consteval_to_quoted_escaped(key_name).size() + 1;
+          constexpr size_t rest_key_len = first_key_len + 1;
           constexpr auto first_key = std::define_static_string(
-              constevalutil::consteval_to_quoted_escaped(key_name) + ":");
+              constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(first_key_len) - first_key_len, '\0'));
           constexpr auto rest_key = std::define_static_string(
-              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":");
-          constexpr size_t first_key_len = std::char_traits<char>::length(first_key);
-          constexpr size_t rest_key_len = std::char_traits<char>::length(rest_key);
-          if (!w.ensure(rest_key_len)) { return; }
+              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(rest_key_len) - rest_key_len, '\0'));
+          if (!w.ensure(padded_key_length(rest_key_len))) { return; }
           if (first) {
-            std::memcpy(w.ptr + w.pos, first_key, first_key_len);
+            std::memcpy(w.ptr + w.pos, first_key, padded_key_length(first_key_len));
             w.pos += first_key_len;
           } else {
-            std::memcpy(w.ptr + w.pos, rest_key, rest_key_len);
+            std::memcpy(w.ptr + w.pos, rest_key, padded_key_length(rest_key_len));
             w.pos += rest_key_len;
           }
           first = false;
@@ -46818,9 +46931,9 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
 
 } // namespace annotation_detail
 
-template <class T>
+template <class W, class T>
   requires(concepts::container_but_not_string<T> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   auto it = t.begin();
   auto end = t.end();
   if (it == end) {
@@ -46842,12 +46955,12 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   w.ptr[w.pos++] = ']';
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char *> ||
            std::is_same_v<T, char>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   // Inline the escape path through the writer so we never round-trip
   // pos through memory for string fields (Twitter is dominated by
   // these -- sync/reload around each string was a real cost).
@@ -46863,16 +46976,18 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
   // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
   // Note that this is pedantic except maybe on 32-bit targets.
-  if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-  if (!w.ensure(2 + 6 * input.size())) { return; }
+  if constexpr (W::checked) {
+    if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+    if (!w.ensure(2 + 6 * input.size())) { return; }
+  }
   w.ptr[w.pos++] = '"';
   w.pos += write_string_escaped(input, w.ptr + w.pos);
   w.ptr[w.pos++] = '"';
 }
 
-template <concepts::string_view_keyed_map T>
+template <class W, concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &m) {
+simdjson_really_inline constexpr void atom(W &w, const T &m) {
   if (m.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "{}", 2);
@@ -46895,8 +47010,10 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
     // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
     // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
     // Note that this is pedantic except maybe on 32-bit targets.
-    if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-    if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    if constexpr (W::checked) {
+      if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+      if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    }
     w.ptr[w.pos++] = '"';
     w.pos += write_string_escaped(key_sv, w.ptr + w.pos);
     w.ptr[w.pos++] = '"';
@@ -46908,9 +47025,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
 }
 
 
-template<typename number_type,
+template<class W, typename number_type,
          typename = typename std::enable_if<std::is_arithmetic<number_type>::value && !std::is_same_v<number_type, char>>::type>
-simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
+simdjson_really_inline constexpr void atom(W &w, const number_type t) {
   // Booleans / floats: defer to string_builder (rare path; keeps writer hot
   // path free of float-formatter machinery). For integers, write directly
   // via jeaiii using local pos.
@@ -46925,7 +47042,11 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
       w.pos += 5;
     }
   } else if constexpr (std::is_floating_point_v<number_type>) {
-    call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    if constexpr (W::checked) {
+      call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    } else {
+      w.pos = size_t(internal::write_double(w.ptr + w.pos, double(t)) - w.ptr);
+    }
   } else if constexpr (std::is_unsigned_v<number_type>) {
     if (!w.ensure(20)) return;
     char *end = internal::write_uint_jeaiii(
@@ -46945,7 +47066,7 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
   }
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_class_v<T> && !concepts::container_but_not_string<T> &&
            !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> &&
@@ -46955,7 +47076,7 @@ template <class T>
            !std::is_same_v<T, std::string_view> &&
            !std::is_same_v<T, const char*> &&
            !std::is_same_v<T, char> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
     // A transparent structure is serialized as its single member.
     constexpr auto dm = simdjson::detail::transparent_member(^^T);
@@ -46971,9 +47092,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
 }
 
 // Support for optional types (std::optional, etc.)
-template <concepts::optional_type T>
+template <class W, concepts::optional_type T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
+simdjson_really_inline constexpr void atom(W &w, const T &opt) {
   if (opt) {
     atom(w, opt.value());
   } else {
@@ -46984,9 +47105,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
 }
 
 // Support for smart pointers (std::unique_ptr, std::shared_ptr, etc.)
-template <concepts::smart_pointer T>
+template <class W, concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
+simdjson_really_inline constexpr void atom(W &w, const T &ptr) {
   if (ptr) {
     atom(w, *ptr);
   } else {
@@ -46997,9 +47118,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
 }
 
 // Support for enums - serialize as string representation using expand approach from P2996R12
-template <typename T>
+template <class W, typename T>
   requires(std::is_enum_v<T> && !require_custom_serialization<T>)
-simdjson_really_inline void atom(writer &w, const T &e) {
+simdjson_really_inline void atom(W &w, const T &e) {
 #if SIMDJSON_STATIC_REFLECTION
   static constexpr auto enumerators = std::define_static_array(std::meta::enumerators_of(^^T));
   template for (constexpr auto enum_val : enumerators) {
@@ -47021,12 +47142,12 @@ simdjson_really_inline void atom(writer &w, const T &e) {
 }
 
 // Support for appendable containers that don't have operator[] (sets, etc.)
-template <concepts::appendable_containers T>
+template <class W, concepts::appendable_containers T>
   requires(!concepts::container_but_not_string<T> && !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> && !concepts::smart_pointer<T> &&
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &container) {
+simdjson_really_inline constexpr void atom(W &w, const T &container) {
   if (container.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "[]", 2);
@@ -47046,6 +47167,150 @@ simdjson_really_inline constexpr void atom(writer &w, const T &container) {
   }
   if (!w.ensure(1)) return;
   w.ptr[w.pos++] = ']';
+}
+
+// =============================================================
+// Size bound: an upper bound on the number of bytes that atom(w, t) writes.
+// Computing it first lets append() reserve the capacity once and then run
+// the whole write chain through an unchecked_writer, without a capacity
+// check before every write. It mirrors the atom() overloads above.
+// =============================================================
+namespace bound_detail {
+
+// Whether size_bound covers everything that atom() writes for T: not when a
+// member is serialized by a with<Adapter> serializer, which writes an unknown
+// amount through the string_builder.
+template <class T>
+consteval bool is_bounded() {
+  if constexpr (require_custom_serialization<T>) {
+    return false;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *> || std::is_arithmetic_v<T> || std::is_enum_v<T>) {
+    return true;
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return is_bounded<std::remove_cvref_t<decltype(*std::declval<const T &>())>>();
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    return is_bounded<std::remove_cvref_t<typename T::mapped_type>>();
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    return is_bounded<std::remove_cvref_t<std::ranges::range_value_t<T>>>();
+  } else {
+    bool bounded = true;
+    template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+      if constexpr (annotation_detail::is_serialized_member(dm)) {
+        bounded = bounded && simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t) == std::meta::info{} &&
+                  is_bounded<std::remove_cvref_t<decltype(std::declval<const T &>().[:dm:])>>();
+      }
+    };
+    return bounded;
+  }
+}
+
+template <class T>
+consteval size_t enum_bound() {
+  size_t bound = 20; // the integer fallback
+  template for (constexpr auto enum_val : std::define_static_array(std::meta::enumerators_of(^^T))) {
+    constexpr size_t len = std::char_traits<char>::length(std::define_static_string(
+        constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<enum_val>())));
+    bound = (std::max)(bound, len);
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound(const T &t) noexcept;
+
+// Bound for the "key":value pairs of a structure, commas included.
+template <class T>
+simdjson_really_inline size_t fields_bound(const T &t) noexcept {
+  size_t bound = 0;
+  template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+    if constexpr (annotation_detail::is_serialized_member(dm)) {
+      if constexpr (simdjson::detail::has_annotation(dm, ^^simdjson::detail::flatten_tag)) {
+        bound += fields_bound(t.[:dm:]);
+      } else {
+        constexpr size_t rest_key_len = constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<dm>()).size() + 2;
+        bound += rest_key_len + size_bound(t.[:dm:]);
+      }
+    }
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound([[maybe_unused]] const T &t) noexcept {
+  if constexpr (std::is_same_v<T, char>) {
+    return 2 + 6;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *>) {
+    // Every byte may become \uXXXX, plus the quotes.
+    return 2 + 6 * std::string_view(t).size();
+  } else if constexpr (std::is_same_v<T, bool>) {
+    return 5;
+  } else if constexpr (std::is_floating_point_v<T>) {
+    return simdjson::internal::to_chars_buffer_size;
+  } else if constexpr (std::is_arithmetic_v<T>) {
+    return 20;
+  } else if constexpr (std::is_enum_v<T>) {
+    return enum_bound<T>();
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return t ? size_bound(*t) : 4;
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    size_t bound = 2;
+    for (const auto &[key, value] : t) {
+      // comma, quotes, colon
+      bound += 4 + 6 * std::string_view(key).size() + size_bound(value);
+    }
+    return bound;
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    using value_type = std::remove_cvref_t<std::ranges::range_value_t<T>>;
+    if constexpr (std::is_arithmetic_v<value_type> && !std::is_same_v<value_type, char>) {
+      // A fixed bound per element: no need to visit them.
+      return 2 + size_t(std::ranges::distance(t)) * (1 + size_bound(value_type{}));
+    } else {
+      size_t bound = 2;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC novector // a vector loop is slower on short containers
+#endif
+#pragma GCC unroll 4
+      for (const auto &item : t) {
+        bound += 1 + size_bound(item);
+      }
+      return bound;
+    }
+  } else if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
+    constexpr auto dm = simdjson::detail::transparent_member(^^T);
+    return size_bound(t.[:dm:]);
+  } else {
+    return 2 + fields_bound(t);
+  }
+}
+
+} // namespace bound_detail
+
+// Write t through an unchecked writer when its size bound is available,
+// reserving that many bytes first, and through the checked writer otherwise.
+template <class T>
+simdjson_really_inline void append_bounded(string_builder &b, const T &t) {
+  // On 32-bit systems, the bound could overflow: keep the checked writer.
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<T>()) {
+    const size_t bound = bound_detail::size_bound(t) + unchecked_slack;
+    const size_t pos = b.unsafe_position();
+    // The bound is a sum of in-memory sizes times a small constant: it cannot
+    // overflow on a 64-bit system. Be pedantic elsewhere.
+    if (sizeof(size_t) >= 8 || bound <= (std::numeric_limits<size_t>::max)() - pos) {
+      const size_t cap = b.unsafe_capacity();
+      // Grow geometrically so that many small appends stay amortized.
+      if (pos + bound <= cap || b.unsafe_grow((std::max)(cap * 2, pos + bound))) {
+        unchecked_writer w(b.unsafe_data(), pos);
+        atom(w, t);
+        b.unsafe_set_position(w.pos);
+      }
+      return;
+    }
+  }
+  writer w(b);
+  atom(w, t);
+  w.sync();
 }
 
 // append() -- top-level entry. Each overload constructs a stack-local
@@ -47073,17 +47338,13 @@ simdjson_inline void append(string_builder &b, const T &t) {
 template <concepts::optional_type T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::appendable_containers T>
@@ -47092,17 +47353,13 @@ template <concepts::appendable_containers T>
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 // works for struct
@@ -47117,18 +47374,14 @@ template <class Z>
            !std::is_same_v<Z, const char*> &&
            !std::is_same_v<Z, char> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 // works for container that have begin() and end() iterators
 template <class Z>
   requires(concepts::container_but_not_string<Z> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 template <class Z>
@@ -47139,22 +47392,38 @@ void append(string_builder &b, const Z &z) {
 
 
 template <class Z>
-simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<Z>()) {
+    // Write straight into s, sized by the bound: no intermediate buffer, no copy.
+    (void)initial_capacity;
+    const size_t bound = bound_detail::size_bound(z) + unchecked_slack;
+    auto write = [&z](char *p) noexcept {
+      unchecked_writer w(p, 0);
+      atom(w, z);
+      return w.pos;
+    };
+#if defined(__cpp_lib_string_resize_and_overwrite) && __cpp_lib_string_resize_and_overwrite >= 202110L
+    s.resize_and_overwrite(bound, [&write](char *p, size_t) noexcept { return write(p); });
+#else
+    s.resize(bound);
+    s.resize(write(s.data()));
+#endif
+    return SUCCESS;
+  } else {
+    string_builder b(initial_capacity);
+    append(b, z);
+    std::string_view view;
+    if(auto e = b.view().get(view); e) { return e; }
+    s.assign(view);
+    return SUCCESS;
+  }
 }
 
 template <class Z>
-simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  std::string s;
+  if(auto e = to_json(z, s, initial_capacity); e) { return e; }
+  return s;
 }
 
 template <class Z>
@@ -47214,25 +47483,18 @@ simdjson_warn_unused simdjson_result<std::string> extract_from(const T &obj, siz
   return std::string(s);
 }
 
+SIMDJSON_POP_DISABLE_WARNINGS
+
 } // namespace builder
 } // namespace arm64
 // Alias the function template to 'to' in the global namespace
 template <class Z>
 simdjson_warn_unused simdjson_result<std::string> to_json(const Z &z, size_t initial_capacity = arm64::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  arm64::builder::string_builder b(initial_capacity);
-  arm64::builder::append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+  return arm64::builder::to_json_string(z, initial_capacity);
 }
 template <class Z>
 simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = arm64::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  arm64::builder::string_builder b(initial_capacity);
-  arm64::builder::append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+  return arm64::builder::to_json(z, s, initial_capacity);
 }
 // Global namespace function for extract_from
 template<constevalutil::fixed_string... FieldNames, typename T>
@@ -47437,6 +47699,9 @@ simdjson_warn_unused simdjson_result<std::string> extract_fractured_json(
 #endif
 #if SIMDJSON_EXPERIMENTAL_HAS_SSE2
 #include <emmintrin.h>
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -47945,12 +48210,38 @@ simdjson_never_inline char *escape_block(const uint8_t *src, char *out,
 
 // Writes the escaped version of input to out, returning the number of bytes
 // written.
-inline size_t write_string_escaped(const std::string_view input, char *out) {
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out) {
   const size_t len = input.size();
   const uint8_t *src = reinterpret_cast<const uint8_t *>(input.data());
   const char *const initout = out;
 
   size_t i = 0;
+#if SIMDJSON_EXPERIMENTAL_HAS_SSE2 && defined(__AVX2__)
+  while (i + 32 <= len) {
+    const __m256i word = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(src + i));
+    const __m256i flags = _mm256_or_si256(
+        _mm256_or_si256(_mm256_cmpeq_epi8(word, _mm256_set1_epi8(34)),   // '"'
+                        _mm256_cmpeq_epi8(word, _mm256_set1_epi8(92))),  // '\\'
+        _mm256_cmpeq_epi8(_mm256_subs_epu8(word, _mm256_set1_epi8(31)),
+                          _mm256_setzero_si256()));                      // control
+    const uint32_t mask = uint32_t(_mm256_movemask_epi8(flags));
+    if (simdjson_likely(mask == 0)) {
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(out), word);
+      out += 32;
+    } else {
+      for (size_t half = 0; half < 32; half += 16) {
+        const uint64_t m = (mask >> half) & 0xFFFF;
+        if (m == 0) {
+          escape_store16(out, escape_load16(src + i + half));
+          out += 16;
+        } else {
+          out = escape_block(src, out, i + half, i + half + 16, m);
+        }
+      }
+    }
+    i += 32;
+  }
+#endif
   while (i + 16 <= len) {
     escape_vector word = escape_load16(src + i);
     escape_vector flags = escape_flags(word);
@@ -48122,96 +48413,135 @@ simdjson_inline void string_builder::clear() noexcept {
 
 namespace internal {
 
-static const char decimal_table[200] = {
-    0x30, 0x30, 0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35,
-    0x30, 0x36, 0x30, 0x37, 0x30, 0x38, 0x30, 0x39, 0x31, 0x30, 0x31, 0x31,
-    0x31, 0x32, 0x31, 0x33, 0x31, 0x34, 0x31, 0x35, 0x31, 0x36, 0x31, 0x37,
-    0x31, 0x38, 0x31, 0x39, 0x32, 0x30, 0x32, 0x31, 0x32, 0x32, 0x32, 0x33,
-    0x32, 0x34, 0x32, 0x35, 0x32, 0x36, 0x32, 0x37, 0x32, 0x38, 0x32, 0x39,
-    0x33, 0x30, 0x33, 0x31, 0x33, 0x32, 0x33, 0x33, 0x33, 0x34, 0x33, 0x35,
-    0x33, 0x36, 0x33, 0x37, 0x33, 0x38, 0x33, 0x39, 0x34, 0x30, 0x34, 0x31,
-    0x34, 0x32, 0x34, 0x33, 0x34, 0x34, 0x34, 0x35, 0x34, 0x36, 0x34, 0x37,
-    0x34, 0x38, 0x34, 0x39, 0x35, 0x30, 0x35, 0x31, 0x35, 0x32, 0x35, 0x33,
-    0x35, 0x34, 0x35, 0x35, 0x35, 0x36, 0x35, 0x37, 0x35, 0x38, 0x35, 0x39,
-    0x36, 0x30, 0x36, 0x31, 0x36, 0x32, 0x36, 0x33, 0x36, 0x34, 0x36, 0x35,
-    0x36, 0x36, 0x36, 0x37, 0x36, 0x38, 0x36, 0x39, 0x37, 0x30, 0x37, 0x31,
-    0x37, 0x32, 0x37, 0x33, 0x37, 0x34, 0x37, 0x35, 0x37, 0x36, 0x37, 0x37,
-    0x37, 0x38, 0x37, 0x39, 0x38, 0x30, 0x38, 0x31, 0x38, 0x32, 0x38, 0x33,
-    0x38, 0x34, 0x38, 0x35, 0x38, 0x36, 0x38, 0x37, 0x38, 0x38, 0x38, 0x39,
-    0x39, 0x30, 0x39, 0x31, 0x39, 0x32, 0x39, 0x33, 0x39, 0x34, 0x39, 0x35,
-    0x39, 0x36, 0x39, 0x37, 0x39, 0x38, 0x39, 0x39,
-};
+// Integer to decimal: James Edward Anhalt III's algorithm
+static const char jeaiii_dd[201] =
+    "00010203040506070809101112131415161718192021222324252627282930313233343536373839"
+    "40414243444546474849505152535455565758596061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+static const char jeaiii_fd[201] =
+    "0\0" "1\0" "2\0" "3\0" "4\0" "5\0" "6\0" "7\0" "8\0" "9\0"
+    "10111213141516171819202122232425262728293031323334353637383940414243444546474849"
+    "50515253545556575859606162636465666768697071727374757677787980818283848586878889"
+    "90919293949596979899";
 
-// Forward unsigned-int writer (cascade-on-magnitude, no upfront digit_count).
-// Built from a non-recursive DAG of always_inline helpers -- gcc and MSVC
-// refuse to inline recursive `always_inline`/`__forceinline` functions.
-// Caller must guarantee at least 20 bytes available at p. All helpers
-// return pointer past the last digit written.
-
-// Caller guarantees v < 100. Writes 1-2 digits.
-simdjson_really_inline char* write_lt100(char* p, uint64_t v) noexcept {
-  if (v < 10) { *p++ = char('0' + v); return p; }
-  std::memcpy(p, &decimal_table[v * 2], 2);
-  return p + 2;
+simdjson_really_inline void jeaiii_write_dd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_dd[2 * k], 2);
+}
+simdjson_really_inline void jeaiii_write_fd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_fd[2 * k], 2);
 }
 
-// Caller guarantees v < 10000. Writes 1-4 digits.
-simdjson_really_inline char* write_lt10000(char* p, uint64_t v) noexcept {
-  if (v < 100) return write_lt100(p, v);
-  uint64_t hi = v / 100, lo = v % 100;
-  if (v < 1000) {
-    *p++ = char('0' + hi);
+// Caller guarantees n < 10^8. Writes 1 to 8 digits.
+simdjson_really_inline char *jeaiii_lt1e8(char *b, uint32_t n) noexcept {
+  constexpr uint64_t mask24 = (uint64_t(1) << 24) - 1;
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  if (n < 100) {
+    jeaiii_write_fd(b, n);
+    return n < 10 ? b + 1 : b + 2;
+  }
+  if (n < 1000000) {
+    if (n < 10000) {
+      const uint32_t f0 = uint32_t(10 * (1 << 24) / 1e3 + 1) * n;
+      jeaiii_write_fd(b, f0 >> 24);
+      b -= n < 1000;
+      const uint32_t f2 = uint32_t(f0 & mask24) * 100;
+      jeaiii_write_dd(b + 2, f2 >> 24);
+      return b + 4;
+    }
+    const uint64_t f0 = uint64_t(10 * (1ull << 32) / 1e5 + 1) * n;
+    jeaiii_write_fd(b, f0 >> 32);
+    b -= n < 100000;
+    const uint64_t f2 = (f0 & mask32) * 100;
+    jeaiii_write_dd(b + 2, f2 >> 32);
+    const uint64_t f4 = (f2 & mask32) * 100;
+    jeaiii_write_dd(b + 4, f4 >> 32);
+    return b + 6;
+  }
+  const uint64_t f0 = uint64_t(10 * (1ull << 48) / 1e7 + 1) * n >> 16;
+  jeaiii_write_fd(b, f0 >> 32);
+  b -= n < 10000000;
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees z < 10^8. Always writes exactly 8 digits.
+simdjson_really_inline char *jeaiii_8_digits(char *b, uint32_t z) noexcept {
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  const uint64_t f0 = (uint64_t((1ull << 48) / 1e6 + 1) * z >> 16) + 1;
+  jeaiii_write_dd(b, f0 >> 32);
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees 10^8 <= n < 2^32. Writes 9 or 10 digits.
+simdjson_really_inline char *jeaiii_9_or_10(char *b, uint64_t n) noexcept {
+  constexpr uint64_t mask57 = (uint64_t(1) << 57) - 1;
+  const uint64_t f0 = uint64_t(10 * (1ull << 57) / 1e9 + 1) * n;
+  jeaiii_write_fd(b, f0 >> 57);
+  b -= n < 1000000000;
+  const uint64_t f2 = (f0 & mask57) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 57);
+  const uint64_t f4 = (f2 & mask57) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 57);
+  const uint64_t f6 = (f4 & mask57) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 57);
+  const uint64_t f8 = (f6 & mask57) * 100;
+  jeaiii_write_dd(b + 8, f8 >> 57);
+  return b + 10;
+}
+
+simdjson_really_inline char *write_uint_jeaiii(char *b, uint64_t n) noexcept {
+  if (n < 100000000) {
+    return jeaiii_lt1e8(b, uint32_t(n));
+  }
+  if (n < (uint64_t(1) << 32)) {
+    return jeaiii_9_or_10(b, n);
+  }
+  // At least 10 digits: the low 8 digits, and 2 to 12 digits above them.
+  const uint32_t z = uint32_t(n % 100000000);
+  uint64_t u = n / 100000000;
+  if (u < 100000000) {
+    // u has 2 to 8 digits (if u < 10, n would be below 2^32).
+    b = jeaiii_lt1e8(b, uint32_t(u));
+  } else if (u < (uint64_t(1) << 32)) {
+    b = jeaiii_9_or_10(b, u);
   } else {
-    std::memcpy(p, &decimal_table[hi * 2], 2);
-    p += 2;
+    // u has 11 or 12 digits: split off 8 more.
+    const uint32_t y = uint32_t(u % 100000000);
+    u /= 100000000;
+    b = jeaiii_lt1e8(b, uint32_t(u)); // 3 or 4 digits
+    b = jeaiii_8_digits(b, y);
   }
-  std::memcpy(p, &decimal_table[lo * 2], 2);
-  return p + 2;
+  return jeaiii_8_digits(b, z);
 }
 
-// Caller guarantees v < 10000. Always writes exactly 4 digits.
-simdjson_really_inline void write_4_digits(char* p, uint64_t v) noexcept {
-  uint64_t hi = v / 100, lo = v % 100;
-  std::memcpy(p,     &decimal_table[hi * 2], 2);
-  std::memcpy(p + 2, &decimal_table[lo * 2], 2);
-}
-
-// Caller guarantees v < 10^8. Writes 1-8 digits.
-simdjson_really_inline char* write_lt1e8(char* p, uint64_t v) noexcept {
-  if (v < 10000) return write_lt10000(p, v);
-  uint64_t hi = v / 10000, lo = v % 10000;
-  p = write_lt10000(p, hi);
-  write_4_digits(p, lo);
-  return p + 4;
-}
-
-simdjson_really_inline char* write_uint_jeaiii(char* p, uint64_t v) noexcept {
-  if (v < 10000ULL) return write_lt10000(p, v);
-  if (v < 100000000ULL) {                   // 5-8 digits
-    uint64_t hi = v / 10000, lo = v % 10000;
-    p = write_lt10000(p, hi);
-    write_4_digits(p, lo);
-    return p + 4;
-  }
-  if (v < 10000000000000000ULL) {           // 9-16 digits
-    uint64_t hi = v / 100000000ULL, lo = v % 100000000ULL;
-    p = write_lt1e8(p, hi);
-    uint64_t lo_hi = lo / 10000, lo_lo = lo % 10000;
-    write_4_digits(p,     lo_hi);
-    write_4_digits(p + 4, lo_lo);
+// Writes v at p, which must have to_chars_buffer_size bytes available, and
+// returns the end of what was written.
+simdjson_inline char *write_double(char *p, double v) noexcept {
+#if SIMDJSON_ENABLE_NAN_INF
+  if (simdjson_unlikely(!std::isfinite(v))) {
+    if (std::isnan(v)) {
+      std::memcpy(p, "NaN", 3);
+      return p + 3;
+    }
+    if (v < 0) {
+      *p++ = '-';
+    }
+    std::memcpy(p, "Infinity", 8);
     return p + 8;
   }
-  // 17-20 digits
-  uint64_t hi = v / 10000000000000000ULL, lo = v % 10000000000000000ULL;
-  p = write_lt10000(p, hi);
-  uint64_t lo_a = lo / 100000000ULL, lo_b = lo % 100000000ULL;
-  uint64_t lo_a_hi = lo_a / 10000, lo_a_lo = lo_a % 10000;
-  uint64_t lo_b_hi = lo_b / 10000, lo_b_lo = lo_b % 10000;
-  write_4_digits(p,      lo_a_hi);
-  write_4_digits(p + 4,  lo_a_lo);
-  write_4_digits(p + 8,  lo_b_hi);
-  write_4_digits(p + 12, lo_b_lo);
-  return p + 16;
+#endif
+  return simdjson::internal::to_chars(p, nullptr, v);
 }
 } // namespace internal
 
@@ -49208,8 +49538,15 @@ namespace builder {
 // name lookup falls back to the wrong outer namespace).
 namespace internal {
 simdjson_really_inline char *write_uint_jeaiii(char *p, uint64_t v) noexcept;
+simdjson_inline char *write_double(char *p, double v) noexcept;
 } // namespace internal
-inline size_t write_string_escaped(const std::string_view input, char *out);
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out);
+
+SIMDJSON_PUSH_DISABLE_WARNINGS
+SIMDJSON_DISABLE_GCC_WARNING(-Warray-bounds)
+#if !defined(__clang__)
+SIMDJSON_DISABLE_GCC_WARNING(-Wstringop-overflow)
+#endif
 
 // =============================================================
 // `writer`: position-as-local hot-path writer used by the reflection
@@ -49222,8 +49559,14 @@ inline size_t write_string_escaped(const std::string_view input, char *out);
 // breaks the strict-aliasing penalty on every char* write through the
 // buffer, which forces a reload of `b.position` and `b.capacity`
 // after every byte.
+//
+// basic_writer<false> (below) is the unchecked variant: the caller has
+// already reserved enough capacity for everything the write chain can
+// produce (see bound_detail::size_bound), so ensure() compiles away.
 // =============================================================
-struct writer {
+template <bool Checked>
+struct basic_writer {
+  static constexpr bool checked = Checked;
   char *ptr;        // buffer pointer (refreshed after a grow)
   size_t pos;       // write position (local)
   size_t cap;       // capacity (refreshed after a grow)
@@ -49231,7 +49574,7 @@ struct writer {
 
   // Snapshot string_builder state into a writer for the duration of
   // a write chain.
-  simdjson_really_inline writer(string_builder &builder) noexcept
+  simdjson_really_inline basic_writer(string_builder &builder) noexcept
       : ptr(builder.unsafe_data())
       , pos(builder.unsafe_position())
       , cap(builder.unsafe_capacity())
@@ -49257,9 +49600,7 @@ struct writer {
     return grow_slow(n);
   }
 
-  // Slow path of ensure(). Out-of-line via simdjson_inline (not
-  // simdjson_really_inline) to keep the hot path short.
-  simdjson_inline bool grow_slow(size_t n) noexcept {
+  simdjson_never_inline bool grow_slow(size_t n) noexcept {
     // Detect overflow.
     // This is pedantic except maybe on 32-bit targets.
     if (simdjson_unlikely(pos + n < pos)) return false;
@@ -49282,14 +49623,40 @@ struct writer {
   }
 };
 
+// The unchecked writer writes into a raw buffer that the caller sized with
+// serialized_size_bound: it never grows and needs no string_builder.
+template <>
+struct basic_writer<false> {
+  static constexpr bool checked = false;
+  char *ptr;
+  size_t pos;
+
+  simdjson_really_inline basic_writer(char *buffer, size_t position) noexcept
+      : ptr(buffer), pos(position) {}
+
+  simdjson_really_inline bool ensure(size_t) const noexcept { return true; }
+};
+
+using writer = basic_writer<true>;
+using unchecked_writer = basic_writer<false>;
+
+// Bytes reserved past the size bound for an unchecked writer: it may then
+// write a little past the end of what it produces (e.g., copy keys as whole
+// 16-byte blocks).
+inline constexpr size_t unchecked_slack = 64;
+
+consteval size_t padded_key_length(size_t length) {
+  return (length + 15) / 16 * 16;
+}
+
 // === Helper: invoke a string_builder member that writes variable-length
 // content (escape_and_append_with_quotes etc), syncing the writer's local
 // state before the call and reloading after. Used for string fields where
 // rewriting the entire SIMD escape path through the writer would be a much
 // bigger refactor. f may be user code (a with<Adapter> serializer) that
 // throws: the exception then propagates to the caller.
-template <class F>
-simdjson_really_inline void call_through_string_builder(writer &w, F &&f) noexcept(noexcept(f(w.sb))) {
+template <class W, class F>
+simdjson_really_inline void call_through_string_builder(W &w, F &&f) noexcept(noexcept(f(w.sb))) {
   w.sync();
   f(w.sb);
   w.ptr = w.sb.unsafe_data();
@@ -49323,8 +49690,8 @@ simdjson_really_inline bool should_serialize(const V &value) {
 
 // Serialize a member value, through its with<Adapter> annotation when the
 // adapter provides a serialize function.
-template <auto dm, typename V>
-simdjson_really_inline void atom_member(writer &w, const V &value) {
+template <auto dm, class W, typename V>
+simdjson_really_inline void atom_member(W &w, const V &value) {
   constexpr std::meta::info with_type = simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t);
   if constexpr (with_type != std::meta::info{}) {
     using adapter = typename [: with_type :]::adapter;
@@ -49341,8 +49708,8 @@ simdjson_really_inline void atom_member(writer &w, const V &value) {
 // Write the "key":value pairs of the members of t (without the braces), each
 // preceded by a comma unless it is the first one. The members of a member
 // annotated with flatten are written in its place.
-template <class T>
-simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
+template <class W, class T>
+simdjson_really_inline void atom_fields(W &w, const T &t, bool &first) {
   // Per-field block: ensure key+value worst case, then write key + value
   // through the writer's local pos. For arithmetic fields, the integer
   // write happens directly via write_uint_jeaiii on w.ptr+w.pos, so pos
@@ -49360,19 +49727,24 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
                         "simdjson::flatten requires a member whose type is a structure serialized member by member");
           atom_fields(w, t.[:dm:], first);
         } else {
+          // Copy the key as whole 16-byte blocks from a zero-padded copy (one
+          // load and one store); ensure() reserves the padded length, and the
+          // unchecked writer has slack past its bound.
           constexpr const char* key_name = simdjson::get_json_key_name<dm>();
+          constexpr size_t first_key_len = constevalutil::consteval_to_quoted_escaped(key_name).size() + 1;
+          constexpr size_t rest_key_len = first_key_len + 1;
           constexpr auto first_key = std::define_static_string(
-              constevalutil::consteval_to_quoted_escaped(key_name) + ":");
+              constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(first_key_len) - first_key_len, '\0'));
           constexpr auto rest_key = std::define_static_string(
-              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":");
-          constexpr size_t first_key_len = std::char_traits<char>::length(first_key);
-          constexpr size_t rest_key_len = std::char_traits<char>::length(rest_key);
-          if (!w.ensure(rest_key_len)) { return; }
+              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(rest_key_len) - rest_key_len, '\0'));
+          if (!w.ensure(padded_key_length(rest_key_len))) { return; }
           if (first) {
-            std::memcpy(w.ptr + w.pos, first_key, first_key_len);
+            std::memcpy(w.ptr + w.pos, first_key, padded_key_length(first_key_len));
             w.pos += first_key_len;
           } else {
-            std::memcpy(w.ptr + w.pos, rest_key, rest_key_len);
+            std::memcpy(w.ptr + w.pos, rest_key, padded_key_length(rest_key_len));
             w.pos += rest_key_len;
           }
           first = false;
@@ -49385,9 +49757,9 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
 
 } // namespace annotation_detail
 
-template <class T>
+template <class W, class T>
   requires(concepts::container_but_not_string<T> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   auto it = t.begin();
   auto end = t.end();
   if (it == end) {
@@ -49409,12 +49781,12 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   w.ptr[w.pos++] = ']';
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char *> ||
            std::is_same_v<T, char>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   // Inline the escape path through the writer so we never round-trip
   // pos through memory for string fields (Twitter is dominated by
   // these -- sync/reload around each string was a real cost).
@@ -49430,16 +49802,18 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
   // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
   // Note that this is pedantic except maybe on 32-bit targets.
-  if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-  if (!w.ensure(2 + 6 * input.size())) { return; }
+  if constexpr (W::checked) {
+    if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+    if (!w.ensure(2 + 6 * input.size())) { return; }
+  }
   w.ptr[w.pos++] = '"';
   w.pos += write_string_escaped(input, w.ptr + w.pos);
   w.ptr[w.pos++] = '"';
 }
 
-template <concepts::string_view_keyed_map T>
+template <class W, concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &m) {
+simdjson_really_inline constexpr void atom(W &w, const T &m) {
   if (m.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "{}", 2);
@@ -49462,8 +49836,10 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
     // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
     // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
     // Note that this is pedantic except maybe on 32-bit targets.
-    if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-    if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    if constexpr (W::checked) {
+      if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+      if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    }
     w.ptr[w.pos++] = '"';
     w.pos += write_string_escaped(key_sv, w.ptr + w.pos);
     w.ptr[w.pos++] = '"';
@@ -49475,9 +49851,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
 }
 
 
-template<typename number_type,
+template<class W, typename number_type,
          typename = typename std::enable_if<std::is_arithmetic<number_type>::value && !std::is_same_v<number_type, char>>::type>
-simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
+simdjson_really_inline constexpr void atom(W &w, const number_type t) {
   // Booleans / floats: defer to string_builder (rare path; keeps writer hot
   // path free of float-formatter machinery). For integers, write directly
   // via jeaiii using local pos.
@@ -49492,7 +49868,11 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
       w.pos += 5;
     }
   } else if constexpr (std::is_floating_point_v<number_type>) {
-    call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    if constexpr (W::checked) {
+      call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    } else {
+      w.pos = size_t(internal::write_double(w.ptr + w.pos, double(t)) - w.ptr);
+    }
   } else if constexpr (std::is_unsigned_v<number_type>) {
     if (!w.ensure(20)) return;
     char *end = internal::write_uint_jeaiii(
@@ -49512,7 +49892,7 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
   }
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_class_v<T> && !concepts::container_but_not_string<T> &&
            !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> &&
@@ -49522,7 +49902,7 @@ template <class T>
            !std::is_same_v<T, std::string_view> &&
            !std::is_same_v<T, const char*> &&
            !std::is_same_v<T, char> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
     // A transparent structure is serialized as its single member.
     constexpr auto dm = simdjson::detail::transparent_member(^^T);
@@ -49538,9 +49918,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
 }
 
 // Support for optional types (std::optional, etc.)
-template <concepts::optional_type T>
+template <class W, concepts::optional_type T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
+simdjson_really_inline constexpr void atom(W &w, const T &opt) {
   if (opt) {
     atom(w, opt.value());
   } else {
@@ -49551,9 +49931,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
 }
 
 // Support for smart pointers (std::unique_ptr, std::shared_ptr, etc.)
-template <concepts::smart_pointer T>
+template <class W, concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
+simdjson_really_inline constexpr void atom(W &w, const T &ptr) {
   if (ptr) {
     atom(w, *ptr);
   } else {
@@ -49564,9 +49944,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
 }
 
 // Support for enums - serialize as string representation using expand approach from P2996R12
-template <typename T>
+template <class W, typename T>
   requires(std::is_enum_v<T> && !require_custom_serialization<T>)
-simdjson_really_inline void atom(writer &w, const T &e) {
+simdjson_really_inline void atom(W &w, const T &e) {
 #if SIMDJSON_STATIC_REFLECTION
   static constexpr auto enumerators = std::define_static_array(std::meta::enumerators_of(^^T));
   template for (constexpr auto enum_val : enumerators) {
@@ -49588,12 +49968,12 @@ simdjson_really_inline void atom(writer &w, const T &e) {
 }
 
 // Support for appendable containers that don't have operator[] (sets, etc.)
-template <concepts::appendable_containers T>
+template <class W, concepts::appendable_containers T>
   requires(!concepts::container_but_not_string<T> && !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> && !concepts::smart_pointer<T> &&
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &container) {
+simdjson_really_inline constexpr void atom(W &w, const T &container) {
   if (container.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "[]", 2);
@@ -49613,6 +49993,150 @@ simdjson_really_inline constexpr void atom(writer &w, const T &container) {
   }
   if (!w.ensure(1)) return;
   w.ptr[w.pos++] = ']';
+}
+
+// =============================================================
+// Size bound: an upper bound on the number of bytes that atom(w, t) writes.
+// Computing it first lets append() reserve the capacity once and then run
+// the whole write chain through an unchecked_writer, without a capacity
+// check before every write. It mirrors the atom() overloads above.
+// =============================================================
+namespace bound_detail {
+
+// Whether size_bound covers everything that atom() writes for T: not when a
+// member is serialized by a with<Adapter> serializer, which writes an unknown
+// amount through the string_builder.
+template <class T>
+consteval bool is_bounded() {
+  if constexpr (require_custom_serialization<T>) {
+    return false;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *> || std::is_arithmetic_v<T> || std::is_enum_v<T>) {
+    return true;
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return is_bounded<std::remove_cvref_t<decltype(*std::declval<const T &>())>>();
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    return is_bounded<std::remove_cvref_t<typename T::mapped_type>>();
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    return is_bounded<std::remove_cvref_t<std::ranges::range_value_t<T>>>();
+  } else {
+    bool bounded = true;
+    template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+      if constexpr (annotation_detail::is_serialized_member(dm)) {
+        bounded = bounded && simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t) == std::meta::info{} &&
+                  is_bounded<std::remove_cvref_t<decltype(std::declval<const T &>().[:dm:])>>();
+      }
+    };
+    return bounded;
+  }
+}
+
+template <class T>
+consteval size_t enum_bound() {
+  size_t bound = 20; // the integer fallback
+  template for (constexpr auto enum_val : std::define_static_array(std::meta::enumerators_of(^^T))) {
+    constexpr size_t len = std::char_traits<char>::length(std::define_static_string(
+        constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<enum_val>())));
+    bound = (std::max)(bound, len);
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound(const T &t) noexcept;
+
+// Bound for the "key":value pairs of a structure, commas included.
+template <class T>
+simdjson_really_inline size_t fields_bound(const T &t) noexcept {
+  size_t bound = 0;
+  template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+    if constexpr (annotation_detail::is_serialized_member(dm)) {
+      if constexpr (simdjson::detail::has_annotation(dm, ^^simdjson::detail::flatten_tag)) {
+        bound += fields_bound(t.[:dm:]);
+      } else {
+        constexpr size_t rest_key_len = constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<dm>()).size() + 2;
+        bound += rest_key_len + size_bound(t.[:dm:]);
+      }
+    }
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound([[maybe_unused]] const T &t) noexcept {
+  if constexpr (std::is_same_v<T, char>) {
+    return 2 + 6;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *>) {
+    // Every byte may become \uXXXX, plus the quotes.
+    return 2 + 6 * std::string_view(t).size();
+  } else if constexpr (std::is_same_v<T, bool>) {
+    return 5;
+  } else if constexpr (std::is_floating_point_v<T>) {
+    return simdjson::internal::to_chars_buffer_size;
+  } else if constexpr (std::is_arithmetic_v<T>) {
+    return 20;
+  } else if constexpr (std::is_enum_v<T>) {
+    return enum_bound<T>();
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return t ? size_bound(*t) : 4;
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    size_t bound = 2;
+    for (const auto &[key, value] : t) {
+      // comma, quotes, colon
+      bound += 4 + 6 * std::string_view(key).size() + size_bound(value);
+    }
+    return bound;
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    using value_type = std::remove_cvref_t<std::ranges::range_value_t<T>>;
+    if constexpr (std::is_arithmetic_v<value_type> && !std::is_same_v<value_type, char>) {
+      // A fixed bound per element: no need to visit them.
+      return 2 + size_t(std::ranges::distance(t)) * (1 + size_bound(value_type{}));
+    } else {
+      size_t bound = 2;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC novector // a vector loop is slower on short containers
+#endif
+#pragma GCC unroll 4
+      for (const auto &item : t) {
+        bound += 1 + size_bound(item);
+      }
+      return bound;
+    }
+  } else if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
+    constexpr auto dm = simdjson::detail::transparent_member(^^T);
+    return size_bound(t.[:dm:]);
+  } else {
+    return 2 + fields_bound(t);
+  }
+}
+
+} // namespace bound_detail
+
+// Write t through an unchecked writer when its size bound is available,
+// reserving that many bytes first, and through the checked writer otherwise.
+template <class T>
+simdjson_really_inline void append_bounded(string_builder &b, const T &t) {
+  // On 32-bit systems, the bound could overflow: keep the checked writer.
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<T>()) {
+    const size_t bound = bound_detail::size_bound(t) + unchecked_slack;
+    const size_t pos = b.unsafe_position();
+    // The bound is a sum of in-memory sizes times a small constant: it cannot
+    // overflow on a 64-bit system. Be pedantic elsewhere.
+    if (sizeof(size_t) >= 8 || bound <= (std::numeric_limits<size_t>::max)() - pos) {
+      const size_t cap = b.unsafe_capacity();
+      // Grow geometrically so that many small appends stay amortized.
+      if (pos + bound <= cap || b.unsafe_grow((std::max)(cap * 2, pos + bound))) {
+        unchecked_writer w(b.unsafe_data(), pos);
+        atom(w, t);
+        b.unsafe_set_position(w.pos);
+      }
+      return;
+    }
+  }
+  writer w(b);
+  atom(w, t);
+  w.sync();
 }
 
 // append() -- top-level entry. Each overload constructs a stack-local
@@ -49640,17 +50164,13 @@ simdjson_inline void append(string_builder &b, const T &t) {
 template <concepts::optional_type T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::appendable_containers T>
@@ -49659,17 +50179,13 @@ template <concepts::appendable_containers T>
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 // works for struct
@@ -49684,18 +50200,14 @@ template <class Z>
            !std::is_same_v<Z, const char*> &&
            !std::is_same_v<Z, char> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 // works for container that have begin() and end() iterators
 template <class Z>
   requires(concepts::container_but_not_string<Z> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 template <class Z>
@@ -49706,22 +50218,38 @@ void append(string_builder &b, const Z &z) {
 
 
 template <class Z>
-simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<Z>()) {
+    // Write straight into s, sized by the bound: no intermediate buffer, no copy.
+    (void)initial_capacity;
+    const size_t bound = bound_detail::size_bound(z) + unchecked_slack;
+    auto write = [&z](char *p) noexcept {
+      unchecked_writer w(p, 0);
+      atom(w, z);
+      return w.pos;
+    };
+#if defined(__cpp_lib_string_resize_and_overwrite) && __cpp_lib_string_resize_and_overwrite >= 202110L
+    s.resize_and_overwrite(bound, [&write](char *p, size_t) noexcept { return write(p); });
+#else
+    s.resize(bound);
+    s.resize(write(s.data()));
+#endif
+    return SUCCESS;
+  } else {
+    string_builder b(initial_capacity);
+    append(b, z);
+    std::string_view view;
+    if(auto e = b.view().get(view); e) { return e; }
+    s.assign(view);
+    return SUCCESS;
+  }
 }
 
 template <class Z>
-simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  std::string s;
+  if(auto e = to_json(z, s, initial_capacity); e) { return e; }
+  return s;
 }
 
 template <class Z>
@@ -49781,25 +50309,18 @@ simdjson_warn_unused simdjson_result<std::string> extract_from(const T &obj, siz
   return std::string(s);
 }
 
+SIMDJSON_POP_DISABLE_WARNINGS
+
 } // namespace builder
 } // namespace fallback
 // Alias the function template to 'to' in the global namespace
 template <class Z>
 simdjson_warn_unused simdjson_result<std::string> to_json(const Z &z, size_t initial_capacity = fallback::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  fallback::builder::string_builder b(initial_capacity);
-  fallback::builder::append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+  return fallback::builder::to_json_string(z, initial_capacity);
 }
 template <class Z>
 simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = fallback::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  fallback::builder::string_builder b(initial_capacity);
-  fallback::builder::append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+  return fallback::builder::to_json(z, s, initial_capacity);
 }
 // Global namespace function for extract_from
 template<constevalutil::fixed_string... FieldNames, typename T>
@@ -50004,6 +50525,9 @@ simdjson_warn_unused simdjson_result<std::string> extract_fractured_json(
 #endif
 #if SIMDJSON_EXPERIMENTAL_HAS_SSE2
 #include <emmintrin.h>
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -50512,12 +51036,38 @@ simdjson_never_inline char *escape_block(const uint8_t *src, char *out,
 
 // Writes the escaped version of input to out, returning the number of bytes
 // written.
-inline size_t write_string_escaped(const std::string_view input, char *out) {
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out) {
   const size_t len = input.size();
   const uint8_t *src = reinterpret_cast<const uint8_t *>(input.data());
   const char *const initout = out;
 
   size_t i = 0;
+#if SIMDJSON_EXPERIMENTAL_HAS_SSE2 && defined(__AVX2__)
+  while (i + 32 <= len) {
+    const __m256i word = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(src + i));
+    const __m256i flags = _mm256_or_si256(
+        _mm256_or_si256(_mm256_cmpeq_epi8(word, _mm256_set1_epi8(34)),   // '"'
+                        _mm256_cmpeq_epi8(word, _mm256_set1_epi8(92))),  // '\\'
+        _mm256_cmpeq_epi8(_mm256_subs_epu8(word, _mm256_set1_epi8(31)),
+                          _mm256_setzero_si256()));                      // control
+    const uint32_t mask = uint32_t(_mm256_movemask_epi8(flags));
+    if (simdjson_likely(mask == 0)) {
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(out), word);
+      out += 32;
+    } else {
+      for (size_t half = 0; half < 32; half += 16) {
+        const uint64_t m = (mask >> half) & 0xFFFF;
+        if (m == 0) {
+          escape_store16(out, escape_load16(src + i + half));
+          out += 16;
+        } else {
+          out = escape_block(src, out, i + half, i + half + 16, m);
+        }
+      }
+    }
+    i += 32;
+  }
+#endif
   while (i + 16 <= len) {
     escape_vector word = escape_load16(src + i);
     escape_vector flags = escape_flags(word);
@@ -50689,96 +51239,135 @@ simdjson_inline void string_builder::clear() noexcept {
 
 namespace internal {
 
-static const char decimal_table[200] = {
-    0x30, 0x30, 0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35,
-    0x30, 0x36, 0x30, 0x37, 0x30, 0x38, 0x30, 0x39, 0x31, 0x30, 0x31, 0x31,
-    0x31, 0x32, 0x31, 0x33, 0x31, 0x34, 0x31, 0x35, 0x31, 0x36, 0x31, 0x37,
-    0x31, 0x38, 0x31, 0x39, 0x32, 0x30, 0x32, 0x31, 0x32, 0x32, 0x32, 0x33,
-    0x32, 0x34, 0x32, 0x35, 0x32, 0x36, 0x32, 0x37, 0x32, 0x38, 0x32, 0x39,
-    0x33, 0x30, 0x33, 0x31, 0x33, 0x32, 0x33, 0x33, 0x33, 0x34, 0x33, 0x35,
-    0x33, 0x36, 0x33, 0x37, 0x33, 0x38, 0x33, 0x39, 0x34, 0x30, 0x34, 0x31,
-    0x34, 0x32, 0x34, 0x33, 0x34, 0x34, 0x34, 0x35, 0x34, 0x36, 0x34, 0x37,
-    0x34, 0x38, 0x34, 0x39, 0x35, 0x30, 0x35, 0x31, 0x35, 0x32, 0x35, 0x33,
-    0x35, 0x34, 0x35, 0x35, 0x35, 0x36, 0x35, 0x37, 0x35, 0x38, 0x35, 0x39,
-    0x36, 0x30, 0x36, 0x31, 0x36, 0x32, 0x36, 0x33, 0x36, 0x34, 0x36, 0x35,
-    0x36, 0x36, 0x36, 0x37, 0x36, 0x38, 0x36, 0x39, 0x37, 0x30, 0x37, 0x31,
-    0x37, 0x32, 0x37, 0x33, 0x37, 0x34, 0x37, 0x35, 0x37, 0x36, 0x37, 0x37,
-    0x37, 0x38, 0x37, 0x39, 0x38, 0x30, 0x38, 0x31, 0x38, 0x32, 0x38, 0x33,
-    0x38, 0x34, 0x38, 0x35, 0x38, 0x36, 0x38, 0x37, 0x38, 0x38, 0x38, 0x39,
-    0x39, 0x30, 0x39, 0x31, 0x39, 0x32, 0x39, 0x33, 0x39, 0x34, 0x39, 0x35,
-    0x39, 0x36, 0x39, 0x37, 0x39, 0x38, 0x39, 0x39,
-};
+// Integer to decimal: James Edward Anhalt III's algorithm
+static const char jeaiii_dd[201] =
+    "00010203040506070809101112131415161718192021222324252627282930313233343536373839"
+    "40414243444546474849505152535455565758596061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+static const char jeaiii_fd[201] =
+    "0\0" "1\0" "2\0" "3\0" "4\0" "5\0" "6\0" "7\0" "8\0" "9\0"
+    "10111213141516171819202122232425262728293031323334353637383940414243444546474849"
+    "50515253545556575859606162636465666768697071727374757677787980818283848586878889"
+    "90919293949596979899";
 
-// Forward unsigned-int writer (cascade-on-magnitude, no upfront digit_count).
-// Built from a non-recursive DAG of always_inline helpers -- gcc and MSVC
-// refuse to inline recursive `always_inline`/`__forceinline` functions.
-// Caller must guarantee at least 20 bytes available at p. All helpers
-// return pointer past the last digit written.
-
-// Caller guarantees v < 100. Writes 1-2 digits.
-simdjson_really_inline char* write_lt100(char* p, uint64_t v) noexcept {
-  if (v < 10) { *p++ = char('0' + v); return p; }
-  std::memcpy(p, &decimal_table[v * 2], 2);
-  return p + 2;
+simdjson_really_inline void jeaiii_write_dd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_dd[2 * k], 2);
+}
+simdjson_really_inline void jeaiii_write_fd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_fd[2 * k], 2);
 }
 
-// Caller guarantees v < 10000. Writes 1-4 digits.
-simdjson_really_inline char* write_lt10000(char* p, uint64_t v) noexcept {
-  if (v < 100) return write_lt100(p, v);
-  uint64_t hi = v / 100, lo = v % 100;
-  if (v < 1000) {
-    *p++ = char('0' + hi);
+// Caller guarantees n < 10^8. Writes 1 to 8 digits.
+simdjson_really_inline char *jeaiii_lt1e8(char *b, uint32_t n) noexcept {
+  constexpr uint64_t mask24 = (uint64_t(1) << 24) - 1;
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  if (n < 100) {
+    jeaiii_write_fd(b, n);
+    return n < 10 ? b + 1 : b + 2;
+  }
+  if (n < 1000000) {
+    if (n < 10000) {
+      const uint32_t f0 = uint32_t(10 * (1 << 24) / 1e3 + 1) * n;
+      jeaiii_write_fd(b, f0 >> 24);
+      b -= n < 1000;
+      const uint32_t f2 = uint32_t(f0 & mask24) * 100;
+      jeaiii_write_dd(b + 2, f2 >> 24);
+      return b + 4;
+    }
+    const uint64_t f0 = uint64_t(10 * (1ull << 32) / 1e5 + 1) * n;
+    jeaiii_write_fd(b, f0 >> 32);
+    b -= n < 100000;
+    const uint64_t f2 = (f0 & mask32) * 100;
+    jeaiii_write_dd(b + 2, f2 >> 32);
+    const uint64_t f4 = (f2 & mask32) * 100;
+    jeaiii_write_dd(b + 4, f4 >> 32);
+    return b + 6;
+  }
+  const uint64_t f0 = uint64_t(10 * (1ull << 48) / 1e7 + 1) * n >> 16;
+  jeaiii_write_fd(b, f0 >> 32);
+  b -= n < 10000000;
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees z < 10^8. Always writes exactly 8 digits.
+simdjson_really_inline char *jeaiii_8_digits(char *b, uint32_t z) noexcept {
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  const uint64_t f0 = (uint64_t((1ull << 48) / 1e6 + 1) * z >> 16) + 1;
+  jeaiii_write_dd(b, f0 >> 32);
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees 10^8 <= n < 2^32. Writes 9 or 10 digits.
+simdjson_really_inline char *jeaiii_9_or_10(char *b, uint64_t n) noexcept {
+  constexpr uint64_t mask57 = (uint64_t(1) << 57) - 1;
+  const uint64_t f0 = uint64_t(10 * (1ull << 57) / 1e9 + 1) * n;
+  jeaiii_write_fd(b, f0 >> 57);
+  b -= n < 1000000000;
+  const uint64_t f2 = (f0 & mask57) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 57);
+  const uint64_t f4 = (f2 & mask57) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 57);
+  const uint64_t f6 = (f4 & mask57) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 57);
+  const uint64_t f8 = (f6 & mask57) * 100;
+  jeaiii_write_dd(b + 8, f8 >> 57);
+  return b + 10;
+}
+
+simdjson_really_inline char *write_uint_jeaiii(char *b, uint64_t n) noexcept {
+  if (n < 100000000) {
+    return jeaiii_lt1e8(b, uint32_t(n));
+  }
+  if (n < (uint64_t(1) << 32)) {
+    return jeaiii_9_or_10(b, n);
+  }
+  // At least 10 digits: the low 8 digits, and 2 to 12 digits above them.
+  const uint32_t z = uint32_t(n % 100000000);
+  uint64_t u = n / 100000000;
+  if (u < 100000000) {
+    // u has 2 to 8 digits (if u < 10, n would be below 2^32).
+    b = jeaiii_lt1e8(b, uint32_t(u));
+  } else if (u < (uint64_t(1) << 32)) {
+    b = jeaiii_9_or_10(b, u);
   } else {
-    std::memcpy(p, &decimal_table[hi * 2], 2);
-    p += 2;
+    // u has 11 or 12 digits: split off 8 more.
+    const uint32_t y = uint32_t(u % 100000000);
+    u /= 100000000;
+    b = jeaiii_lt1e8(b, uint32_t(u)); // 3 or 4 digits
+    b = jeaiii_8_digits(b, y);
   }
-  std::memcpy(p, &decimal_table[lo * 2], 2);
-  return p + 2;
+  return jeaiii_8_digits(b, z);
 }
 
-// Caller guarantees v < 10000. Always writes exactly 4 digits.
-simdjson_really_inline void write_4_digits(char* p, uint64_t v) noexcept {
-  uint64_t hi = v / 100, lo = v % 100;
-  std::memcpy(p,     &decimal_table[hi * 2], 2);
-  std::memcpy(p + 2, &decimal_table[lo * 2], 2);
-}
-
-// Caller guarantees v < 10^8. Writes 1-8 digits.
-simdjson_really_inline char* write_lt1e8(char* p, uint64_t v) noexcept {
-  if (v < 10000) return write_lt10000(p, v);
-  uint64_t hi = v / 10000, lo = v % 10000;
-  p = write_lt10000(p, hi);
-  write_4_digits(p, lo);
-  return p + 4;
-}
-
-simdjson_really_inline char* write_uint_jeaiii(char* p, uint64_t v) noexcept {
-  if (v < 10000ULL) return write_lt10000(p, v);
-  if (v < 100000000ULL) {                   // 5-8 digits
-    uint64_t hi = v / 10000, lo = v % 10000;
-    p = write_lt10000(p, hi);
-    write_4_digits(p, lo);
-    return p + 4;
-  }
-  if (v < 10000000000000000ULL) {           // 9-16 digits
-    uint64_t hi = v / 100000000ULL, lo = v % 100000000ULL;
-    p = write_lt1e8(p, hi);
-    uint64_t lo_hi = lo / 10000, lo_lo = lo % 10000;
-    write_4_digits(p,     lo_hi);
-    write_4_digits(p + 4, lo_lo);
+// Writes v at p, which must have to_chars_buffer_size bytes available, and
+// returns the end of what was written.
+simdjson_inline char *write_double(char *p, double v) noexcept {
+#if SIMDJSON_ENABLE_NAN_INF
+  if (simdjson_unlikely(!std::isfinite(v))) {
+    if (std::isnan(v)) {
+      std::memcpy(p, "NaN", 3);
+      return p + 3;
+    }
+    if (v < 0) {
+      *p++ = '-';
+    }
+    std::memcpy(p, "Infinity", 8);
     return p + 8;
   }
-  // 17-20 digits
-  uint64_t hi = v / 10000000000000000ULL, lo = v % 10000000000000000ULL;
-  p = write_lt10000(p, hi);
-  uint64_t lo_a = lo / 100000000ULL, lo_b = lo % 100000000ULL;
-  uint64_t lo_a_hi = lo_a / 10000, lo_a_lo = lo_a % 10000;
-  uint64_t lo_b_hi = lo_b / 10000, lo_b_lo = lo_b % 10000;
-  write_4_digits(p,      lo_a_hi);
-  write_4_digits(p + 4,  lo_a_lo);
-  write_4_digits(p + 8,  lo_b_hi);
-  write_4_digits(p + 12, lo_b_lo);
-  return p + 16;
+#endif
+  return simdjson::internal::to_chars(p, nullptr, v);
 }
 } // namespace internal
 
@@ -52252,8 +52841,15 @@ namespace builder {
 // name lookup falls back to the wrong outer namespace).
 namespace internal {
 simdjson_really_inline char *write_uint_jeaiii(char *p, uint64_t v) noexcept;
+simdjson_inline char *write_double(char *p, double v) noexcept;
 } // namespace internal
-inline size_t write_string_escaped(const std::string_view input, char *out);
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out);
+
+SIMDJSON_PUSH_DISABLE_WARNINGS
+SIMDJSON_DISABLE_GCC_WARNING(-Warray-bounds)
+#if !defined(__clang__)
+SIMDJSON_DISABLE_GCC_WARNING(-Wstringop-overflow)
+#endif
 
 // =============================================================
 // `writer`: position-as-local hot-path writer used by the reflection
@@ -52266,8 +52862,14 @@ inline size_t write_string_escaped(const std::string_view input, char *out);
 // breaks the strict-aliasing penalty on every char* write through the
 // buffer, which forces a reload of `b.position` and `b.capacity`
 // after every byte.
+//
+// basic_writer<false> (below) is the unchecked variant: the caller has
+// already reserved enough capacity for everything the write chain can
+// produce (see bound_detail::size_bound), so ensure() compiles away.
 // =============================================================
-struct writer {
+template <bool Checked>
+struct basic_writer {
+  static constexpr bool checked = Checked;
   char *ptr;        // buffer pointer (refreshed after a grow)
   size_t pos;       // write position (local)
   size_t cap;       // capacity (refreshed after a grow)
@@ -52275,7 +52877,7 @@ struct writer {
 
   // Snapshot string_builder state into a writer for the duration of
   // a write chain.
-  simdjson_really_inline writer(string_builder &builder) noexcept
+  simdjson_really_inline basic_writer(string_builder &builder) noexcept
       : ptr(builder.unsafe_data())
       , pos(builder.unsafe_position())
       , cap(builder.unsafe_capacity())
@@ -52301,9 +52903,7 @@ struct writer {
     return grow_slow(n);
   }
 
-  // Slow path of ensure(). Out-of-line via simdjson_inline (not
-  // simdjson_really_inline) to keep the hot path short.
-  simdjson_inline bool grow_slow(size_t n) noexcept {
+  simdjson_never_inline bool grow_slow(size_t n) noexcept {
     // Detect overflow.
     // This is pedantic except maybe on 32-bit targets.
     if (simdjson_unlikely(pos + n < pos)) return false;
@@ -52326,14 +52926,40 @@ struct writer {
   }
 };
 
+// The unchecked writer writes into a raw buffer that the caller sized with
+// serialized_size_bound: it never grows and needs no string_builder.
+template <>
+struct basic_writer<false> {
+  static constexpr bool checked = false;
+  char *ptr;
+  size_t pos;
+
+  simdjson_really_inline basic_writer(char *buffer, size_t position) noexcept
+      : ptr(buffer), pos(position) {}
+
+  simdjson_really_inline bool ensure(size_t) const noexcept { return true; }
+};
+
+using writer = basic_writer<true>;
+using unchecked_writer = basic_writer<false>;
+
+// Bytes reserved past the size bound for an unchecked writer: it may then
+// write a little past the end of what it produces (e.g., copy keys as whole
+// 16-byte blocks).
+inline constexpr size_t unchecked_slack = 64;
+
+consteval size_t padded_key_length(size_t length) {
+  return (length + 15) / 16 * 16;
+}
+
 // === Helper: invoke a string_builder member that writes variable-length
 // content (escape_and_append_with_quotes etc), syncing the writer's local
 // state before the call and reloading after. Used for string fields where
 // rewriting the entire SIMD escape path through the writer would be a much
 // bigger refactor. f may be user code (a with<Adapter> serializer) that
 // throws: the exception then propagates to the caller.
-template <class F>
-simdjson_really_inline void call_through_string_builder(writer &w, F &&f) noexcept(noexcept(f(w.sb))) {
+template <class W, class F>
+simdjson_really_inline void call_through_string_builder(W &w, F &&f) noexcept(noexcept(f(w.sb))) {
   w.sync();
   f(w.sb);
   w.ptr = w.sb.unsafe_data();
@@ -52367,8 +52993,8 @@ simdjson_really_inline bool should_serialize(const V &value) {
 
 // Serialize a member value, through its with<Adapter> annotation when the
 // adapter provides a serialize function.
-template <auto dm, typename V>
-simdjson_really_inline void atom_member(writer &w, const V &value) {
+template <auto dm, class W, typename V>
+simdjson_really_inline void atom_member(W &w, const V &value) {
   constexpr std::meta::info with_type = simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t);
   if constexpr (with_type != std::meta::info{}) {
     using adapter = typename [: with_type :]::adapter;
@@ -52385,8 +53011,8 @@ simdjson_really_inline void atom_member(writer &w, const V &value) {
 // Write the "key":value pairs of the members of t (without the braces), each
 // preceded by a comma unless it is the first one. The members of a member
 // annotated with flatten are written in its place.
-template <class T>
-simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
+template <class W, class T>
+simdjson_really_inline void atom_fields(W &w, const T &t, bool &first) {
   // Per-field block: ensure key+value worst case, then write key + value
   // through the writer's local pos. For arithmetic fields, the integer
   // write happens directly via write_uint_jeaiii on w.ptr+w.pos, so pos
@@ -52404,19 +53030,24 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
                         "simdjson::flatten requires a member whose type is a structure serialized member by member");
           atom_fields(w, t.[:dm:], first);
         } else {
+          // Copy the key as whole 16-byte blocks from a zero-padded copy (one
+          // load and one store); ensure() reserves the padded length, and the
+          // unchecked writer has slack past its bound.
           constexpr const char* key_name = simdjson::get_json_key_name<dm>();
+          constexpr size_t first_key_len = constevalutil::consteval_to_quoted_escaped(key_name).size() + 1;
+          constexpr size_t rest_key_len = first_key_len + 1;
           constexpr auto first_key = std::define_static_string(
-              constevalutil::consteval_to_quoted_escaped(key_name) + ":");
+              constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(first_key_len) - first_key_len, '\0'));
           constexpr auto rest_key = std::define_static_string(
-              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":");
-          constexpr size_t first_key_len = std::char_traits<char>::length(first_key);
-          constexpr size_t rest_key_len = std::char_traits<char>::length(rest_key);
-          if (!w.ensure(rest_key_len)) { return; }
+              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(rest_key_len) - rest_key_len, '\0'));
+          if (!w.ensure(padded_key_length(rest_key_len))) { return; }
           if (first) {
-            std::memcpy(w.ptr + w.pos, first_key, first_key_len);
+            std::memcpy(w.ptr + w.pos, first_key, padded_key_length(first_key_len));
             w.pos += first_key_len;
           } else {
-            std::memcpy(w.ptr + w.pos, rest_key, rest_key_len);
+            std::memcpy(w.ptr + w.pos, rest_key, padded_key_length(rest_key_len));
             w.pos += rest_key_len;
           }
           first = false;
@@ -52429,9 +53060,9 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
 
 } // namespace annotation_detail
 
-template <class T>
+template <class W, class T>
   requires(concepts::container_but_not_string<T> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   auto it = t.begin();
   auto end = t.end();
   if (it == end) {
@@ -52453,12 +53084,12 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   w.ptr[w.pos++] = ']';
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char *> ||
            std::is_same_v<T, char>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   // Inline the escape path through the writer so we never round-trip
   // pos through memory for string fields (Twitter is dominated by
   // these -- sync/reload around each string was a real cost).
@@ -52474,16 +53105,18 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
   // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
   // Note that this is pedantic except maybe on 32-bit targets.
-  if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-  if (!w.ensure(2 + 6 * input.size())) { return; }
+  if constexpr (W::checked) {
+    if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+    if (!w.ensure(2 + 6 * input.size())) { return; }
+  }
   w.ptr[w.pos++] = '"';
   w.pos += write_string_escaped(input, w.ptr + w.pos);
   w.ptr[w.pos++] = '"';
 }
 
-template <concepts::string_view_keyed_map T>
+template <class W, concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &m) {
+simdjson_really_inline constexpr void atom(W &w, const T &m) {
   if (m.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "{}", 2);
@@ -52506,8 +53139,10 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
     // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
     // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
     // Note that this is pedantic except maybe on 32-bit targets.
-    if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-    if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    if constexpr (W::checked) {
+      if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+      if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    }
     w.ptr[w.pos++] = '"';
     w.pos += write_string_escaped(key_sv, w.ptr + w.pos);
     w.ptr[w.pos++] = '"';
@@ -52519,9 +53154,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
 }
 
 
-template<typename number_type,
+template<class W, typename number_type,
          typename = typename std::enable_if<std::is_arithmetic<number_type>::value && !std::is_same_v<number_type, char>>::type>
-simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
+simdjson_really_inline constexpr void atom(W &w, const number_type t) {
   // Booleans / floats: defer to string_builder (rare path; keeps writer hot
   // path free of float-formatter machinery). For integers, write directly
   // via jeaiii using local pos.
@@ -52536,7 +53171,11 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
       w.pos += 5;
     }
   } else if constexpr (std::is_floating_point_v<number_type>) {
-    call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    if constexpr (W::checked) {
+      call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    } else {
+      w.pos = size_t(internal::write_double(w.ptr + w.pos, double(t)) - w.ptr);
+    }
   } else if constexpr (std::is_unsigned_v<number_type>) {
     if (!w.ensure(20)) return;
     char *end = internal::write_uint_jeaiii(
@@ -52556,7 +53195,7 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
   }
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_class_v<T> && !concepts::container_but_not_string<T> &&
            !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> &&
@@ -52566,7 +53205,7 @@ template <class T>
            !std::is_same_v<T, std::string_view> &&
            !std::is_same_v<T, const char*> &&
            !std::is_same_v<T, char> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
     // A transparent structure is serialized as its single member.
     constexpr auto dm = simdjson::detail::transparent_member(^^T);
@@ -52582,9 +53221,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
 }
 
 // Support for optional types (std::optional, etc.)
-template <concepts::optional_type T>
+template <class W, concepts::optional_type T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
+simdjson_really_inline constexpr void atom(W &w, const T &opt) {
   if (opt) {
     atom(w, opt.value());
   } else {
@@ -52595,9 +53234,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
 }
 
 // Support for smart pointers (std::unique_ptr, std::shared_ptr, etc.)
-template <concepts::smart_pointer T>
+template <class W, concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
+simdjson_really_inline constexpr void atom(W &w, const T &ptr) {
   if (ptr) {
     atom(w, *ptr);
   } else {
@@ -52608,9 +53247,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
 }
 
 // Support for enums - serialize as string representation using expand approach from P2996R12
-template <typename T>
+template <class W, typename T>
   requires(std::is_enum_v<T> && !require_custom_serialization<T>)
-simdjson_really_inline void atom(writer &w, const T &e) {
+simdjson_really_inline void atom(W &w, const T &e) {
 #if SIMDJSON_STATIC_REFLECTION
   static constexpr auto enumerators = std::define_static_array(std::meta::enumerators_of(^^T));
   template for (constexpr auto enum_val : enumerators) {
@@ -52632,12 +53271,12 @@ simdjson_really_inline void atom(writer &w, const T &e) {
 }
 
 // Support for appendable containers that don't have operator[] (sets, etc.)
-template <concepts::appendable_containers T>
+template <class W, concepts::appendable_containers T>
   requires(!concepts::container_but_not_string<T> && !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> && !concepts::smart_pointer<T> &&
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &container) {
+simdjson_really_inline constexpr void atom(W &w, const T &container) {
   if (container.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "[]", 2);
@@ -52657,6 +53296,150 @@ simdjson_really_inline constexpr void atom(writer &w, const T &container) {
   }
   if (!w.ensure(1)) return;
   w.ptr[w.pos++] = ']';
+}
+
+// =============================================================
+// Size bound: an upper bound on the number of bytes that atom(w, t) writes.
+// Computing it first lets append() reserve the capacity once and then run
+// the whole write chain through an unchecked_writer, without a capacity
+// check before every write. It mirrors the atom() overloads above.
+// =============================================================
+namespace bound_detail {
+
+// Whether size_bound covers everything that atom() writes for T: not when a
+// member is serialized by a with<Adapter> serializer, which writes an unknown
+// amount through the string_builder.
+template <class T>
+consteval bool is_bounded() {
+  if constexpr (require_custom_serialization<T>) {
+    return false;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *> || std::is_arithmetic_v<T> || std::is_enum_v<T>) {
+    return true;
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return is_bounded<std::remove_cvref_t<decltype(*std::declval<const T &>())>>();
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    return is_bounded<std::remove_cvref_t<typename T::mapped_type>>();
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    return is_bounded<std::remove_cvref_t<std::ranges::range_value_t<T>>>();
+  } else {
+    bool bounded = true;
+    template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+      if constexpr (annotation_detail::is_serialized_member(dm)) {
+        bounded = bounded && simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t) == std::meta::info{} &&
+                  is_bounded<std::remove_cvref_t<decltype(std::declval<const T &>().[:dm:])>>();
+      }
+    };
+    return bounded;
+  }
+}
+
+template <class T>
+consteval size_t enum_bound() {
+  size_t bound = 20; // the integer fallback
+  template for (constexpr auto enum_val : std::define_static_array(std::meta::enumerators_of(^^T))) {
+    constexpr size_t len = std::char_traits<char>::length(std::define_static_string(
+        constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<enum_val>())));
+    bound = (std::max)(bound, len);
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound(const T &t) noexcept;
+
+// Bound for the "key":value pairs of a structure, commas included.
+template <class T>
+simdjson_really_inline size_t fields_bound(const T &t) noexcept {
+  size_t bound = 0;
+  template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+    if constexpr (annotation_detail::is_serialized_member(dm)) {
+      if constexpr (simdjson::detail::has_annotation(dm, ^^simdjson::detail::flatten_tag)) {
+        bound += fields_bound(t.[:dm:]);
+      } else {
+        constexpr size_t rest_key_len = constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<dm>()).size() + 2;
+        bound += rest_key_len + size_bound(t.[:dm:]);
+      }
+    }
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound([[maybe_unused]] const T &t) noexcept {
+  if constexpr (std::is_same_v<T, char>) {
+    return 2 + 6;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *>) {
+    // Every byte may become \uXXXX, plus the quotes.
+    return 2 + 6 * std::string_view(t).size();
+  } else if constexpr (std::is_same_v<T, bool>) {
+    return 5;
+  } else if constexpr (std::is_floating_point_v<T>) {
+    return simdjson::internal::to_chars_buffer_size;
+  } else if constexpr (std::is_arithmetic_v<T>) {
+    return 20;
+  } else if constexpr (std::is_enum_v<T>) {
+    return enum_bound<T>();
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return t ? size_bound(*t) : 4;
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    size_t bound = 2;
+    for (const auto &[key, value] : t) {
+      // comma, quotes, colon
+      bound += 4 + 6 * std::string_view(key).size() + size_bound(value);
+    }
+    return bound;
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    using value_type = std::remove_cvref_t<std::ranges::range_value_t<T>>;
+    if constexpr (std::is_arithmetic_v<value_type> && !std::is_same_v<value_type, char>) {
+      // A fixed bound per element: no need to visit them.
+      return 2 + size_t(std::ranges::distance(t)) * (1 + size_bound(value_type{}));
+    } else {
+      size_t bound = 2;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC novector // a vector loop is slower on short containers
+#endif
+#pragma GCC unroll 4
+      for (const auto &item : t) {
+        bound += 1 + size_bound(item);
+      }
+      return bound;
+    }
+  } else if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
+    constexpr auto dm = simdjson::detail::transparent_member(^^T);
+    return size_bound(t.[:dm:]);
+  } else {
+    return 2 + fields_bound(t);
+  }
+}
+
+} // namespace bound_detail
+
+// Write t through an unchecked writer when its size bound is available,
+// reserving that many bytes first, and through the checked writer otherwise.
+template <class T>
+simdjson_really_inline void append_bounded(string_builder &b, const T &t) {
+  // On 32-bit systems, the bound could overflow: keep the checked writer.
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<T>()) {
+    const size_t bound = bound_detail::size_bound(t) + unchecked_slack;
+    const size_t pos = b.unsafe_position();
+    // The bound is a sum of in-memory sizes times a small constant: it cannot
+    // overflow on a 64-bit system. Be pedantic elsewhere.
+    if (sizeof(size_t) >= 8 || bound <= (std::numeric_limits<size_t>::max)() - pos) {
+      const size_t cap = b.unsafe_capacity();
+      // Grow geometrically so that many small appends stay amortized.
+      if (pos + bound <= cap || b.unsafe_grow((std::max)(cap * 2, pos + bound))) {
+        unchecked_writer w(b.unsafe_data(), pos);
+        atom(w, t);
+        b.unsafe_set_position(w.pos);
+      }
+      return;
+    }
+  }
+  writer w(b);
+  atom(w, t);
+  w.sync();
 }
 
 // append() -- top-level entry. Each overload constructs a stack-local
@@ -52684,17 +53467,13 @@ simdjson_inline void append(string_builder &b, const T &t) {
 template <concepts::optional_type T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::appendable_containers T>
@@ -52703,17 +53482,13 @@ template <concepts::appendable_containers T>
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 // works for struct
@@ -52728,18 +53503,14 @@ template <class Z>
            !std::is_same_v<Z, const char*> &&
            !std::is_same_v<Z, char> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 // works for container that have begin() and end() iterators
 template <class Z>
   requires(concepts::container_but_not_string<Z> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 template <class Z>
@@ -52750,22 +53521,38 @@ void append(string_builder &b, const Z &z) {
 
 
 template <class Z>
-simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<Z>()) {
+    // Write straight into s, sized by the bound: no intermediate buffer, no copy.
+    (void)initial_capacity;
+    const size_t bound = bound_detail::size_bound(z) + unchecked_slack;
+    auto write = [&z](char *p) noexcept {
+      unchecked_writer w(p, 0);
+      atom(w, z);
+      return w.pos;
+    };
+#if defined(__cpp_lib_string_resize_and_overwrite) && __cpp_lib_string_resize_and_overwrite >= 202110L
+    s.resize_and_overwrite(bound, [&write](char *p, size_t) noexcept { return write(p); });
+#else
+    s.resize(bound);
+    s.resize(write(s.data()));
+#endif
+    return SUCCESS;
+  } else {
+    string_builder b(initial_capacity);
+    append(b, z);
+    std::string_view view;
+    if(auto e = b.view().get(view); e) { return e; }
+    s.assign(view);
+    return SUCCESS;
+  }
 }
 
 template <class Z>
-simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  std::string s;
+  if(auto e = to_json(z, s, initial_capacity); e) { return e; }
+  return s;
 }
 
 template <class Z>
@@ -52825,25 +53612,18 @@ simdjson_warn_unused simdjson_result<std::string> extract_from(const T &obj, siz
   return std::string(s);
 }
 
+SIMDJSON_POP_DISABLE_WARNINGS
+
 } // namespace builder
 } // namespace haswell
 // Alias the function template to 'to' in the global namespace
 template <class Z>
 simdjson_warn_unused simdjson_result<std::string> to_json(const Z &z, size_t initial_capacity = haswell::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  haswell::builder::string_builder b(initial_capacity);
-  haswell::builder::append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+  return haswell::builder::to_json_string(z, initial_capacity);
 }
 template <class Z>
 simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = haswell::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  haswell::builder::string_builder b(initial_capacity);
-  haswell::builder::append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+  return haswell::builder::to_json(z, s, initial_capacity);
 }
 // Global namespace function for extract_from
 template<constevalutil::fixed_string... FieldNames, typename T>
@@ -53048,6 +53828,9 @@ simdjson_warn_unused simdjson_result<std::string> extract_fractured_json(
 #endif
 #if SIMDJSON_EXPERIMENTAL_HAS_SSE2
 #include <emmintrin.h>
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -53556,12 +54339,38 @@ simdjson_never_inline char *escape_block(const uint8_t *src, char *out,
 
 // Writes the escaped version of input to out, returning the number of bytes
 // written.
-inline size_t write_string_escaped(const std::string_view input, char *out) {
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out) {
   const size_t len = input.size();
   const uint8_t *src = reinterpret_cast<const uint8_t *>(input.data());
   const char *const initout = out;
 
   size_t i = 0;
+#if SIMDJSON_EXPERIMENTAL_HAS_SSE2 && defined(__AVX2__)
+  while (i + 32 <= len) {
+    const __m256i word = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(src + i));
+    const __m256i flags = _mm256_or_si256(
+        _mm256_or_si256(_mm256_cmpeq_epi8(word, _mm256_set1_epi8(34)),   // '"'
+                        _mm256_cmpeq_epi8(word, _mm256_set1_epi8(92))),  // '\\'
+        _mm256_cmpeq_epi8(_mm256_subs_epu8(word, _mm256_set1_epi8(31)),
+                          _mm256_setzero_si256()));                      // control
+    const uint32_t mask = uint32_t(_mm256_movemask_epi8(flags));
+    if (simdjson_likely(mask == 0)) {
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(out), word);
+      out += 32;
+    } else {
+      for (size_t half = 0; half < 32; half += 16) {
+        const uint64_t m = (mask >> half) & 0xFFFF;
+        if (m == 0) {
+          escape_store16(out, escape_load16(src + i + half));
+          out += 16;
+        } else {
+          out = escape_block(src, out, i + half, i + half + 16, m);
+        }
+      }
+    }
+    i += 32;
+  }
+#endif
   while (i + 16 <= len) {
     escape_vector word = escape_load16(src + i);
     escape_vector flags = escape_flags(word);
@@ -53733,96 +54542,135 @@ simdjson_inline void string_builder::clear() noexcept {
 
 namespace internal {
 
-static const char decimal_table[200] = {
-    0x30, 0x30, 0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35,
-    0x30, 0x36, 0x30, 0x37, 0x30, 0x38, 0x30, 0x39, 0x31, 0x30, 0x31, 0x31,
-    0x31, 0x32, 0x31, 0x33, 0x31, 0x34, 0x31, 0x35, 0x31, 0x36, 0x31, 0x37,
-    0x31, 0x38, 0x31, 0x39, 0x32, 0x30, 0x32, 0x31, 0x32, 0x32, 0x32, 0x33,
-    0x32, 0x34, 0x32, 0x35, 0x32, 0x36, 0x32, 0x37, 0x32, 0x38, 0x32, 0x39,
-    0x33, 0x30, 0x33, 0x31, 0x33, 0x32, 0x33, 0x33, 0x33, 0x34, 0x33, 0x35,
-    0x33, 0x36, 0x33, 0x37, 0x33, 0x38, 0x33, 0x39, 0x34, 0x30, 0x34, 0x31,
-    0x34, 0x32, 0x34, 0x33, 0x34, 0x34, 0x34, 0x35, 0x34, 0x36, 0x34, 0x37,
-    0x34, 0x38, 0x34, 0x39, 0x35, 0x30, 0x35, 0x31, 0x35, 0x32, 0x35, 0x33,
-    0x35, 0x34, 0x35, 0x35, 0x35, 0x36, 0x35, 0x37, 0x35, 0x38, 0x35, 0x39,
-    0x36, 0x30, 0x36, 0x31, 0x36, 0x32, 0x36, 0x33, 0x36, 0x34, 0x36, 0x35,
-    0x36, 0x36, 0x36, 0x37, 0x36, 0x38, 0x36, 0x39, 0x37, 0x30, 0x37, 0x31,
-    0x37, 0x32, 0x37, 0x33, 0x37, 0x34, 0x37, 0x35, 0x37, 0x36, 0x37, 0x37,
-    0x37, 0x38, 0x37, 0x39, 0x38, 0x30, 0x38, 0x31, 0x38, 0x32, 0x38, 0x33,
-    0x38, 0x34, 0x38, 0x35, 0x38, 0x36, 0x38, 0x37, 0x38, 0x38, 0x38, 0x39,
-    0x39, 0x30, 0x39, 0x31, 0x39, 0x32, 0x39, 0x33, 0x39, 0x34, 0x39, 0x35,
-    0x39, 0x36, 0x39, 0x37, 0x39, 0x38, 0x39, 0x39,
-};
+// Integer to decimal: James Edward Anhalt III's algorithm
+static const char jeaiii_dd[201] =
+    "00010203040506070809101112131415161718192021222324252627282930313233343536373839"
+    "40414243444546474849505152535455565758596061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+static const char jeaiii_fd[201] =
+    "0\0" "1\0" "2\0" "3\0" "4\0" "5\0" "6\0" "7\0" "8\0" "9\0"
+    "10111213141516171819202122232425262728293031323334353637383940414243444546474849"
+    "50515253545556575859606162636465666768697071727374757677787980818283848586878889"
+    "90919293949596979899";
 
-// Forward unsigned-int writer (cascade-on-magnitude, no upfront digit_count).
-// Built from a non-recursive DAG of always_inline helpers -- gcc and MSVC
-// refuse to inline recursive `always_inline`/`__forceinline` functions.
-// Caller must guarantee at least 20 bytes available at p. All helpers
-// return pointer past the last digit written.
-
-// Caller guarantees v < 100. Writes 1-2 digits.
-simdjson_really_inline char* write_lt100(char* p, uint64_t v) noexcept {
-  if (v < 10) { *p++ = char('0' + v); return p; }
-  std::memcpy(p, &decimal_table[v * 2], 2);
-  return p + 2;
+simdjson_really_inline void jeaiii_write_dd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_dd[2 * k], 2);
+}
+simdjson_really_inline void jeaiii_write_fd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_fd[2 * k], 2);
 }
 
-// Caller guarantees v < 10000. Writes 1-4 digits.
-simdjson_really_inline char* write_lt10000(char* p, uint64_t v) noexcept {
-  if (v < 100) return write_lt100(p, v);
-  uint64_t hi = v / 100, lo = v % 100;
-  if (v < 1000) {
-    *p++ = char('0' + hi);
+// Caller guarantees n < 10^8. Writes 1 to 8 digits.
+simdjson_really_inline char *jeaiii_lt1e8(char *b, uint32_t n) noexcept {
+  constexpr uint64_t mask24 = (uint64_t(1) << 24) - 1;
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  if (n < 100) {
+    jeaiii_write_fd(b, n);
+    return n < 10 ? b + 1 : b + 2;
+  }
+  if (n < 1000000) {
+    if (n < 10000) {
+      const uint32_t f0 = uint32_t(10 * (1 << 24) / 1e3 + 1) * n;
+      jeaiii_write_fd(b, f0 >> 24);
+      b -= n < 1000;
+      const uint32_t f2 = uint32_t(f0 & mask24) * 100;
+      jeaiii_write_dd(b + 2, f2 >> 24);
+      return b + 4;
+    }
+    const uint64_t f0 = uint64_t(10 * (1ull << 32) / 1e5 + 1) * n;
+    jeaiii_write_fd(b, f0 >> 32);
+    b -= n < 100000;
+    const uint64_t f2 = (f0 & mask32) * 100;
+    jeaiii_write_dd(b + 2, f2 >> 32);
+    const uint64_t f4 = (f2 & mask32) * 100;
+    jeaiii_write_dd(b + 4, f4 >> 32);
+    return b + 6;
+  }
+  const uint64_t f0 = uint64_t(10 * (1ull << 48) / 1e7 + 1) * n >> 16;
+  jeaiii_write_fd(b, f0 >> 32);
+  b -= n < 10000000;
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees z < 10^8. Always writes exactly 8 digits.
+simdjson_really_inline char *jeaiii_8_digits(char *b, uint32_t z) noexcept {
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  const uint64_t f0 = (uint64_t((1ull << 48) / 1e6 + 1) * z >> 16) + 1;
+  jeaiii_write_dd(b, f0 >> 32);
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees 10^8 <= n < 2^32. Writes 9 or 10 digits.
+simdjson_really_inline char *jeaiii_9_or_10(char *b, uint64_t n) noexcept {
+  constexpr uint64_t mask57 = (uint64_t(1) << 57) - 1;
+  const uint64_t f0 = uint64_t(10 * (1ull << 57) / 1e9 + 1) * n;
+  jeaiii_write_fd(b, f0 >> 57);
+  b -= n < 1000000000;
+  const uint64_t f2 = (f0 & mask57) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 57);
+  const uint64_t f4 = (f2 & mask57) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 57);
+  const uint64_t f6 = (f4 & mask57) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 57);
+  const uint64_t f8 = (f6 & mask57) * 100;
+  jeaiii_write_dd(b + 8, f8 >> 57);
+  return b + 10;
+}
+
+simdjson_really_inline char *write_uint_jeaiii(char *b, uint64_t n) noexcept {
+  if (n < 100000000) {
+    return jeaiii_lt1e8(b, uint32_t(n));
+  }
+  if (n < (uint64_t(1) << 32)) {
+    return jeaiii_9_or_10(b, n);
+  }
+  // At least 10 digits: the low 8 digits, and 2 to 12 digits above them.
+  const uint32_t z = uint32_t(n % 100000000);
+  uint64_t u = n / 100000000;
+  if (u < 100000000) {
+    // u has 2 to 8 digits (if u < 10, n would be below 2^32).
+    b = jeaiii_lt1e8(b, uint32_t(u));
+  } else if (u < (uint64_t(1) << 32)) {
+    b = jeaiii_9_or_10(b, u);
   } else {
-    std::memcpy(p, &decimal_table[hi * 2], 2);
-    p += 2;
+    // u has 11 or 12 digits: split off 8 more.
+    const uint32_t y = uint32_t(u % 100000000);
+    u /= 100000000;
+    b = jeaiii_lt1e8(b, uint32_t(u)); // 3 or 4 digits
+    b = jeaiii_8_digits(b, y);
   }
-  std::memcpy(p, &decimal_table[lo * 2], 2);
-  return p + 2;
+  return jeaiii_8_digits(b, z);
 }
 
-// Caller guarantees v < 10000. Always writes exactly 4 digits.
-simdjson_really_inline void write_4_digits(char* p, uint64_t v) noexcept {
-  uint64_t hi = v / 100, lo = v % 100;
-  std::memcpy(p,     &decimal_table[hi * 2], 2);
-  std::memcpy(p + 2, &decimal_table[lo * 2], 2);
-}
-
-// Caller guarantees v < 10^8. Writes 1-8 digits.
-simdjson_really_inline char* write_lt1e8(char* p, uint64_t v) noexcept {
-  if (v < 10000) return write_lt10000(p, v);
-  uint64_t hi = v / 10000, lo = v % 10000;
-  p = write_lt10000(p, hi);
-  write_4_digits(p, lo);
-  return p + 4;
-}
-
-simdjson_really_inline char* write_uint_jeaiii(char* p, uint64_t v) noexcept {
-  if (v < 10000ULL) return write_lt10000(p, v);
-  if (v < 100000000ULL) {                   // 5-8 digits
-    uint64_t hi = v / 10000, lo = v % 10000;
-    p = write_lt10000(p, hi);
-    write_4_digits(p, lo);
-    return p + 4;
-  }
-  if (v < 10000000000000000ULL) {           // 9-16 digits
-    uint64_t hi = v / 100000000ULL, lo = v % 100000000ULL;
-    p = write_lt1e8(p, hi);
-    uint64_t lo_hi = lo / 10000, lo_lo = lo % 10000;
-    write_4_digits(p,     lo_hi);
-    write_4_digits(p + 4, lo_lo);
+// Writes v at p, which must have to_chars_buffer_size bytes available, and
+// returns the end of what was written.
+simdjson_inline char *write_double(char *p, double v) noexcept {
+#if SIMDJSON_ENABLE_NAN_INF
+  if (simdjson_unlikely(!std::isfinite(v))) {
+    if (std::isnan(v)) {
+      std::memcpy(p, "NaN", 3);
+      return p + 3;
+    }
+    if (v < 0) {
+      *p++ = '-';
+    }
+    std::memcpy(p, "Infinity", 8);
     return p + 8;
   }
-  // 17-20 digits
-  uint64_t hi = v / 10000000000000000ULL, lo = v % 10000000000000000ULL;
-  p = write_lt10000(p, hi);
-  uint64_t lo_a = lo / 100000000ULL, lo_b = lo % 100000000ULL;
-  uint64_t lo_a_hi = lo_a / 10000, lo_a_lo = lo_a % 10000;
-  uint64_t lo_b_hi = lo_b / 10000, lo_b_lo = lo_b % 10000;
-  write_4_digits(p,      lo_a_hi);
-  write_4_digits(p + 4,  lo_a_lo);
-  write_4_digits(p + 8,  lo_b_hi);
-  write_4_digits(p + 12, lo_b_lo);
-  return p + 16;
+#endif
+  return simdjson::internal::to_chars(p, nullptr, v);
 }
 } // namespace internal
 
@@ -55296,8 +56144,15 @@ namespace builder {
 // name lookup falls back to the wrong outer namespace).
 namespace internal {
 simdjson_really_inline char *write_uint_jeaiii(char *p, uint64_t v) noexcept;
+simdjson_inline char *write_double(char *p, double v) noexcept;
 } // namespace internal
-inline size_t write_string_escaped(const std::string_view input, char *out);
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out);
+
+SIMDJSON_PUSH_DISABLE_WARNINGS
+SIMDJSON_DISABLE_GCC_WARNING(-Warray-bounds)
+#if !defined(__clang__)
+SIMDJSON_DISABLE_GCC_WARNING(-Wstringop-overflow)
+#endif
 
 // =============================================================
 // `writer`: position-as-local hot-path writer used by the reflection
@@ -55310,8 +56165,14 @@ inline size_t write_string_escaped(const std::string_view input, char *out);
 // breaks the strict-aliasing penalty on every char* write through the
 // buffer, which forces a reload of `b.position` and `b.capacity`
 // after every byte.
+//
+// basic_writer<false> (below) is the unchecked variant: the caller has
+// already reserved enough capacity for everything the write chain can
+// produce (see bound_detail::size_bound), so ensure() compiles away.
 // =============================================================
-struct writer {
+template <bool Checked>
+struct basic_writer {
+  static constexpr bool checked = Checked;
   char *ptr;        // buffer pointer (refreshed after a grow)
   size_t pos;       // write position (local)
   size_t cap;       // capacity (refreshed after a grow)
@@ -55319,7 +56180,7 @@ struct writer {
 
   // Snapshot string_builder state into a writer for the duration of
   // a write chain.
-  simdjson_really_inline writer(string_builder &builder) noexcept
+  simdjson_really_inline basic_writer(string_builder &builder) noexcept
       : ptr(builder.unsafe_data())
       , pos(builder.unsafe_position())
       , cap(builder.unsafe_capacity())
@@ -55345,9 +56206,7 @@ struct writer {
     return grow_slow(n);
   }
 
-  // Slow path of ensure(). Out-of-line via simdjson_inline (not
-  // simdjson_really_inline) to keep the hot path short.
-  simdjson_inline bool grow_slow(size_t n) noexcept {
+  simdjson_never_inline bool grow_slow(size_t n) noexcept {
     // Detect overflow.
     // This is pedantic except maybe on 32-bit targets.
     if (simdjson_unlikely(pos + n < pos)) return false;
@@ -55370,14 +56229,40 @@ struct writer {
   }
 };
 
+// The unchecked writer writes into a raw buffer that the caller sized with
+// serialized_size_bound: it never grows and needs no string_builder.
+template <>
+struct basic_writer<false> {
+  static constexpr bool checked = false;
+  char *ptr;
+  size_t pos;
+
+  simdjson_really_inline basic_writer(char *buffer, size_t position) noexcept
+      : ptr(buffer), pos(position) {}
+
+  simdjson_really_inline bool ensure(size_t) const noexcept { return true; }
+};
+
+using writer = basic_writer<true>;
+using unchecked_writer = basic_writer<false>;
+
+// Bytes reserved past the size bound for an unchecked writer: it may then
+// write a little past the end of what it produces (e.g., copy keys as whole
+// 16-byte blocks).
+inline constexpr size_t unchecked_slack = 64;
+
+consteval size_t padded_key_length(size_t length) {
+  return (length + 15) / 16 * 16;
+}
+
 // === Helper: invoke a string_builder member that writes variable-length
 // content (escape_and_append_with_quotes etc), syncing the writer's local
 // state before the call and reloading after. Used for string fields where
 // rewriting the entire SIMD escape path through the writer would be a much
 // bigger refactor. f may be user code (a with<Adapter> serializer) that
 // throws: the exception then propagates to the caller.
-template <class F>
-simdjson_really_inline void call_through_string_builder(writer &w, F &&f) noexcept(noexcept(f(w.sb))) {
+template <class W, class F>
+simdjson_really_inline void call_through_string_builder(W &w, F &&f) noexcept(noexcept(f(w.sb))) {
   w.sync();
   f(w.sb);
   w.ptr = w.sb.unsafe_data();
@@ -55411,8 +56296,8 @@ simdjson_really_inline bool should_serialize(const V &value) {
 
 // Serialize a member value, through its with<Adapter> annotation when the
 // adapter provides a serialize function.
-template <auto dm, typename V>
-simdjson_really_inline void atom_member(writer &w, const V &value) {
+template <auto dm, class W, typename V>
+simdjson_really_inline void atom_member(W &w, const V &value) {
   constexpr std::meta::info with_type = simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t);
   if constexpr (with_type != std::meta::info{}) {
     using adapter = typename [: with_type :]::adapter;
@@ -55429,8 +56314,8 @@ simdjson_really_inline void atom_member(writer &w, const V &value) {
 // Write the "key":value pairs of the members of t (without the braces), each
 // preceded by a comma unless it is the first one. The members of a member
 // annotated with flatten are written in its place.
-template <class T>
-simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
+template <class W, class T>
+simdjson_really_inline void atom_fields(W &w, const T &t, bool &first) {
   // Per-field block: ensure key+value worst case, then write key + value
   // through the writer's local pos. For arithmetic fields, the integer
   // write happens directly via write_uint_jeaiii on w.ptr+w.pos, so pos
@@ -55448,19 +56333,24 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
                         "simdjson::flatten requires a member whose type is a structure serialized member by member");
           atom_fields(w, t.[:dm:], first);
         } else {
+          // Copy the key as whole 16-byte blocks from a zero-padded copy (one
+          // load and one store); ensure() reserves the padded length, and the
+          // unchecked writer has slack past its bound.
           constexpr const char* key_name = simdjson::get_json_key_name<dm>();
+          constexpr size_t first_key_len = constevalutil::consteval_to_quoted_escaped(key_name).size() + 1;
+          constexpr size_t rest_key_len = first_key_len + 1;
           constexpr auto first_key = std::define_static_string(
-              constevalutil::consteval_to_quoted_escaped(key_name) + ":");
+              constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(first_key_len) - first_key_len, '\0'));
           constexpr auto rest_key = std::define_static_string(
-              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":");
-          constexpr size_t first_key_len = std::char_traits<char>::length(first_key);
-          constexpr size_t rest_key_len = std::char_traits<char>::length(rest_key);
-          if (!w.ensure(rest_key_len)) { return; }
+              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(rest_key_len) - rest_key_len, '\0'));
+          if (!w.ensure(padded_key_length(rest_key_len))) { return; }
           if (first) {
-            std::memcpy(w.ptr + w.pos, first_key, first_key_len);
+            std::memcpy(w.ptr + w.pos, first_key, padded_key_length(first_key_len));
             w.pos += first_key_len;
           } else {
-            std::memcpy(w.ptr + w.pos, rest_key, rest_key_len);
+            std::memcpy(w.ptr + w.pos, rest_key, padded_key_length(rest_key_len));
             w.pos += rest_key_len;
           }
           first = false;
@@ -55473,9 +56363,9 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
 
 } // namespace annotation_detail
 
-template <class T>
+template <class W, class T>
   requires(concepts::container_but_not_string<T> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   auto it = t.begin();
   auto end = t.end();
   if (it == end) {
@@ -55497,12 +56387,12 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   w.ptr[w.pos++] = ']';
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char *> ||
            std::is_same_v<T, char>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   // Inline the escape path through the writer so we never round-trip
   // pos through memory for string fields (Twitter is dominated by
   // these -- sync/reload around each string was a real cost).
@@ -55518,16 +56408,18 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
   // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
   // Note that this is pedantic except maybe on 32-bit targets.
-  if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-  if (!w.ensure(2 + 6 * input.size())) { return; }
+  if constexpr (W::checked) {
+    if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+    if (!w.ensure(2 + 6 * input.size())) { return; }
+  }
   w.ptr[w.pos++] = '"';
   w.pos += write_string_escaped(input, w.ptr + w.pos);
   w.ptr[w.pos++] = '"';
 }
 
-template <concepts::string_view_keyed_map T>
+template <class W, concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &m) {
+simdjson_really_inline constexpr void atom(W &w, const T &m) {
   if (m.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "{}", 2);
@@ -55550,8 +56442,10 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
     // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
     // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
     // Note that this is pedantic except maybe on 32-bit targets.
-    if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-    if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    if constexpr (W::checked) {
+      if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+      if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    }
     w.ptr[w.pos++] = '"';
     w.pos += write_string_escaped(key_sv, w.ptr + w.pos);
     w.ptr[w.pos++] = '"';
@@ -55563,9 +56457,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
 }
 
 
-template<typename number_type,
+template<class W, typename number_type,
          typename = typename std::enable_if<std::is_arithmetic<number_type>::value && !std::is_same_v<number_type, char>>::type>
-simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
+simdjson_really_inline constexpr void atom(W &w, const number_type t) {
   // Booleans / floats: defer to string_builder (rare path; keeps writer hot
   // path free of float-formatter machinery). For integers, write directly
   // via jeaiii using local pos.
@@ -55580,7 +56474,11 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
       w.pos += 5;
     }
   } else if constexpr (std::is_floating_point_v<number_type>) {
-    call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    if constexpr (W::checked) {
+      call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    } else {
+      w.pos = size_t(internal::write_double(w.ptr + w.pos, double(t)) - w.ptr);
+    }
   } else if constexpr (std::is_unsigned_v<number_type>) {
     if (!w.ensure(20)) return;
     char *end = internal::write_uint_jeaiii(
@@ -55600,7 +56498,7 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
   }
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_class_v<T> && !concepts::container_but_not_string<T> &&
            !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> &&
@@ -55610,7 +56508,7 @@ template <class T>
            !std::is_same_v<T, std::string_view> &&
            !std::is_same_v<T, const char*> &&
            !std::is_same_v<T, char> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
     // A transparent structure is serialized as its single member.
     constexpr auto dm = simdjson::detail::transparent_member(^^T);
@@ -55626,9 +56524,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
 }
 
 // Support for optional types (std::optional, etc.)
-template <concepts::optional_type T>
+template <class W, concepts::optional_type T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
+simdjson_really_inline constexpr void atom(W &w, const T &opt) {
   if (opt) {
     atom(w, opt.value());
   } else {
@@ -55639,9 +56537,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
 }
 
 // Support for smart pointers (std::unique_ptr, std::shared_ptr, etc.)
-template <concepts::smart_pointer T>
+template <class W, concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
+simdjson_really_inline constexpr void atom(W &w, const T &ptr) {
   if (ptr) {
     atom(w, *ptr);
   } else {
@@ -55652,9 +56550,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
 }
 
 // Support for enums - serialize as string representation using expand approach from P2996R12
-template <typename T>
+template <class W, typename T>
   requires(std::is_enum_v<T> && !require_custom_serialization<T>)
-simdjson_really_inline void atom(writer &w, const T &e) {
+simdjson_really_inline void atom(W &w, const T &e) {
 #if SIMDJSON_STATIC_REFLECTION
   static constexpr auto enumerators = std::define_static_array(std::meta::enumerators_of(^^T));
   template for (constexpr auto enum_val : enumerators) {
@@ -55676,12 +56574,12 @@ simdjson_really_inline void atom(writer &w, const T &e) {
 }
 
 // Support for appendable containers that don't have operator[] (sets, etc.)
-template <concepts::appendable_containers T>
+template <class W, concepts::appendable_containers T>
   requires(!concepts::container_but_not_string<T> && !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> && !concepts::smart_pointer<T> &&
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &container) {
+simdjson_really_inline constexpr void atom(W &w, const T &container) {
   if (container.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "[]", 2);
@@ -55701,6 +56599,150 @@ simdjson_really_inline constexpr void atom(writer &w, const T &container) {
   }
   if (!w.ensure(1)) return;
   w.ptr[w.pos++] = ']';
+}
+
+// =============================================================
+// Size bound: an upper bound on the number of bytes that atom(w, t) writes.
+// Computing it first lets append() reserve the capacity once and then run
+// the whole write chain through an unchecked_writer, without a capacity
+// check before every write. It mirrors the atom() overloads above.
+// =============================================================
+namespace bound_detail {
+
+// Whether size_bound covers everything that atom() writes for T: not when a
+// member is serialized by a with<Adapter> serializer, which writes an unknown
+// amount through the string_builder.
+template <class T>
+consteval bool is_bounded() {
+  if constexpr (require_custom_serialization<T>) {
+    return false;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *> || std::is_arithmetic_v<T> || std::is_enum_v<T>) {
+    return true;
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return is_bounded<std::remove_cvref_t<decltype(*std::declval<const T &>())>>();
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    return is_bounded<std::remove_cvref_t<typename T::mapped_type>>();
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    return is_bounded<std::remove_cvref_t<std::ranges::range_value_t<T>>>();
+  } else {
+    bool bounded = true;
+    template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+      if constexpr (annotation_detail::is_serialized_member(dm)) {
+        bounded = bounded && simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t) == std::meta::info{} &&
+                  is_bounded<std::remove_cvref_t<decltype(std::declval<const T &>().[:dm:])>>();
+      }
+    };
+    return bounded;
+  }
+}
+
+template <class T>
+consteval size_t enum_bound() {
+  size_t bound = 20; // the integer fallback
+  template for (constexpr auto enum_val : std::define_static_array(std::meta::enumerators_of(^^T))) {
+    constexpr size_t len = std::char_traits<char>::length(std::define_static_string(
+        constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<enum_val>())));
+    bound = (std::max)(bound, len);
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound(const T &t) noexcept;
+
+// Bound for the "key":value pairs of a structure, commas included.
+template <class T>
+simdjson_really_inline size_t fields_bound(const T &t) noexcept {
+  size_t bound = 0;
+  template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+    if constexpr (annotation_detail::is_serialized_member(dm)) {
+      if constexpr (simdjson::detail::has_annotation(dm, ^^simdjson::detail::flatten_tag)) {
+        bound += fields_bound(t.[:dm:]);
+      } else {
+        constexpr size_t rest_key_len = constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<dm>()).size() + 2;
+        bound += rest_key_len + size_bound(t.[:dm:]);
+      }
+    }
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound([[maybe_unused]] const T &t) noexcept {
+  if constexpr (std::is_same_v<T, char>) {
+    return 2 + 6;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *>) {
+    // Every byte may become \uXXXX, plus the quotes.
+    return 2 + 6 * std::string_view(t).size();
+  } else if constexpr (std::is_same_v<T, bool>) {
+    return 5;
+  } else if constexpr (std::is_floating_point_v<T>) {
+    return simdjson::internal::to_chars_buffer_size;
+  } else if constexpr (std::is_arithmetic_v<T>) {
+    return 20;
+  } else if constexpr (std::is_enum_v<T>) {
+    return enum_bound<T>();
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return t ? size_bound(*t) : 4;
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    size_t bound = 2;
+    for (const auto &[key, value] : t) {
+      // comma, quotes, colon
+      bound += 4 + 6 * std::string_view(key).size() + size_bound(value);
+    }
+    return bound;
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    using value_type = std::remove_cvref_t<std::ranges::range_value_t<T>>;
+    if constexpr (std::is_arithmetic_v<value_type> && !std::is_same_v<value_type, char>) {
+      // A fixed bound per element: no need to visit them.
+      return 2 + size_t(std::ranges::distance(t)) * (1 + size_bound(value_type{}));
+    } else {
+      size_t bound = 2;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC novector // a vector loop is slower on short containers
+#endif
+#pragma GCC unroll 4
+      for (const auto &item : t) {
+        bound += 1 + size_bound(item);
+      }
+      return bound;
+    }
+  } else if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
+    constexpr auto dm = simdjson::detail::transparent_member(^^T);
+    return size_bound(t.[:dm:]);
+  } else {
+    return 2 + fields_bound(t);
+  }
+}
+
+} // namespace bound_detail
+
+// Write t through an unchecked writer when its size bound is available,
+// reserving that many bytes first, and through the checked writer otherwise.
+template <class T>
+simdjson_really_inline void append_bounded(string_builder &b, const T &t) {
+  // On 32-bit systems, the bound could overflow: keep the checked writer.
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<T>()) {
+    const size_t bound = bound_detail::size_bound(t) + unchecked_slack;
+    const size_t pos = b.unsafe_position();
+    // The bound is a sum of in-memory sizes times a small constant: it cannot
+    // overflow on a 64-bit system. Be pedantic elsewhere.
+    if (sizeof(size_t) >= 8 || bound <= (std::numeric_limits<size_t>::max)() - pos) {
+      const size_t cap = b.unsafe_capacity();
+      // Grow geometrically so that many small appends stay amortized.
+      if (pos + bound <= cap || b.unsafe_grow((std::max)(cap * 2, pos + bound))) {
+        unchecked_writer w(b.unsafe_data(), pos);
+        atom(w, t);
+        b.unsafe_set_position(w.pos);
+      }
+      return;
+    }
+  }
+  writer w(b);
+  atom(w, t);
+  w.sync();
 }
 
 // append() -- top-level entry. Each overload constructs a stack-local
@@ -55728,17 +56770,13 @@ simdjson_inline void append(string_builder &b, const T &t) {
 template <concepts::optional_type T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::appendable_containers T>
@@ -55747,17 +56785,13 @@ template <concepts::appendable_containers T>
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 // works for struct
@@ -55772,18 +56806,14 @@ template <class Z>
            !std::is_same_v<Z, const char*> &&
            !std::is_same_v<Z, char> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 // works for container that have begin() and end() iterators
 template <class Z>
   requires(concepts::container_but_not_string<Z> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 template <class Z>
@@ -55794,22 +56824,38 @@ void append(string_builder &b, const Z &z) {
 
 
 template <class Z>
-simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<Z>()) {
+    // Write straight into s, sized by the bound: no intermediate buffer, no copy.
+    (void)initial_capacity;
+    const size_t bound = bound_detail::size_bound(z) + unchecked_slack;
+    auto write = [&z](char *p) noexcept {
+      unchecked_writer w(p, 0);
+      atom(w, z);
+      return w.pos;
+    };
+#if defined(__cpp_lib_string_resize_and_overwrite) && __cpp_lib_string_resize_and_overwrite >= 202110L
+    s.resize_and_overwrite(bound, [&write](char *p, size_t) noexcept { return write(p); });
+#else
+    s.resize(bound);
+    s.resize(write(s.data()));
+#endif
+    return SUCCESS;
+  } else {
+    string_builder b(initial_capacity);
+    append(b, z);
+    std::string_view view;
+    if(auto e = b.view().get(view); e) { return e; }
+    s.assign(view);
+    return SUCCESS;
+  }
 }
 
 template <class Z>
-simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  std::string s;
+  if(auto e = to_json(z, s, initial_capacity); e) { return e; }
+  return s;
 }
 
 template <class Z>
@@ -55869,25 +56915,18 @@ simdjson_warn_unused simdjson_result<std::string> extract_from(const T &obj, siz
   return std::string(s);
 }
 
+SIMDJSON_POP_DISABLE_WARNINGS
+
 } // namespace builder
 } // namespace icelake
 // Alias the function template to 'to' in the global namespace
 template <class Z>
 simdjson_warn_unused simdjson_result<std::string> to_json(const Z &z, size_t initial_capacity = icelake::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  icelake::builder::string_builder b(initial_capacity);
-  icelake::builder::append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+  return icelake::builder::to_json_string(z, initial_capacity);
 }
 template <class Z>
 simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = icelake::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  icelake::builder::string_builder b(initial_capacity);
-  icelake::builder::append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+  return icelake::builder::to_json(z, s, initial_capacity);
 }
 // Global namespace function for extract_from
 template<constevalutil::fixed_string... FieldNames, typename T>
@@ -56092,6 +57131,9 @@ simdjson_warn_unused simdjson_result<std::string> extract_fractured_json(
 #endif
 #if SIMDJSON_EXPERIMENTAL_HAS_SSE2
 #include <emmintrin.h>
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -56600,12 +57642,38 @@ simdjson_never_inline char *escape_block(const uint8_t *src, char *out,
 
 // Writes the escaped version of input to out, returning the number of bytes
 // written.
-inline size_t write_string_escaped(const std::string_view input, char *out) {
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out) {
   const size_t len = input.size();
   const uint8_t *src = reinterpret_cast<const uint8_t *>(input.data());
   const char *const initout = out;
 
   size_t i = 0;
+#if SIMDJSON_EXPERIMENTAL_HAS_SSE2 && defined(__AVX2__)
+  while (i + 32 <= len) {
+    const __m256i word = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(src + i));
+    const __m256i flags = _mm256_or_si256(
+        _mm256_or_si256(_mm256_cmpeq_epi8(word, _mm256_set1_epi8(34)),   // '"'
+                        _mm256_cmpeq_epi8(word, _mm256_set1_epi8(92))),  // '\\'
+        _mm256_cmpeq_epi8(_mm256_subs_epu8(word, _mm256_set1_epi8(31)),
+                          _mm256_setzero_si256()));                      // control
+    const uint32_t mask = uint32_t(_mm256_movemask_epi8(flags));
+    if (simdjson_likely(mask == 0)) {
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(out), word);
+      out += 32;
+    } else {
+      for (size_t half = 0; half < 32; half += 16) {
+        const uint64_t m = (mask >> half) & 0xFFFF;
+        if (m == 0) {
+          escape_store16(out, escape_load16(src + i + half));
+          out += 16;
+        } else {
+          out = escape_block(src, out, i + half, i + half + 16, m);
+        }
+      }
+    }
+    i += 32;
+  }
+#endif
   while (i + 16 <= len) {
     escape_vector word = escape_load16(src + i);
     escape_vector flags = escape_flags(word);
@@ -56777,96 +57845,135 @@ simdjson_inline void string_builder::clear() noexcept {
 
 namespace internal {
 
-static const char decimal_table[200] = {
-    0x30, 0x30, 0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35,
-    0x30, 0x36, 0x30, 0x37, 0x30, 0x38, 0x30, 0x39, 0x31, 0x30, 0x31, 0x31,
-    0x31, 0x32, 0x31, 0x33, 0x31, 0x34, 0x31, 0x35, 0x31, 0x36, 0x31, 0x37,
-    0x31, 0x38, 0x31, 0x39, 0x32, 0x30, 0x32, 0x31, 0x32, 0x32, 0x32, 0x33,
-    0x32, 0x34, 0x32, 0x35, 0x32, 0x36, 0x32, 0x37, 0x32, 0x38, 0x32, 0x39,
-    0x33, 0x30, 0x33, 0x31, 0x33, 0x32, 0x33, 0x33, 0x33, 0x34, 0x33, 0x35,
-    0x33, 0x36, 0x33, 0x37, 0x33, 0x38, 0x33, 0x39, 0x34, 0x30, 0x34, 0x31,
-    0x34, 0x32, 0x34, 0x33, 0x34, 0x34, 0x34, 0x35, 0x34, 0x36, 0x34, 0x37,
-    0x34, 0x38, 0x34, 0x39, 0x35, 0x30, 0x35, 0x31, 0x35, 0x32, 0x35, 0x33,
-    0x35, 0x34, 0x35, 0x35, 0x35, 0x36, 0x35, 0x37, 0x35, 0x38, 0x35, 0x39,
-    0x36, 0x30, 0x36, 0x31, 0x36, 0x32, 0x36, 0x33, 0x36, 0x34, 0x36, 0x35,
-    0x36, 0x36, 0x36, 0x37, 0x36, 0x38, 0x36, 0x39, 0x37, 0x30, 0x37, 0x31,
-    0x37, 0x32, 0x37, 0x33, 0x37, 0x34, 0x37, 0x35, 0x37, 0x36, 0x37, 0x37,
-    0x37, 0x38, 0x37, 0x39, 0x38, 0x30, 0x38, 0x31, 0x38, 0x32, 0x38, 0x33,
-    0x38, 0x34, 0x38, 0x35, 0x38, 0x36, 0x38, 0x37, 0x38, 0x38, 0x38, 0x39,
-    0x39, 0x30, 0x39, 0x31, 0x39, 0x32, 0x39, 0x33, 0x39, 0x34, 0x39, 0x35,
-    0x39, 0x36, 0x39, 0x37, 0x39, 0x38, 0x39, 0x39,
-};
+// Integer to decimal: James Edward Anhalt III's algorithm
+static const char jeaiii_dd[201] =
+    "00010203040506070809101112131415161718192021222324252627282930313233343536373839"
+    "40414243444546474849505152535455565758596061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+static const char jeaiii_fd[201] =
+    "0\0" "1\0" "2\0" "3\0" "4\0" "5\0" "6\0" "7\0" "8\0" "9\0"
+    "10111213141516171819202122232425262728293031323334353637383940414243444546474849"
+    "50515253545556575859606162636465666768697071727374757677787980818283848586878889"
+    "90919293949596979899";
 
-// Forward unsigned-int writer (cascade-on-magnitude, no upfront digit_count).
-// Built from a non-recursive DAG of always_inline helpers -- gcc and MSVC
-// refuse to inline recursive `always_inline`/`__forceinline` functions.
-// Caller must guarantee at least 20 bytes available at p. All helpers
-// return pointer past the last digit written.
-
-// Caller guarantees v < 100. Writes 1-2 digits.
-simdjson_really_inline char* write_lt100(char* p, uint64_t v) noexcept {
-  if (v < 10) { *p++ = char('0' + v); return p; }
-  std::memcpy(p, &decimal_table[v * 2], 2);
-  return p + 2;
+simdjson_really_inline void jeaiii_write_dd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_dd[2 * k], 2);
+}
+simdjson_really_inline void jeaiii_write_fd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_fd[2 * k], 2);
 }
 
-// Caller guarantees v < 10000. Writes 1-4 digits.
-simdjson_really_inline char* write_lt10000(char* p, uint64_t v) noexcept {
-  if (v < 100) return write_lt100(p, v);
-  uint64_t hi = v / 100, lo = v % 100;
-  if (v < 1000) {
-    *p++ = char('0' + hi);
+// Caller guarantees n < 10^8. Writes 1 to 8 digits.
+simdjson_really_inline char *jeaiii_lt1e8(char *b, uint32_t n) noexcept {
+  constexpr uint64_t mask24 = (uint64_t(1) << 24) - 1;
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  if (n < 100) {
+    jeaiii_write_fd(b, n);
+    return n < 10 ? b + 1 : b + 2;
+  }
+  if (n < 1000000) {
+    if (n < 10000) {
+      const uint32_t f0 = uint32_t(10 * (1 << 24) / 1e3 + 1) * n;
+      jeaiii_write_fd(b, f0 >> 24);
+      b -= n < 1000;
+      const uint32_t f2 = uint32_t(f0 & mask24) * 100;
+      jeaiii_write_dd(b + 2, f2 >> 24);
+      return b + 4;
+    }
+    const uint64_t f0 = uint64_t(10 * (1ull << 32) / 1e5 + 1) * n;
+    jeaiii_write_fd(b, f0 >> 32);
+    b -= n < 100000;
+    const uint64_t f2 = (f0 & mask32) * 100;
+    jeaiii_write_dd(b + 2, f2 >> 32);
+    const uint64_t f4 = (f2 & mask32) * 100;
+    jeaiii_write_dd(b + 4, f4 >> 32);
+    return b + 6;
+  }
+  const uint64_t f0 = uint64_t(10 * (1ull << 48) / 1e7 + 1) * n >> 16;
+  jeaiii_write_fd(b, f0 >> 32);
+  b -= n < 10000000;
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees z < 10^8. Always writes exactly 8 digits.
+simdjson_really_inline char *jeaiii_8_digits(char *b, uint32_t z) noexcept {
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  const uint64_t f0 = (uint64_t((1ull << 48) / 1e6 + 1) * z >> 16) + 1;
+  jeaiii_write_dd(b, f0 >> 32);
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees 10^8 <= n < 2^32. Writes 9 or 10 digits.
+simdjson_really_inline char *jeaiii_9_or_10(char *b, uint64_t n) noexcept {
+  constexpr uint64_t mask57 = (uint64_t(1) << 57) - 1;
+  const uint64_t f0 = uint64_t(10 * (1ull << 57) / 1e9 + 1) * n;
+  jeaiii_write_fd(b, f0 >> 57);
+  b -= n < 1000000000;
+  const uint64_t f2 = (f0 & mask57) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 57);
+  const uint64_t f4 = (f2 & mask57) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 57);
+  const uint64_t f6 = (f4 & mask57) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 57);
+  const uint64_t f8 = (f6 & mask57) * 100;
+  jeaiii_write_dd(b + 8, f8 >> 57);
+  return b + 10;
+}
+
+simdjson_really_inline char *write_uint_jeaiii(char *b, uint64_t n) noexcept {
+  if (n < 100000000) {
+    return jeaiii_lt1e8(b, uint32_t(n));
+  }
+  if (n < (uint64_t(1) << 32)) {
+    return jeaiii_9_or_10(b, n);
+  }
+  // At least 10 digits: the low 8 digits, and 2 to 12 digits above them.
+  const uint32_t z = uint32_t(n % 100000000);
+  uint64_t u = n / 100000000;
+  if (u < 100000000) {
+    // u has 2 to 8 digits (if u < 10, n would be below 2^32).
+    b = jeaiii_lt1e8(b, uint32_t(u));
+  } else if (u < (uint64_t(1) << 32)) {
+    b = jeaiii_9_or_10(b, u);
   } else {
-    std::memcpy(p, &decimal_table[hi * 2], 2);
-    p += 2;
+    // u has 11 or 12 digits: split off 8 more.
+    const uint32_t y = uint32_t(u % 100000000);
+    u /= 100000000;
+    b = jeaiii_lt1e8(b, uint32_t(u)); // 3 or 4 digits
+    b = jeaiii_8_digits(b, y);
   }
-  std::memcpy(p, &decimal_table[lo * 2], 2);
-  return p + 2;
+  return jeaiii_8_digits(b, z);
 }
 
-// Caller guarantees v < 10000. Always writes exactly 4 digits.
-simdjson_really_inline void write_4_digits(char* p, uint64_t v) noexcept {
-  uint64_t hi = v / 100, lo = v % 100;
-  std::memcpy(p,     &decimal_table[hi * 2], 2);
-  std::memcpy(p + 2, &decimal_table[lo * 2], 2);
-}
-
-// Caller guarantees v < 10^8. Writes 1-8 digits.
-simdjson_really_inline char* write_lt1e8(char* p, uint64_t v) noexcept {
-  if (v < 10000) return write_lt10000(p, v);
-  uint64_t hi = v / 10000, lo = v % 10000;
-  p = write_lt10000(p, hi);
-  write_4_digits(p, lo);
-  return p + 4;
-}
-
-simdjson_really_inline char* write_uint_jeaiii(char* p, uint64_t v) noexcept {
-  if (v < 10000ULL) return write_lt10000(p, v);
-  if (v < 100000000ULL) {                   // 5-8 digits
-    uint64_t hi = v / 10000, lo = v % 10000;
-    p = write_lt10000(p, hi);
-    write_4_digits(p, lo);
-    return p + 4;
-  }
-  if (v < 10000000000000000ULL) {           // 9-16 digits
-    uint64_t hi = v / 100000000ULL, lo = v % 100000000ULL;
-    p = write_lt1e8(p, hi);
-    uint64_t lo_hi = lo / 10000, lo_lo = lo % 10000;
-    write_4_digits(p,     lo_hi);
-    write_4_digits(p + 4, lo_lo);
+// Writes v at p, which must have to_chars_buffer_size bytes available, and
+// returns the end of what was written.
+simdjson_inline char *write_double(char *p, double v) noexcept {
+#if SIMDJSON_ENABLE_NAN_INF
+  if (simdjson_unlikely(!std::isfinite(v))) {
+    if (std::isnan(v)) {
+      std::memcpy(p, "NaN", 3);
+      return p + 3;
+    }
+    if (v < 0) {
+      *p++ = '-';
+    }
+    std::memcpy(p, "Infinity", 8);
     return p + 8;
   }
-  // 17-20 digits
-  uint64_t hi = v / 10000000000000000ULL, lo = v % 10000000000000000ULL;
-  p = write_lt10000(p, hi);
-  uint64_t lo_a = lo / 100000000ULL, lo_b = lo % 100000000ULL;
-  uint64_t lo_a_hi = lo_a / 10000, lo_a_lo = lo_a % 10000;
-  uint64_t lo_b_hi = lo_b / 10000, lo_b_lo = lo_b % 10000;
-  write_4_digits(p,      lo_a_hi);
-  write_4_digits(p + 4,  lo_a_lo);
-  write_4_digits(p + 8,  lo_b_hi);
-  write_4_digits(p + 12, lo_b_lo);
-  return p + 16;
+#endif
+  return simdjson::internal::to_chars(p, nullptr, v);
 }
 } // namespace internal
 
@@ -58455,8 +59562,15 @@ namespace builder {
 // name lookup falls back to the wrong outer namespace).
 namespace internal {
 simdjson_really_inline char *write_uint_jeaiii(char *p, uint64_t v) noexcept;
+simdjson_inline char *write_double(char *p, double v) noexcept;
 } // namespace internal
-inline size_t write_string_escaped(const std::string_view input, char *out);
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out);
+
+SIMDJSON_PUSH_DISABLE_WARNINGS
+SIMDJSON_DISABLE_GCC_WARNING(-Warray-bounds)
+#if !defined(__clang__)
+SIMDJSON_DISABLE_GCC_WARNING(-Wstringop-overflow)
+#endif
 
 // =============================================================
 // `writer`: position-as-local hot-path writer used by the reflection
@@ -58469,8 +59583,14 @@ inline size_t write_string_escaped(const std::string_view input, char *out);
 // breaks the strict-aliasing penalty on every char* write through the
 // buffer, which forces a reload of `b.position` and `b.capacity`
 // after every byte.
+//
+// basic_writer<false> (below) is the unchecked variant: the caller has
+// already reserved enough capacity for everything the write chain can
+// produce (see bound_detail::size_bound), so ensure() compiles away.
 // =============================================================
-struct writer {
+template <bool Checked>
+struct basic_writer {
+  static constexpr bool checked = Checked;
   char *ptr;        // buffer pointer (refreshed after a grow)
   size_t pos;       // write position (local)
   size_t cap;       // capacity (refreshed after a grow)
@@ -58478,7 +59598,7 @@ struct writer {
 
   // Snapshot string_builder state into a writer for the duration of
   // a write chain.
-  simdjson_really_inline writer(string_builder &builder) noexcept
+  simdjson_really_inline basic_writer(string_builder &builder) noexcept
       : ptr(builder.unsafe_data())
       , pos(builder.unsafe_position())
       , cap(builder.unsafe_capacity())
@@ -58504,9 +59624,7 @@ struct writer {
     return grow_slow(n);
   }
 
-  // Slow path of ensure(). Out-of-line via simdjson_inline (not
-  // simdjson_really_inline) to keep the hot path short.
-  simdjson_inline bool grow_slow(size_t n) noexcept {
+  simdjson_never_inline bool grow_slow(size_t n) noexcept {
     // Detect overflow.
     // This is pedantic except maybe on 32-bit targets.
     if (simdjson_unlikely(pos + n < pos)) return false;
@@ -58529,14 +59647,40 @@ struct writer {
   }
 };
 
+// The unchecked writer writes into a raw buffer that the caller sized with
+// serialized_size_bound: it never grows and needs no string_builder.
+template <>
+struct basic_writer<false> {
+  static constexpr bool checked = false;
+  char *ptr;
+  size_t pos;
+
+  simdjson_really_inline basic_writer(char *buffer, size_t position) noexcept
+      : ptr(buffer), pos(position) {}
+
+  simdjson_really_inline bool ensure(size_t) const noexcept { return true; }
+};
+
+using writer = basic_writer<true>;
+using unchecked_writer = basic_writer<false>;
+
+// Bytes reserved past the size bound for an unchecked writer: it may then
+// write a little past the end of what it produces (e.g., copy keys as whole
+// 16-byte blocks).
+inline constexpr size_t unchecked_slack = 64;
+
+consteval size_t padded_key_length(size_t length) {
+  return (length + 15) / 16 * 16;
+}
+
 // === Helper: invoke a string_builder member that writes variable-length
 // content (escape_and_append_with_quotes etc), syncing the writer's local
 // state before the call and reloading after. Used for string fields where
 // rewriting the entire SIMD escape path through the writer would be a much
 // bigger refactor. f may be user code (a with<Adapter> serializer) that
 // throws: the exception then propagates to the caller.
-template <class F>
-simdjson_really_inline void call_through_string_builder(writer &w, F &&f) noexcept(noexcept(f(w.sb))) {
+template <class W, class F>
+simdjson_really_inline void call_through_string_builder(W &w, F &&f) noexcept(noexcept(f(w.sb))) {
   w.sync();
   f(w.sb);
   w.ptr = w.sb.unsafe_data();
@@ -58570,8 +59714,8 @@ simdjson_really_inline bool should_serialize(const V &value) {
 
 // Serialize a member value, through its with<Adapter> annotation when the
 // adapter provides a serialize function.
-template <auto dm, typename V>
-simdjson_really_inline void atom_member(writer &w, const V &value) {
+template <auto dm, class W, typename V>
+simdjson_really_inline void atom_member(W &w, const V &value) {
   constexpr std::meta::info with_type = simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t);
   if constexpr (with_type != std::meta::info{}) {
     using adapter = typename [: with_type :]::adapter;
@@ -58588,8 +59732,8 @@ simdjson_really_inline void atom_member(writer &w, const V &value) {
 // Write the "key":value pairs of the members of t (without the braces), each
 // preceded by a comma unless it is the first one. The members of a member
 // annotated with flatten are written in its place.
-template <class T>
-simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
+template <class W, class T>
+simdjson_really_inline void atom_fields(W &w, const T &t, bool &first) {
   // Per-field block: ensure key+value worst case, then write key + value
   // through the writer's local pos. For arithmetic fields, the integer
   // write happens directly via write_uint_jeaiii on w.ptr+w.pos, so pos
@@ -58607,19 +59751,24 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
                         "simdjson::flatten requires a member whose type is a structure serialized member by member");
           atom_fields(w, t.[:dm:], first);
         } else {
+          // Copy the key as whole 16-byte blocks from a zero-padded copy (one
+          // load and one store); ensure() reserves the padded length, and the
+          // unchecked writer has slack past its bound.
           constexpr const char* key_name = simdjson::get_json_key_name<dm>();
+          constexpr size_t first_key_len = constevalutil::consteval_to_quoted_escaped(key_name).size() + 1;
+          constexpr size_t rest_key_len = first_key_len + 1;
           constexpr auto first_key = std::define_static_string(
-              constevalutil::consteval_to_quoted_escaped(key_name) + ":");
+              constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(first_key_len) - first_key_len, '\0'));
           constexpr auto rest_key = std::define_static_string(
-              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":");
-          constexpr size_t first_key_len = std::char_traits<char>::length(first_key);
-          constexpr size_t rest_key_len = std::char_traits<char>::length(rest_key);
-          if (!w.ensure(rest_key_len)) { return; }
+              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(rest_key_len) - rest_key_len, '\0'));
+          if (!w.ensure(padded_key_length(rest_key_len))) { return; }
           if (first) {
-            std::memcpy(w.ptr + w.pos, first_key, first_key_len);
+            std::memcpy(w.ptr + w.pos, first_key, padded_key_length(first_key_len));
             w.pos += first_key_len;
           } else {
-            std::memcpy(w.ptr + w.pos, rest_key, rest_key_len);
+            std::memcpy(w.ptr + w.pos, rest_key, padded_key_length(rest_key_len));
             w.pos += rest_key_len;
           }
           first = false;
@@ -58632,9 +59781,9 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
 
 } // namespace annotation_detail
 
-template <class T>
+template <class W, class T>
   requires(concepts::container_but_not_string<T> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   auto it = t.begin();
   auto end = t.end();
   if (it == end) {
@@ -58656,12 +59805,12 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   w.ptr[w.pos++] = ']';
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char *> ||
            std::is_same_v<T, char>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   // Inline the escape path through the writer so we never round-trip
   // pos through memory for string fields (Twitter is dominated by
   // these -- sync/reload around each string was a real cost).
@@ -58677,16 +59826,18 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
   // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
   // Note that this is pedantic except maybe on 32-bit targets.
-  if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-  if (!w.ensure(2 + 6 * input.size())) { return; }
+  if constexpr (W::checked) {
+    if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+    if (!w.ensure(2 + 6 * input.size())) { return; }
+  }
   w.ptr[w.pos++] = '"';
   w.pos += write_string_escaped(input, w.ptr + w.pos);
   w.ptr[w.pos++] = '"';
 }
 
-template <concepts::string_view_keyed_map T>
+template <class W, concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &m) {
+simdjson_really_inline constexpr void atom(W &w, const T &m) {
   if (m.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "{}", 2);
@@ -58709,8 +59860,10 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
     // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
     // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
     // Note that this is pedantic except maybe on 32-bit targets.
-    if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-    if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    if constexpr (W::checked) {
+      if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+      if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    }
     w.ptr[w.pos++] = '"';
     w.pos += write_string_escaped(key_sv, w.ptr + w.pos);
     w.ptr[w.pos++] = '"';
@@ -58722,9 +59875,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
 }
 
 
-template<typename number_type,
+template<class W, typename number_type,
          typename = typename std::enable_if<std::is_arithmetic<number_type>::value && !std::is_same_v<number_type, char>>::type>
-simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
+simdjson_really_inline constexpr void atom(W &w, const number_type t) {
   // Booleans / floats: defer to string_builder (rare path; keeps writer hot
   // path free of float-formatter machinery). For integers, write directly
   // via jeaiii using local pos.
@@ -58739,7 +59892,11 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
       w.pos += 5;
     }
   } else if constexpr (std::is_floating_point_v<number_type>) {
-    call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    if constexpr (W::checked) {
+      call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    } else {
+      w.pos = size_t(internal::write_double(w.ptr + w.pos, double(t)) - w.ptr);
+    }
   } else if constexpr (std::is_unsigned_v<number_type>) {
     if (!w.ensure(20)) return;
     char *end = internal::write_uint_jeaiii(
@@ -58759,7 +59916,7 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
   }
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_class_v<T> && !concepts::container_but_not_string<T> &&
            !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> &&
@@ -58769,7 +59926,7 @@ template <class T>
            !std::is_same_v<T, std::string_view> &&
            !std::is_same_v<T, const char*> &&
            !std::is_same_v<T, char> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
     // A transparent structure is serialized as its single member.
     constexpr auto dm = simdjson::detail::transparent_member(^^T);
@@ -58785,9 +59942,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
 }
 
 // Support for optional types (std::optional, etc.)
-template <concepts::optional_type T>
+template <class W, concepts::optional_type T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
+simdjson_really_inline constexpr void atom(W &w, const T &opt) {
   if (opt) {
     atom(w, opt.value());
   } else {
@@ -58798,9 +59955,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
 }
 
 // Support for smart pointers (std::unique_ptr, std::shared_ptr, etc.)
-template <concepts::smart_pointer T>
+template <class W, concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
+simdjson_really_inline constexpr void atom(W &w, const T &ptr) {
   if (ptr) {
     atom(w, *ptr);
   } else {
@@ -58811,9 +59968,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
 }
 
 // Support for enums - serialize as string representation using expand approach from P2996R12
-template <typename T>
+template <class W, typename T>
   requires(std::is_enum_v<T> && !require_custom_serialization<T>)
-simdjson_really_inline void atom(writer &w, const T &e) {
+simdjson_really_inline void atom(W &w, const T &e) {
 #if SIMDJSON_STATIC_REFLECTION
   static constexpr auto enumerators = std::define_static_array(std::meta::enumerators_of(^^T));
   template for (constexpr auto enum_val : enumerators) {
@@ -58835,12 +59992,12 @@ simdjson_really_inline void atom(writer &w, const T &e) {
 }
 
 // Support for appendable containers that don't have operator[] (sets, etc.)
-template <concepts::appendable_containers T>
+template <class W, concepts::appendable_containers T>
   requires(!concepts::container_but_not_string<T> && !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> && !concepts::smart_pointer<T> &&
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &container) {
+simdjson_really_inline constexpr void atom(W &w, const T &container) {
   if (container.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "[]", 2);
@@ -58860,6 +60017,150 @@ simdjson_really_inline constexpr void atom(writer &w, const T &container) {
   }
   if (!w.ensure(1)) return;
   w.ptr[w.pos++] = ']';
+}
+
+// =============================================================
+// Size bound: an upper bound on the number of bytes that atom(w, t) writes.
+// Computing it first lets append() reserve the capacity once and then run
+// the whole write chain through an unchecked_writer, without a capacity
+// check before every write. It mirrors the atom() overloads above.
+// =============================================================
+namespace bound_detail {
+
+// Whether size_bound covers everything that atom() writes for T: not when a
+// member is serialized by a with<Adapter> serializer, which writes an unknown
+// amount through the string_builder.
+template <class T>
+consteval bool is_bounded() {
+  if constexpr (require_custom_serialization<T>) {
+    return false;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *> || std::is_arithmetic_v<T> || std::is_enum_v<T>) {
+    return true;
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return is_bounded<std::remove_cvref_t<decltype(*std::declval<const T &>())>>();
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    return is_bounded<std::remove_cvref_t<typename T::mapped_type>>();
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    return is_bounded<std::remove_cvref_t<std::ranges::range_value_t<T>>>();
+  } else {
+    bool bounded = true;
+    template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+      if constexpr (annotation_detail::is_serialized_member(dm)) {
+        bounded = bounded && simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t) == std::meta::info{} &&
+                  is_bounded<std::remove_cvref_t<decltype(std::declval<const T &>().[:dm:])>>();
+      }
+    };
+    return bounded;
+  }
+}
+
+template <class T>
+consteval size_t enum_bound() {
+  size_t bound = 20; // the integer fallback
+  template for (constexpr auto enum_val : std::define_static_array(std::meta::enumerators_of(^^T))) {
+    constexpr size_t len = std::char_traits<char>::length(std::define_static_string(
+        constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<enum_val>())));
+    bound = (std::max)(bound, len);
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound(const T &t) noexcept;
+
+// Bound for the "key":value pairs of a structure, commas included.
+template <class T>
+simdjson_really_inline size_t fields_bound(const T &t) noexcept {
+  size_t bound = 0;
+  template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+    if constexpr (annotation_detail::is_serialized_member(dm)) {
+      if constexpr (simdjson::detail::has_annotation(dm, ^^simdjson::detail::flatten_tag)) {
+        bound += fields_bound(t.[:dm:]);
+      } else {
+        constexpr size_t rest_key_len = constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<dm>()).size() + 2;
+        bound += rest_key_len + size_bound(t.[:dm:]);
+      }
+    }
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound([[maybe_unused]] const T &t) noexcept {
+  if constexpr (std::is_same_v<T, char>) {
+    return 2 + 6;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *>) {
+    // Every byte may become \uXXXX, plus the quotes.
+    return 2 + 6 * std::string_view(t).size();
+  } else if constexpr (std::is_same_v<T, bool>) {
+    return 5;
+  } else if constexpr (std::is_floating_point_v<T>) {
+    return simdjson::internal::to_chars_buffer_size;
+  } else if constexpr (std::is_arithmetic_v<T>) {
+    return 20;
+  } else if constexpr (std::is_enum_v<T>) {
+    return enum_bound<T>();
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return t ? size_bound(*t) : 4;
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    size_t bound = 2;
+    for (const auto &[key, value] : t) {
+      // comma, quotes, colon
+      bound += 4 + 6 * std::string_view(key).size() + size_bound(value);
+    }
+    return bound;
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    using value_type = std::remove_cvref_t<std::ranges::range_value_t<T>>;
+    if constexpr (std::is_arithmetic_v<value_type> && !std::is_same_v<value_type, char>) {
+      // A fixed bound per element: no need to visit them.
+      return 2 + size_t(std::ranges::distance(t)) * (1 + size_bound(value_type{}));
+    } else {
+      size_t bound = 2;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC novector // a vector loop is slower on short containers
+#endif
+#pragma GCC unroll 4
+      for (const auto &item : t) {
+        bound += 1 + size_bound(item);
+      }
+      return bound;
+    }
+  } else if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
+    constexpr auto dm = simdjson::detail::transparent_member(^^T);
+    return size_bound(t.[:dm:]);
+  } else {
+    return 2 + fields_bound(t);
+  }
+}
+
+} // namespace bound_detail
+
+// Write t through an unchecked writer when its size bound is available,
+// reserving that many bytes first, and through the checked writer otherwise.
+template <class T>
+simdjson_really_inline void append_bounded(string_builder &b, const T &t) {
+  // On 32-bit systems, the bound could overflow: keep the checked writer.
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<T>()) {
+    const size_t bound = bound_detail::size_bound(t) + unchecked_slack;
+    const size_t pos = b.unsafe_position();
+    // The bound is a sum of in-memory sizes times a small constant: it cannot
+    // overflow on a 64-bit system. Be pedantic elsewhere.
+    if (sizeof(size_t) >= 8 || bound <= (std::numeric_limits<size_t>::max)() - pos) {
+      const size_t cap = b.unsafe_capacity();
+      // Grow geometrically so that many small appends stay amortized.
+      if (pos + bound <= cap || b.unsafe_grow((std::max)(cap * 2, pos + bound))) {
+        unchecked_writer w(b.unsafe_data(), pos);
+        atom(w, t);
+        b.unsafe_set_position(w.pos);
+      }
+      return;
+    }
+  }
+  writer w(b);
+  atom(w, t);
+  w.sync();
 }
 
 // append() -- top-level entry. Each overload constructs a stack-local
@@ -58887,17 +60188,13 @@ simdjson_inline void append(string_builder &b, const T &t) {
 template <concepts::optional_type T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::appendable_containers T>
@@ -58906,17 +60203,13 @@ template <concepts::appendable_containers T>
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 // works for struct
@@ -58931,18 +60224,14 @@ template <class Z>
            !std::is_same_v<Z, const char*> &&
            !std::is_same_v<Z, char> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 // works for container that have begin() and end() iterators
 template <class Z>
   requires(concepts::container_but_not_string<Z> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 template <class Z>
@@ -58953,22 +60242,38 @@ void append(string_builder &b, const Z &z) {
 
 
 template <class Z>
-simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<Z>()) {
+    // Write straight into s, sized by the bound: no intermediate buffer, no copy.
+    (void)initial_capacity;
+    const size_t bound = bound_detail::size_bound(z) + unchecked_slack;
+    auto write = [&z](char *p) noexcept {
+      unchecked_writer w(p, 0);
+      atom(w, z);
+      return w.pos;
+    };
+#if defined(__cpp_lib_string_resize_and_overwrite) && __cpp_lib_string_resize_and_overwrite >= 202110L
+    s.resize_and_overwrite(bound, [&write](char *p, size_t) noexcept { return write(p); });
+#else
+    s.resize(bound);
+    s.resize(write(s.data()));
+#endif
+    return SUCCESS;
+  } else {
+    string_builder b(initial_capacity);
+    append(b, z);
+    std::string_view view;
+    if(auto e = b.view().get(view); e) { return e; }
+    s.assign(view);
+    return SUCCESS;
+  }
 }
 
 template <class Z>
-simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  std::string s;
+  if(auto e = to_json(z, s, initial_capacity); e) { return e; }
+  return s;
 }
 
 template <class Z>
@@ -59028,25 +60333,18 @@ simdjson_warn_unused simdjson_result<std::string> extract_from(const T &obj, siz
   return std::string(s);
 }
 
+SIMDJSON_POP_DISABLE_WARNINGS
+
 } // namespace builder
 } // namespace ppc64
 // Alias the function template to 'to' in the global namespace
 template <class Z>
 simdjson_warn_unused simdjson_result<std::string> to_json(const Z &z, size_t initial_capacity = ppc64::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  ppc64::builder::string_builder b(initial_capacity);
-  ppc64::builder::append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+  return ppc64::builder::to_json_string(z, initial_capacity);
 }
 template <class Z>
 simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = ppc64::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  ppc64::builder::string_builder b(initial_capacity);
-  ppc64::builder::append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+  return ppc64::builder::to_json(z, s, initial_capacity);
 }
 // Global namespace function for extract_from
 template<constevalutil::fixed_string... FieldNames, typename T>
@@ -59251,6 +60549,9 @@ simdjson_warn_unused simdjson_result<std::string> extract_fractured_json(
 #endif
 #if SIMDJSON_EXPERIMENTAL_HAS_SSE2
 #include <emmintrin.h>
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -59759,12 +61060,38 @@ simdjson_never_inline char *escape_block(const uint8_t *src, char *out,
 
 // Writes the escaped version of input to out, returning the number of bytes
 // written.
-inline size_t write_string_escaped(const std::string_view input, char *out) {
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out) {
   const size_t len = input.size();
   const uint8_t *src = reinterpret_cast<const uint8_t *>(input.data());
   const char *const initout = out;
 
   size_t i = 0;
+#if SIMDJSON_EXPERIMENTAL_HAS_SSE2 && defined(__AVX2__)
+  while (i + 32 <= len) {
+    const __m256i word = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(src + i));
+    const __m256i flags = _mm256_or_si256(
+        _mm256_or_si256(_mm256_cmpeq_epi8(word, _mm256_set1_epi8(34)),   // '"'
+                        _mm256_cmpeq_epi8(word, _mm256_set1_epi8(92))),  // '\\'
+        _mm256_cmpeq_epi8(_mm256_subs_epu8(word, _mm256_set1_epi8(31)),
+                          _mm256_setzero_si256()));                      // control
+    const uint32_t mask = uint32_t(_mm256_movemask_epi8(flags));
+    if (simdjson_likely(mask == 0)) {
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(out), word);
+      out += 32;
+    } else {
+      for (size_t half = 0; half < 32; half += 16) {
+        const uint64_t m = (mask >> half) & 0xFFFF;
+        if (m == 0) {
+          escape_store16(out, escape_load16(src + i + half));
+          out += 16;
+        } else {
+          out = escape_block(src, out, i + half, i + half + 16, m);
+        }
+      }
+    }
+    i += 32;
+  }
+#endif
   while (i + 16 <= len) {
     escape_vector word = escape_load16(src + i);
     escape_vector flags = escape_flags(word);
@@ -59936,96 +61263,135 @@ simdjson_inline void string_builder::clear() noexcept {
 
 namespace internal {
 
-static const char decimal_table[200] = {
-    0x30, 0x30, 0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35,
-    0x30, 0x36, 0x30, 0x37, 0x30, 0x38, 0x30, 0x39, 0x31, 0x30, 0x31, 0x31,
-    0x31, 0x32, 0x31, 0x33, 0x31, 0x34, 0x31, 0x35, 0x31, 0x36, 0x31, 0x37,
-    0x31, 0x38, 0x31, 0x39, 0x32, 0x30, 0x32, 0x31, 0x32, 0x32, 0x32, 0x33,
-    0x32, 0x34, 0x32, 0x35, 0x32, 0x36, 0x32, 0x37, 0x32, 0x38, 0x32, 0x39,
-    0x33, 0x30, 0x33, 0x31, 0x33, 0x32, 0x33, 0x33, 0x33, 0x34, 0x33, 0x35,
-    0x33, 0x36, 0x33, 0x37, 0x33, 0x38, 0x33, 0x39, 0x34, 0x30, 0x34, 0x31,
-    0x34, 0x32, 0x34, 0x33, 0x34, 0x34, 0x34, 0x35, 0x34, 0x36, 0x34, 0x37,
-    0x34, 0x38, 0x34, 0x39, 0x35, 0x30, 0x35, 0x31, 0x35, 0x32, 0x35, 0x33,
-    0x35, 0x34, 0x35, 0x35, 0x35, 0x36, 0x35, 0x37, 0x35, 0x38, 0x35, 0x39,
-    0x36, 0x30, 0x36, 0x31, 0x36, 0x32, 0x36, 0x33, 0x36, 0x34, 0x36, 0x35,
-    0x36, 0x36, 0x36, 0x37, 0x36, 0x38, 0x36, 0x39, 0x37, 0x30, 0x37, 0x31,
-    0x37, 0x32, 0x37, 0x33, 0x37, 0x34, 0x37, 0x35, 0x37, 0x36, 0x37, 0x37,
-    0x37, 0x38, 0x37, 0x39, 0x38, 0x30, 0x38, 0x31, 0x38, 0x32, 0x38, 0x33,
-    0x38, 0x34, 0x38, 0x35, 0x38, 0x36, 0x38, 0x37, 0x38, 0x38, 0x38, 0x39,
-    0x39, 0x30, 0x39, 0x31, 0x39, 0x32, 0x39, 0x33, 0x39, 0x34, 0x39, 0x35,
-    0x39, 0x36, 0x39, 0x37, 0x39, 0x38, 0x39, 0x39,
-};
+// Integer to decimal: James Edward Anhalt III's algorithm
+static const char jeaiii_dd[201] =
+    "00010203040506070809101112131415161718192021222324252627282930313233343536373839"
+    "40414243444546474849505152535455565758596061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+static const char jeaiii_fd[201] =
+    "0\0" "1\0" "2\0" "3\0" "4\0" "5\0" "6\0" "7\0" "8\0" "9\0"
+    "10111213141516171819202122232425262728293031323334353637383940414243444546474849"
+    "50515253545556575859606162636465666768697071727374757677787980818283848586878889"
+    "90919293949596979899";
 
-// Forward unsigned-int writer (cascade-on-magnitude, no upfront digit_count).
-// Built from a non-recursive DAG of always_inline helpers -- gcc and MSVC
-// refuse to inline recursive `always_inline`/`__forceinline` functions.
-// Caller must guarantee at least 20 bytes available at p. All helpers
-// return pointer past the last digit written.
-
-// Caller guarantees v < 100. Writes 1-2 digits.
-simdjson_really_inline char* write_lt100(char* p, uint64_t v) noexcept {
-  if (v < 10) { *p++ = char('0' + v); return p; }
-  std::memcpy(p, &decimal_table[v * 2], 2);
-  return p + 2;
+simdjson_really_inline void jeaiii_write_dd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_dd[2 * k], 2);
+}
+simdjson_really_inline void jeaiii_write_fd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_fd[2 * k], 2);
 }
 
-// Caller guarantees v < 10000. Writes 1-4 digits.
-simdjson_really_inline char* write_lt10000(char* p, uint64_t v) noexcept {
-  if (v < 100) return write_lt100(p, v);
-  uint64_t hi = v / 100, lo = v % 100;
-  if (v < 1000) {
-    *p++ = char('0' + hi);
+// Caller guarantees n < 10^8. Writes 1 to 8 digits.
+simdjson_really_inline char *jeaiii_lt1e8(char *b, uint32_t n) noexcept {
+  constexpr uint64_t mask24 = (uint64_t(1) << 24) - 1;
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  if (n < 100) {
+    jeaiii_write_fd(b, n);
+    return n < 10 ? b + 1 : b + 2;
+  }
+  if (n < 1000000) {
+    if (n < 10000) {
+      const uint32_t f0 = uint32_t(10 * (1 << 24) / 1e3 + 1) * n;
+      jeaiii_write_fd(b, f0 >> 24);
+      b -= n < 1000;
+      const uint32_t f2 = uint32_t(f0 & mask24) * 100;
+      jeaiii_write_dd(b + 2, f2 >> 24);
+      return b + 4;
+    }
+    const uint64_t f0 = uint64_t(10 * (1ull << 32) / 1e5 + 1) * n;
+    jeaiii_write_fd(b, f0 >> 32);
+    b -= n < 100000;
+    const uint64_t f2 = (f0 & mask32) * 100;
+    jeaiii_write_dd(b + 2, f2 >> 32);
+    const uint64_t f4 = (f2 & mask32) * 100;
+    jeaiii_write_dd(b + 4, f4 >> 32);
+    return b + 6;
+  }
+  const uint64_t f0 = uint64_t(10 * (1ull << 48) / 1e7 + 1) * n >> 16;
+  jeaiii_write_fd(b, f0 >> 32);
+  b -= n < 10000000;
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees z < 10^8. Always writes exactly 8 digits.
+simdjson_really_inline char *jeaiii_8_digits(char *b, uint32_t z) noexcept {
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  const uint64_t f0 = (uint64_t((1ull << 48) / 1e6 + 1) * z >> 16) + 1;
+  jeaiii_write_dd(b, f0 >> 32);
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees 10^8 <= n < 2^32. Writes 9 or 10 digits.
+simdjson_really_inline char *jeaiii_9_or_10(char *b, uint64_t n) noexcept {
+  constexpr uint64_t mask57 = (uint64_t(1) << 57) - 1;
+  const uint64_t f0 = uint64_t(10 * (1ull << 57) / 1e9 + 1) * n;
+  jeaiii_write_fd(b, f0 >> 57);
+  b -= n < 1000000000;
+  const uint64_t f2 = (f0 & mask57) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 57);
+  const uint64_t f4 = (f2 & mask57) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 57);
+  const uint64_t f6 = (f4 & mask57) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 57);
+  const uint64_t f8 = (f6 & mask57) * 100;
+  jeaiii_write_dd(b + 8, f8 >> 57);
+  return b + 10;
+}
+
+simdjson_really_inline char *write_uint_jeaiii(char *b, uint64_t n) noexcept {
+  if (n < 100000000) {
+    return jeaiii_lt1e8(b, uint32_t(n));
+  }
+  if (n < (uint64_t(1) << 32)) {
+    return jeaiii_9_or_10(b, n);
+  }
+  // At least 10 digits: the low 8 digits, and 2 to 12 digits above them.
+  const uint32_t z = uint32_t(n % 100000000);
+  uint64_t u = n / 100000000;
+  if (u < 100000000) {
+    // u has 2 to 8 digits (if u < 10, n would be below 2^32).
+    b = jeaiii_lt1e8(b, uint32_t(u));
+  } else if (u < (uint64_t(1) << 32)) {
+    b = jeaiii_9_or_10(b, u);
   } else {
-    std::memcpy(p, &decimal_table[hi * 2], 2);
-    p += 2;
+    // u has 11 or 12 digits: split off 8 more.
+    const uint32_t y = uint32_t(u % 100000000);
+    u /= 100000000;
+    b = jeaiii_lt1e8(b, uint32_t(u)); // 3 or 4 digits
+    b = jeaiii_8_digits(b, y);
   }
-  std::memcpy(p, &decimal_table[lo * 2], 2);
-  return p + 2;
+  return jeaiii_8_digits(b, z);
 }
 
-// Caller guarantees v < 10000. Always writes exactly 4 digits.
-simdjson_really_inline void write_4_digits(char* p, uint64_t v) noexcept {
-  uint64_t hi = v / 100, lo = v % 100;
-  std::memcpy(p,     &decimal_table[hi * 2], 2);
-  std::memcpy(p + 2, &decimal_table[lo * 2], 2);
-}
-
-// Caller guarantees v < 10^8. Writes 1-8 digits.
-simdjson_really_inline char* write_lt1e8(char* p, uint64_t v) noexcept {
-  if (v < 10000) return write_lt10000(p, v);
-  uint64_t hi = v / 10000, lo = v % 10000;
-  p = write_lt10000(p, hi);
-  write_4_digits(p, lo);
-  return p + 4;
-}
-
-simdjson_really_inline char* write_uint_jeaiii(char* p, uint64_t v) noexcept {
-  if (v < 10000ULL) return write_lt10000(p, v);
-  if (v < 100000000ULL) {                   // 5-8 digits
-    uint64_t hi = v / 10000, lo = v % 10000;
-    p = write_lt10000(p, hi);
-    write_4_digits(p, lo);
-    return p + 4;
-  }
-  if (v < 10000000000000000ULL) {           // 9-16 digits
-    uint64_t hi = v / 100000000ULL, lo = v % 100000000ULL;
-    p = write_lt1e8(p, hi);
-    uint64_t lo_hi = lo / 10000, lo_lo = lo % 10000;
-    write_4_digits(p,     lo_hi);
-    write_4_digits(p + 4, lo_lo);
+// Writes v at p, which must have to_chars_buffer_size bytes available, and
+// returns the end of what was written.
+simdjson_inline char *write_double(char *p, double v) noexcept {
+#if SIMDJSON_ENABLE_NAN_INF
+  if (simdjson_unlikely(!std::isfinite(v))) {
+    if (std::isnan(v)) {
+      std::memcpy(p, "NaN", 3);
+      return p + 3;
+    }
+    if (v < 0) {
+      *p++ = '-';
+    }
+    std::memcpy(p, "Infinity", 8);
     return p + 8;
   }
-  // 17-20 digits
-  uint64_t hi = v / 10000000000000000ULL, lo = v % 10000000000000000ULL;
-  p = write_lt10000(p, hi);
-  uint64_t lo_a = lo / 100000000ULL, lo_b = lo % 100000000ULL;
-  uint64_t lo_a_hi = lo_a / 10000, lo_a_lo = lo_a % 10000;
-  uint64_t lo_b_hi = lo_b / 10000, lo_b_lo = lo_b % 10000;
-  write_4_digits(p,      lo_a_hi);
-  write_4_digits(p + 4,  lo_a_lo);
-  write_4_digits(p + 8,  lo_b_hi);
-  write_4_digits(p + 12, lo_b_lo);
-  return p + 16;
+#endif
+  return simdjson::internal::to_chars(p, nullptr, v);
 }
 } // namespace internal
 
@@ -61921,8 +63287,15 @@ namespace builder {
 // name lookup falls back to the wrong outer namespace).
 namespace internal {
 simdjson_really_inline char *write_uint_jeaiii(char *p, uint64_t v) noexcept;
+simdjson_inline char *write_double(char *p, double v) noexcept;
 } // namespace internal
-inline size_t write_string_escaped(const std::string_view input, char *out);
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out);
+
+SIMDJSON_PUSH_DISABLE_WARNINGS
+SIMDJSON_DISABLE_GCC_WARNING(-Warray-bounds)
+#if !defined(__clang__)
+SIMDJSON_DISABLE_GCC_WARNING(-Wstringop-overflow)
+#endif
 
 // =============================================================
 // `writer`: position-as-local hot-path writer used by the reflection
@@ -61935,8 +63308,14 @@ inline size_t write_string_escaped(const std::string_view input, char *out);
 // breaks the strict-aliasing penalty on every char* write through the
 // buffer, which forces a reload of `b.position` and `b.capacity`
 // after every byte.
+//
+// basic_writer<false> (below) is the unchecked variant: the caller has
+// already reserved enough capacity for everything the write chain can
+// produce (see bound_detail::size_bound), so ensure() compiles away.
 // =============================================================
-struct writer {
+template <bool Checked>
+struct basic_writer {
+  static constexpr bool checked = Checked;
   char *ptr;        // buffer pointer (refreshed after a grow)
   size_t pos;       // write position (local)
   size_t cap;       // capacity (refreshed after a grow)
@@ -61944,7 +63323,7 @@ struct writer {
 
   // Snapshot string_builder state into a writer for the duration of
   // a write chain.
-  simdjson_really_inline writer(string_builder &builder) noexcept
+  simdjson_really_inline basic_writer(string_builder &builder) noexcept
       : ptr(builder.unsafe_data())
       , pos(builder.unsafe_position())
       , cap(builder.unsafe_capacity())
@@ -61970,9 +63349,7 @@ struct writer {
     return grow_slow(n);
   }
 
-  // Slow path of ensure(). Out-of-line via simdjson_inline (not
-  // simdjson_really_inline) to keep the hot path short.
-  simdjson_inline bool grow_slow(size_t n) noexcept {
+  simdjson_never_inline bool grow_slow(size_t n) noexcept {
     // Detect overflow.
     // This is pedantic except maybe on 32-bit targets.
     if (simdjson_unlikely(pos + n < pos)) return false;
@@ -61995,14 +63372,40 @@ struct writer {
   }
 };
 
+// The unchecked writer writes into a raw buffer that the caller sized with
+// serialized_size_bound: it never grows and needs no string_builder.
+template <>
+struct basic_writer<false> {
+  static constexpr bool checked = false;
+  char *ptr;
+  size_t pos;
+
+  simdjson_really_inline basic_writer(char *buffer, size_t position) noexcept
+      : ptr(buffer), pos(position) {}
+
+  simdjson_really_inline bool ensure(size_t) const noexcept { return true; }
+};
+
+using writer = basic_writer<true>;
+using unchecked_writer = basic_writer<false>;
+
+// Bytes reserved past the size bound for an unchecked writer: it may then
+// write a little past the end of what it produces (e.g., copy keys as whole
+// 16-byte blocks).
+inline constexpr size_t unchecked_slack = 64;
+
+consteval size_t padded_key_length(size_t length) {
+  return (length + 15) / 16 * 16;
+}
+
 // === Helper: invoke a string_builder member that writes variable-length
 // content (escape_and_append_with_quotes etc), syncing the writer's local
 // state before the call and reloading after. Used for string fields where
 // rewriting the entire SIMD escape path through the writer would be a much
 // bigger refactor. f may be user code (a with<Adapter> serializer) that
 // throws: the exception then propagates to the caller.
-template <class F>
-simdjson_really_inline void call_through_string_builder(writer &w, F &&f) noexcept(noexcept(f(w.sb))) {
+template <class W, class F>
+simdjson_really_inline void call_through_string_builder(W &w, F &&f) noexcept(noexcept(f(w.sb))) {
   w.sync();
   f(w.sb);
   w.ptr = w.sb.unsafe_data();
@@ -62036,8 +63439,8 @@ simdjson_really_inline bool should_serialize(const V &value) {
 
 // Serialize a member value, through its with<Adapter> annotation when the
 // adapter provides a serialize function.
-template <auto dm, typename V>
-simdjson_really_inline void atom_member(writer &w, const V &value) {
+template <auto dm, class W, typename V>
+simdjson_really_inline void atom_member(W &w, const V &value) {
   constexpr std::meta::info with_type = simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t);
   if constexpr (with_type != std::meta::info{}) {
     using adapter = typename [: with_type :]::adapter;
@@ -62054,8 +63457,8 @@ simdjson_really_inline void atom_member(writer &w, const V &value) {
 // Write the "key":value pairs of the members of t (without the braces), each
 // preceded by a comma unless it is the first one. The members of a member
 // annotated with flatten are written in its place.
-template <class T>
-simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
+template <class W, class T>
+simdjson_really_inline void atom_fields(W &w, const T &t, bool &first) {
   // Per-field block: ensure key+value worst case, then write key + value
   // through the writer's local pos. For arithmetic fields, the integer
   // write happens directly via write_uint_jeaiii on w.ptr+w.pos, so pos
@@ -62073,19 +63476,24 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
                         "simdjson::flatten requires a member whose type is a structure serialized member by member");
           atom_fields(w, t.[:dm:], first);
         } else {
+          // Copy the key as whole 16-byte blocks from a zero-padded copy (one
+          // load and one store); ensure() reserves the padded length, and the
+          // unchecked writer has slack past its bound.
           constexpr const char* key_name = simdjson::get_json_key_name<dm>();
+          constexpr size_t first_key_len = constevalutil::consteval_to_quoted_escaped(key_name).size() + 1;
+          constexpr size_t rest_key_len = first_key_len + 1;
           constexpr auto first_key = std::define_static_string(
-              constevalutil::consteval_to_quoted_escaped(key_name) + ":");
+              constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(first_key_len) - first_key_len, '\0'));
           constexpr auto rest_key = std::define_static_string(
-              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":");
-          constexpr size_t first_key_len = std::char_traits<char>::length(first_key);
-          constexpr size_t rest_key_len = std::char_traits<char>::length(rest_key);
-          if (!w.ensure(rest_key_len)) { return; }
+              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(rest_key_len) - rest_key_len, '\0'));
+          if (!w.ensure(padded_key_length(rest_key_len))) { return; }
           if (first) {
-            std::memcpy(w.ptr + w.pos, first_key, first_key_len);
+            std::memcpy(w.ptr + w.pos, first_key, padded_key_length(first_key_len));
             w.pos += first_key_len;
           } else {
-            std::memcpy(w.ptr + w.pos, rest_key, rest_key_len);
+            std::memcpy(w.ptr + w.pos, rest_key, padded_key_length(rest_key_len));
             w.pos += rest_key_len;
           }
           first = false;
@@ -62098,9 +63506,9 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
 
 } // namespace annotation_detail
 
-template <class T>
+template <class W, class T>
   requires(concepts::container_but_not_string<T> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   auto it = t.begin();
   auto end = t.end();
   if (it == end) {
@@ -62122,12 +63530,12 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   w.ptr[w.pos++] = ']';
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char *> ||
            std::is_same_v<T, char>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   // Inline the escape path through the writer so we never round-trip
   // pos through memory for string fields (Twitter is dominated by
   // these -- sync/reload around each string was a real cost).
@@ -62143,16 +63551,18 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
   // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
   // Note that this is pedantic except maybe on 32-bit targets.
-  if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-  if (!w.ensure(2 + 6 * input.size())) { return; }
+  if constexpr (W::checked) {
+    if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+    if (!w.ensure(2 + 6 * input.size())) { return; }
+  }
   w.ptr[w.pos++] = '"';
   w.pos += write_string_escaped(input, w.ptr + w.pos);
   w.ptr[w.pos++] = '"';
 }
 
-template <concepts::string_view_keyed_map T>
+template <class W, concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &m) {
+simdjson_really_inline constexpr void atom(W &w, const T &m) {
   if (m.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "{}", 2);
@@ -62175,8 +63585,10 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
     // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
     // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
     // Note that this is pedantic except maybe on 32-bit targets.
-    if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-    if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    if constexpr (W::checked) {
+      if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+      if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    }
     w.ptr[w.pos++] = '"';
     w.pos += write_string_escaped(key_sv, w.ptr + w.pos);
     w.ptr[w.pos++] = '"';
@@ -62188,9 +63600,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
 }
 
 
-template<typename number_type,
+template<class W, typename number_type,
          typename = typename std::enable_if<std::is_arithmetic<number_type>::value && !std::is_same_v<number_type, char>>::type>
-simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
+simdjson_really_inline constexpr void atom(W &w, const number_type t) {
   // Booleans / floats: defer to string_builder (rare path; keeps writer hot
   // path free of float-formatter machinery). For integers, write directly
   // via jeaiii using local pos.
@@ -62205,7 +63617,11 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
       w.pos += 5;
     }
   } else if constexpr (std::is_floating_point_v<number_type>) {
-    call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    if constexpr (W::checked) {
+      call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    } else {
+      w.pos = size_t(internal::write_double(w.ptr + w.pos, double(t)) - w.ptr);
+    }
   } else if constexpr (std::is_unsigned_v<number_type>) {
     if (!w.ensure(20)) return;
     char *end = internal::write_uint_jeaiii(
@@ -62225,7 +63641,7 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
   }
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_class_v<T> && !concepts::container_but_not_string<T> &&
            !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> &&
@@ -62235,7 +63651,7 @@ template <class T>
            !std::is_same_v<T, std::string_view> &&
            !std::is_same_v<T, const char*> &&
            !std::is_same_v<T, char> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
     // A transparent structure is serialized as its single member.
     constexpr auto dm = simdjson::detail::transparent_member(^^T);
@@ -62251,9 +63667,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
 }
 
 // Support for optional types (std::optional, etc.)
-template <concepts::optional_type T>
+template <class W, concepts::optional_type T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
+simdjson_really_inline constexpr void atom(W &w, const T &opt) {
   if (opt) {
     atom(w, opt.value());
   } else {
@@ -62264,9 +63680,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
 }
 
 // Support for smart pointers (std::unique_ptr, std::shared_ptr, etc.)
-template <concepts::smart_pointer T>
+template <class W, concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
+simdjson_really_inline constexpr void atom(W &w, const T &ptr) {
   if (ptr) {
     atom(w, *ptr);
   } else {
@@ -62277,9 +63693,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
 }
 
 // Support for enums - serialize as string representation using expand approach from P2996R12
-template <typename T>
+template <class W, typename T>
   requires(std::is_enum_v<T> && !require_custom_serialization<T>)
-simdjson_really_inline void atom(writer &w, const T &e) {
+simdjson_really_inline void atom(W &w, const T &e) {
 #if SIMDJSON_STATIC_REFLECTION
   static constexpr auto enumerators = std::define_static_array(std::meta::enumerators_of(^^T));
   template for (constexpr auto enum_val : enumerators) {
@@ -62301,12 +63717,12 @@ simdjson_really_inline void atom(writer &w, const T &e) {
 }
 
 // Support for appendable containers that don't have operator[] (sets, etc.)
-template <concepts::appendable_containers T>
+template <class W, concepts::appendable_containers T>
   requires(!concepts::container_but_not_string<T> && !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> && !concepts::smart_pointer<T> &&
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &container) {
+simdjson_really_inline constexpr void atom(W &w, const T &container) {
   if (container.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "[]", 2);
@@ -62326,6 +63742,150 @@ simdjson_really_inline constexpr void atom(writer &w, const T &container) {
   }
   if (!w.ensure(1)) return;
   w.ptr[w.pos++] = ']';
+}
+
+// =============================================================
+// Size bound: an upper bound on the number of bytes that atom(w, t) writes.
+// Computing it first lets append() reserve the capacity once and then run
+// the whole write chain through an unchecked_writer, without a capacity
+// check before every write. It mirrors the atom() overloads above.
+// =============================================================
+namespace bound_detail {
+
+// Whether size_bound covers everything that atom() writes for T: not when a
+// member is serialized by a with<Adapter> serializer, which writes an unknown
+// amount through the string_builder.
+template <class T>
+consteval bool is_bounded() {
+  if constexpr (require_custom_serialization<T>) {
+    return false;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *> || std::is_arithmetic_v<T> || std::is_enum_v<T>) {
+    return true;
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return is_bounded<std::remove_cvref_t<decltype(*std::declval<const T &>())>>();
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    return is_bounded<std::remove_cvref_t<typename T::mapped_type>>();
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    return is_bounded<std::remove_cvref_t<std::ranges::range_value_t<T>>>();
+  } else {
+    bool bounded = true;
+    template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+      if constexpr (annotation_detail::is_serialized_member(dm)) {
+        bounded = bounded && simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t) == std::meta::info{} &&
+                  is_bounded<std::remove_cvref_t<decltype(std::declval<const T &>().[:dm:])>>();
+      }
+    };
+    return bounded;
+  }
+}
+
+template <class T>
+consteval size_t enum_bound() {
+  size_t bound = 20; // the integer fallback
+  template for (constexpr auto enum_val : std::define_static_array(std::meta::enumerators_of(^^T))) {
+    constexpr size_t len = std::char_traits<char>::length(std::define_static_string(
+        constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<enum_val>())));
+    bound = (std::max)(bound, len);
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound(const T &t) noexcept;
+
+// Bound for the "key":value pairs of a structure, commas included.
+template <class T>
+simdjson_really_inline size_t fields_bound(const T &t) noexcept {
+  size_t bound = 0;
+  template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+    if constexpr (annotation_detail::is_serialized_member(dm)) {
+      if constexpr (simdjson::detail::has_annotation(dm, ^^simdjson::detail::flatten_tag)) {
+        bound += fields_bound(t.[:dm:]);
+      } else {
+        constexpr size_t rest_key_len = constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<dm>()).size() + 2;
+        bound += rest_key_len + size_bound(t.[:dm:]);
+      }
+    }
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound([[maybe_unused]] const T &t) noexcept {
+  if constexpr (std::is_same_v<T, char>) {
+    return 2 + 6;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *>) {
+    // Every byte may become \uXXXX, plus the quotes.
+    return 2 + 6 * std::string_view(t).size();
+  } else if constexpr (std::is_same_v<T, bool>) {
+    return 5;
+  } else if constexpr (std::is_floating_point_v<T>) {
+    return simdjson::internal::to_chars_buffer_size;
+  } else if constexpr (std::is_arithmetic_v<T>) {
+    return 20;
+  } else if constexpr (std::is_enum_v<T>) {
+    return enum_bound<T>();
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return t ? size_bound(*t) : 4;
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    size_t bound = 2;
+    for (const auto &[key, value] : t) {
+      // comma, quotes, colon
+      bound += 4 + 6 * std::string_view(key).size() + size_bound(value);
+    }
+    return bound;
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    using value_type = std::remove_cvref_t<std::ranges::range_value_t<T>>;
+    if constexpr (std::is_arithmetic_v<value_type> && !std::is_same_v<value_type, char>) {
+      // A fixed bound per element: no need to visit them.
+      return 2 + size_t(std::ranges::distance(t)) * (1 + size_bound(value_type{}));
+    } else {
+      size_t bound = 2;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC novector // a vector loop is slower on short containers
+#endif
+#pragma GCC unroll 4
+      for (const auto &item : t) {
+        bound += 1 + size_bound(item);
+      }
+      return bound;
+    }
+  } else if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
+    constexpr auto dm = simdjson::detail::transparent_member(^^T);
+    return size_bound(t.[:dm:]);
+  } else {
+    return 2 + fields_bound(t);
+  }
+}
+
+} // namespace bound_detail
+
+// Write t through an unchecked writer when its size bound is available,
+// reserving that many bytes first, and through the checked writer otherwise.
+template <class T>
+simdjson_really_inline void append_bounded(string_builder &b, const T &t) {
+  // On 32-bit systems, the bound could overflow: keep the checked writer.
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<T>()) {
+    const size_t bound = bound_detail::size_bound(t) + unchecked_slack;
+    const size_t pos = b.unsafe_position();
+    // The bound is a sum of in-memory sizes times a small constant: it cannot
+    // overflow on a 64-bit system. Be pedantic elsewhere.
+    if (sizeof(size_t) >= 8 || bound <= (std::numeric_limits<size_t>::max)() - pos) {
+      const size_t cap = b.unsafe_capacity();
+      // Grow geometrically so that many small appends stay amortized.
+      if (pos + bound <= cap || b.unsafe_grow((std::max)(cap * 2, pos + bound))) {
+        unchecked_writer w(b.unsafe_data(), pos);
+        atom(w, t);
+        b.unsafe_set_position(w.pos);
+      }
+      return;
+    }
+  }
+  writer w(b);
+  atom(w, t);
+  w.sync();
 }
 
 // append() -- top-level entry. Each overload constructs a stack-local
@@ -62353,17 +63913,13 @@ simdjson_inline void append(string_builder &b, const T &t) {
 template <concepts::optional_type T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::appendable_containers T>
@@ -62372,17 +63928,13 @@ template <concepts::appendable_containers T>
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 // works for struct
@@ -62397,18 +63949,14 @@ template <class Z>
            !std::is_same_v<Z, const char*> &&
            !std::is_same_v<Z, char> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 // works for container that have begin() and end() iterators
 template <class Z>
   requires(concepts::container_but_not_string<Z> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 template <class Z>
@@ -62419,22 +63967,38 @@ void append(string_builder &b, const Z &z) {
 
 
 template <class Z>
-simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<Z>()) {
+    // Write straight into s, sized by the bound: no intermediate buffer, no copy.
+    (void)initial_capacity;
+    const size_t bound = bound_detail::size_bound(z) + unchecked_slack;
+    auto write = [&z](char *p) noexcept {
+      unchecked_writer w(p, 0);
+      atom(w, z);
+      return w.pos;
+    };
+#if defined(__cpp_lib_string_resize_and_overwrite) && __cpp_lib_string_resize_and_overwrite >= 202110L
+    s.resize_and_overwrite(bound, [&write](char *p, size_t) noexcept { return write(p); });
+#else
+    s.resize(bound);
+    s.resize(write(s.data()));
+#endif
+    return SUCCESS;
+  } else {
+    string_builder b(initial_capacity);
+    append(b, z);
+    std::string_view view;
+    if(auto e = b.view().get(view); e) { return e; }
+    s.assign(view);
+    return SUCCESS;
+  }
 }
 
 template <class Z>
-simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  std::string s;
+  if(auto e = to_json(z, s, initial_capacity); e) { return e; }
+  return s;
 }
 
 template <class Z>
@@ -62494,25 +64058,18 @@ simdjson_warn_unused simdjson_result<std::string> extract_from(const T &obj, siz
   return std::string(s);
 }
 
+SIMDJSON_POP_DISABLE_WARNINGS
+
 } // namespace builder
 } // namespace westmere
 // Alias the function template to 'to' in the global namespace
 template <class Z>
 simdjson_warn_unused simdjson_result<std::string> to_json(const Z &z, size_t initial_capacity = westmere::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  westmere::builder::string_builder b(initial_capacity);
-  westmere::builder::append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+  return westmere::builder::to_json_string(z, initial_capacity);
 }
 template <class Z>
 simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = westmere::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  westmere::builder::string_builder b(initial_capacity);
-  westmere::builder::append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+  return westmere::builder::to_json(z, s, initial_capacity);
 }
 // Global namespace function for extract_from
 template<constevalutil::fixed_string... FieldNames, typename T>
@@ -62717,6 +64274,9 @@ simdjson_warn_unused simdjson_result<std::string> extract_fractured_json(
 #endif
 #if SIMDJSON_EXPERIMENTAL_HAS_SSE2
 #include <emmintrin.h>
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -63225,12 +64785,38 @@ simdjson_never_inline char *escape_block(const uint8_t *src, char *out,
 
 // Writes the escaped version of input to out, returning the number of bytes
 // written.
-inline size_t write_string_escaped(const std::string_view input, char *out) {
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out) {
   const size_t len = input.size();
   const uint8_t *src = reinterpret_cast<const uint8_t *>(input.data());
   const char *const initout = out;
 
   size_t i = 0;
+#if SIMDJSON_EXPERIMENTAL_HAS_SSE2 && defined(__AVX2__)
+  while (i + 32 <= len) {
+    const __m256i word = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(src + i));
+    const __m256i flags = _mm256_or_si256(
+        _mm256_or_si256(_mm256_cmpeq_epi8(word, _mm256_set1_epi8(34)),   // '"'
+                        _mm256_cmpeq_epi8(word, _mm256_set1_epi8(92))),  // '\\'
+        _mm256_cmpeq_epi8(_mm256_subs_epu8(word, _mm256_set1_epi8(31)),
+                          _mm256_setzero_si256()));                      // control
+    const uint32_t mask = uint32_t(_mm256_movemask_epi8(flags));
+    if (simdjson_likely(mask == 0)) {
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(out), word);
+      out += 32;
+    } else {
+      for (size_t half = 0; half < 32; half += 16) {
+        const uint64_t m = (mask >> half) & 0xFFFF;
+        if (m == 0) {
+          escape_store16(out, escape_load16(src + i + half));
+          out += 16;
+        } else {
+          out = escape_block(src, out, i + half, i + half + 16, m);
+        }
+      }
+    }
+    i += 32;
+  }
+#endif
   while (i + 16 <= len) {
     escape_vector word = escape_load16(src + i);
     escape_vector flags = escape_flags(word);
@@ -63402,96 +64988,135 @@ simdjson_inline void string_builder::clear() noexcept {
 
 namespace internal {
 
-static const char decimal_table[200] = {
-    0x30, 0x30, 0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35,
-    0x30, 0x36, 0x30, 0x37, 0x30, 0x38, 0x30, 0x39, 0x31, 0x30, 0x31, 0x31,
-    0x31, 0x32, 0x31, 0x33, 0x31, 0x34, 0x31, 0x35, 0x31, 0x36, 0x31, 0x37,
-    0x31, 0x38, 0x31, 0x39, 0x32, 0x30, 0x32, 0x31, 0x32, 0x32, 0x32, 0x33,
-    0x32, 0x34, 0x32, 0x35, 0x32, 0x36, 0x32, 0x37, 0x32, 0x38, 0x32, 0x39,
-    0x33, 0x30, 0x33, 0x31, 0x33, 0x32, 0x33, 0x33, 0x33, 0x34, 0x33, 0x35,
-    0x33, 0x36, 0x33, 0x37, 0x33, 0x38, 0x33, 0x39, 0x34, 0x30, 0x34, 0x31,
-    0x34, 0x32, 0x34, 0x33, 0x34, 0x34, 0x34, 0x35, 0x34, 0x36, 0x34, 0x37,
-    0x34, 0x38, 0x34, 0x39, 0x35, 0x30, 0x35, 0x31, 0x35, 0x32, 0x35, 0x33,
-    0x35, 0x34, 0x35, 0x35, 0x35, 0x36, 0x35, 0x37, 0x35, 0x38, 0x35, 0x39,
-    0x36, 0x30, 0x36, 0x31, 0x36, 0x32, 0x36, 0x33, 0x36, 0x34, 0x36, 0x35,
-    0x36, 0x36, 0x36, 0x37, 0x36, 0x38, 0x36, 0x39, 0x37, 0x30, 0x37, 0x31,
-    0x37, 0x32, 0x37, 0x33, 0x37, 0x34, 0x37, 0x35, 0x37, 0x36, 0x37, 0x37,
-    0x37, 0x38, 0x37, 0x39, 0x38, 0x30, 0x38, 0x31, 0x38, 0x32, 0x38, 0x33,
-    0x38, 0x34, 0x38, 0x35, 0x38, 0x36, 0x38, 0x37, 0x38, 0x38, 0x38, 0x39,
-    0x39, 0x30, 0x39, 0x31, 0x39, 0x32, 0x39, 0x33, 0x39, 0x34, 0x39, 0x35,
-    0x39, 0x36, 0x39, 0x37, 0x39, 0x38, 0x39, 0x39,
-};
+// Integer to decimal: James Edward Anhalt III's algorithm
+static const char jeaiii_dd[201] =
+    "00010203040506070809101112131415161718192021222324252627282930313233343536373839"
+    "40414243444546474849505152535455565758596061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+static const char jeaiii_fd[201] =
+    "0\0" "1\0" "2\0" "3\0" "4\0" "5\0" "6\0" "7\0" "8\0" "9\0"
+    "10111213141516171819202122232425262728293031323334353637383940414243444546474849"
+    "50515253545556575859606162636465666768697071727374757677787980818283848586878889"
+    "90919293949596979899";
 
-// Forward unsigned-int writer (cascade-on-magnitude, no upfront digit_count).
-// Built from a non-recursive DAG of always_inline helpers -- gcc and MSVC
-// refuse to inline recursive `always_inline`/`__forceinline` functions.
-// Caller must guarantee at least 20 bytes available at p. All helpers
-// return pointer past the last digit written.
-
-// Caller guarantees v < 100. Writes 1-2 digits.
-simdjson_really_inline char* write_lt100(char* p, uint64_t v) noexcept {
-  if (v < 10) { *p++ = char('0' + v); return p; }
-  std::memcpy(p, &decimal_table[v * 2], 2);
-  return p + 2;
+simdjson_really_inline void jeaiii_write_dd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_dd[2 * k], 2);
+}
+simdjson_really_inline void jeaiii_write_fd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_fd[2 * k], 2);
 }
 
-// Caller guarantees v < 10000. Writes 1-4 digits.
-simdjson_really_inline char* write_lt10000(char* p, uint64_t v) noexcept {
-  if (v < 100) return write_lt100(p, v);
-  uint64_t hi = v / 100, lo = v % 100;
-  if (v < 1000) {
-    *p++ = char('0' + hi);
+// Caller guarantees n < 10^8. Writes 1 to 8 digits.
+simdjson_really_inline char *jeaiii_lt1e8(char *b, uint32_t n) noexcept {
+  constexpr uint64_t mask24 = (uint64_t(1) << 24) - 1;
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  if (n < 100) {
+    jeaiii_write_fd(b, n);
+    return n < 10 ? b + 1 : b + 2;
+  }
+  if (n < 1000000) {
+    if (n < 10000) {
+      const uint32_t f0 = uint32_t(10 * (1 << 24) / 1e3 + 1) * n;
+      jeaiii_write_fd(b, f0 >> 24);
+      b -= n < 1000;
+      const uint32_t f2 = uint32_t(f0 & mask24) * 100;
+      jeaiii_write_dd(b + 2, f2 >> 24);
+      return b + 4;
+    }
+    const uint64_t f0 = uint64_t(10 * (1ull << 32) / 1e5 + 1) * n;
+    jeaiii_write_fd(b, f0 >> 32);
+    b -= n < 100000;
+    const uint64_t f2 = (f0 & mask32) * 100;
+    jeaiii_write_dd(b + 2, f2 >> 32);
+    const uint64_t f4 = (f2 & mask32) * 100;
+    jeaiii_write_dd(b + 4, f4 >> 32);
+    return b + 6;
+  }
+  const uint64_t f0 = uint64_t(10 * (1ull << 48) / 1e7 + 1) * n >> 16;
+  jeaiii_write_fd(b, f0 >> 32);
+  b -= n < 10000000;
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees z < 10^8. Always writes exactly 8 digits.
+simdjson_really_inline char *jeaiii_8_digits(char *b, uint32_t z) noexcept {
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  const uint64_t f0 = (uint64_t((1ull << 48) / 1e6 + 1) * z >> 16) + 1;
+  jeaiii_write_dd(b, f0 >> 32);
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees 10^8 <= n < 2^32. Writes 9 or 10 digits.
+simdjson_really_inline char *jeaiii_9_or_10(char *b, uint64_t n) noexcept {
+  constexpr uint64_t mask57 = (uint64_t(1) << 57) - 1;
+  const uint64_t f0 = uint64_t(10 * (1ull << 57) / 1e9 + 1) * n;
+  jeaiii_write_fd(b, f0 >> 57);
+  b -= n < 1000000000;
+  const uint64_t f2 = (f0 & mask57) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 57);
+  const uint64_t f4 = (f2 & mask57) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 57);
+  const uint64_t f6 = (f4 & mask57) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 57);
+  const uint64_t f8 = (f6 & mask57) * 100;
+  jeaiii_write_dd(b + 8, f8 >> 57);
+  return b + 10;
+}
+
+simdjson_really_inline char *write_uint_jeaiii(char *b, uint64_t n) noexcept {
+  if (n < 100000000) {
+    return jeaiii_lt1e8(b, uint32_t(n));
+  }
+  if (n < (uint64_t(1) << 32)) {
+    return jeaiii_9_or_10(b, n);
+  }
+  // At least 10 digits: the low 8 digits, and 2 to 12 digits above them.
+  const uint32_t z = uint32_t(n % 100000000);
+  uint64_t u = n / 100000000;
+  if (u < 100000000) {
+    // u has 2 to 8 digits (if u < 10, n would be below 2^32).
+    b = jeaiii_lt1e8(b, uint32_t(u));
+  } else if (u < (uint64_t(1) << 32)) {
+    b = jeaiii_9_or_10(b, u);
   } else {
-    std::memcpy(p, &decimal_table[hi * 2], 2);
-    p += 2;
+    // u has 11 or 12 digits: split off 8 more.
+    const uint32_t y = uint32_t(u % 100000000);
+    u /= 100000000;
+    b = jeaiii_lt1e8(b, uint32_t(u)); // 3 or 4 digits
+    b = jeaiii_8_digits(b, y);
   }
-  std::memcpy(p, &decimal_table[lo * 2], 2);
-  return p + 2;
+  return jeaiii_8_digits(b, z);
 }
 
-// Caller guarantees v < 10000. Always writes exactly 4 digits.
-simdjson_really_inline void write_4_digits(char* p, uint64_t v) noexcept {
-  uint64_t hi = v / 100, lo = v % 100;
-  std::memcpy(p,     &decimal_table[hi * 2], 2);
-  std::memcpy(p + 2, &decimal_table[lo * 2], 2);
-}
-
-// Caller guarantees v < 10^8. Writes 1-8 digits.
-simdjson_really_inline char* write_lt1e8(char* p, uint64_t v) noexcept {
-  if (v < 10000) return write_lt10000(p, v);
-  uint64_t hi = v / 10000, lo = v % 10000;
-  p = write_lt10000(p, hi);
-  write_4_digits(p, lo);
-  return p + 4;
-}
-
-simdjson_really_inline char* write_uint_jeaiii(char* p, uint64_t v) noexcept {
-  if (v < 10000ULL) return write_lt10000(p, v);
-  if (v < 100000000ULL) {                   // 5-8 digits
-    uint64_t hi = v / 10000, lo = v % 10000;
-    p = write_lt10000(p, hi);
-    write_4_digits(p, lo);
-    return p + 4;
-  }
-  if (v < 10000000000000000ULL) {           // 9-16 digits
-    uint64_t hi = v / 100000000ULL, lo = v % 100000000ULL;
-    p = write_lt1e8(p, hi);
-    uint64_t lo_hi = lo / 10000, lo_lo = lo % 10000;
-    write_4_digits(p,     lo_hi);
-    write_4_digits(p + 4, lo_lo);
+// Writes v at p, which must have to_chars_buffer_size bytes available, and
+// returns the end of what was written.
+simdjson_inline char *write_double(char *p, double v) noexcept {
+#if SIMDJSON_ENABLE_NAN_INF
+  if (simdjson_unlikely(!std::isfinite(v))) {
+    if (std::isnan(v)) {
+      std::memcpy(p, "NaN", 3);
+      return p + 3;
+    }
+    if (v < 0) {
+      *p++ = '-';
+    }
+    std::memcpy(p, "Infinity", 8);
     return p + 8;
   }
-  // 17-20 digits
-  uint64_t hi = v / 10000000000000000ULL, lo = v % 10000000000000000ULL;
-  p = write_lt10000(p, hi);
-  uint64_t lo_a = lo / 100000000ULL, lo_b = lo % 100000000ULL;
-  uint64_t lo_a_hi = lo_a / 10000, lo_a_lo = lo_a % 10000;
-  uint64_t lo_b_hi = lo_b / 10000, lo_b_lo = lo_b % 10000;
-  write_4_digits(p,      lo_a_hi);
-  write_4_digits(p + 4,  lo_a_lo);
-  write_4_digits(p + 8,  lo_b_hi);
-  write_4_digits(p + 12, lo_b_lo);
-  return p + 16;
+#endif
+  return simdjson::internal::to_chars(p, nullptr, v);
 }
 } // namespace internal
 
@@ -64877,8 +66502,15 @@ namespace builder {
 // name lookup falls back to the wrong outer namespace).
 namespace internal {
 simdjson_really_inline char *write_uint_jeaiii(char *p, uint64_t v) noexcept;
+simdjson_inline char *write_double(char *p, double v) noexcept;
 } // namespace internal
-inline size_t write_string_escaped(const std::string_view input, char *out);
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out);
+
+SIMDJSON_PUSH_DISABLE_WARNINGS
+SIMDJSON_DISABLE_GCC_WARNING(-Warray-bounds)
+#if !defined(__clang__)
+SIMDJSON_DISABLE_GCC_WARNING(-Wstringop-overflow)
+#endif
 
 // =============================================================
 // `writer`: position-as-local hot-path writer used by the reflection
@@ -64891,8 +66523,14 @@ inline size_t write_string_escaped(const std::string_view input, char *out);
 // breaks the strict-aliasing penalty on every char* write through the
 // buffer, which forces a reload of `b.position` and `b.capacity`
 // after every byte.
+//
+// basic_writer<false> (below) is the unchecked variant: the caller has
+// already reserved enough capacity for everything the write chain can
+// produce (see bound_detail::size_bound), so ensure() compiles away.
 // =============================================================
-struct writer {
+template <bool Checked>
+struct basic_writer {
+  static constexpr bool checked = Checked;
   char *ptr;        // buffer pointer (refreshed after a grow)
   size_t pos;       // write position (local)
   size_t cap;       // capacity (refreshed after a grow)
@@ -64900,7 +66538,7 @@ struct writer {
 
   // Snapshot string_builder state into a writer for the duration of
   // a write chain.
-  simdjson_really_inline writer(string_builder &builder) noexcept
+  simdjson_really_inline basic_writer(string_builder &builder) noexcept
       : ptr(builder.unsafe_data())
       , pos(builder.unsafe_position())
       , cap(builder.unsafe_capacity())
@@ -64926,9 +66564,7 @@ struct writer {
     return grow_slow(n);
   }
 
-  // Slow path of ensure(). Out-of-line via simdjson_inline (not
-  // simdjson_really_inline) to keep the hot path short.
-  simdjson_inline bool grow_slow(size_t n) noexcept {
+  simdjson_never_inline bool grow_slow(size_t n) noexcept {
     // Detect overflow.
     // This is pedantic except maybe on 32-bit targets.
     if (simdjson_unlikely(pos + n < pos)) return false;
@@ -64951,14 +66587,40 @@ struct writer {
   }
 };
 
+// The unchecked writer writes into a raw buffer that the caller sized with
+// serialized_size_bound: it never grows and needs no string_builder.
+template <>
+struct basic_writer<false> {
+  static constexpr bool checked = false;
+  char *ptr;
+  size_t pos;
+
+  simdjson_really_inline basic_writer(char *buffer, size_t position) noexcept
+      : ptr(buffer), pos(position) {}
+
+  simdjson_really_inline bool ensure(size_t) const noexcept { return true; }
+};
+
+using writer = basic_writer<true>;
+using unchecked_writer = basic_writer<false>;
+
+// Bytes reserved past the size bound for an unchecked writer: it may then
+// write a little past the end of what it produces (e.g., copy keys as whole
+// 16-byte blocks).
+inline constexpr size_t unchecked_slack = 64;
+
+consteval size_t padded_key_length(size_t length) {
+  return (length + 15) / 16 * 16;
+}
+
 // === Helper: invoke a string_builder member that writes variable-length
 // content (escape_and_append_with_quotes etc), syncing the writer's local
 // state before the call and reloading after. Used for string fields where
 // rewriting the entire SIMD escape path through the writer would be a much
 // bigger refactor. f may be user code (a with<Adapter> serializer) that
 // throws: the exception then propagates to the caller.
-template <class F>
-simdjson_really_inline void call_through_string_builder(writer &w, F &&f) noexcept(noexcept(f(w.sb))) {
+template <class W, class F>
+simdjson_really_inline void call_through_string_builder(W &w, F &&f) noexcept(noexcept(f(w.sb))) {
   w.sync();
   f(w.sb);
   w.ptr = w.sb.unsafe_data();
@@ -64992,8 +66654,8 @@ simdjson_really_inline bool should_serialize(const V &value) {
 
 // Serialize a member value, through its with<Adapter> annotation when the
 // adapter provides a serialize function.
-template <auto dm, typename V>
-simdjson_really_inline void atom_member(writer &w, const V &value) {
+template <auto dm, class W, typename V>
+simdjson_really_inline void atom_member(W &w, const V &value) {
   constexpr std::meta::info with_type = simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t);
   if constexpr (with_type != std::meta::info{}) {
     using adapter = typename [: with_type :]::adapter;
@@ -65010,8 +66672,8 @@ simdjson_really_inline void atom_member(writer &w, const V &value) {
 // Write the "key":value pairs of the members of t (without the braces), each
 // preceded by a comma unless it is the first one. The members of a member
 // annotated with flatten are written in its place.
-template <class T>
-simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
+template <class W, class T>
+simdjson_really_inline void atom_fields(W &w, const T &t, bool &first) {
   // Per-field block: ensure key+value worst case, then write key + value
   // through the writer's local pos. For arithmetic fields, the integer
   // write happens directly via write_uint_jeaiii on w.ptr+w.pos, so pos
@@ -65029,19 +66691,24 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
                         "simdjson::flatten requires a member whose type is a structure serialized member by member");
           atom_fields(w, t.[:dm:], first);
         } else {
+          // Copy the key as whole 16-byte blocks from a zero-padded copy (one
+          // load and one store); ensure() reserves the padded length, and the
+          // unchecked writer has slack past its bound.
           constexpr const char* key_name = simdjson::get_json_key_name<dm>();
+          constexpr size_t first_key_len = constevalutil::consteval_to_quoted_escaped(key_name).size() + 1;
+          constexpr size_t rest_key_len = first_key_len + 1;
           constexpr auto first_key = std::define_static_string(
-              constevalutil::consteval_to_quoted_escaped(key_name) + ":");
+              constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(first_key_len) - first_key_len, '\0'));
           constexpr auto rest_key = std::define_static_string(
-              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":");
-          constexpr size_t first_key_len = std::char_traits<char>::length(first_key);
-          constexpr size_t rest_key_len = std::char_traits<char>::length(rest_key);
-          if (!w.ensure(rest_key_len)) { return; }
+              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(rest_key_len) - rest_key_len, '\0'));
+          if (!w.ensure(padded_key_length(rest_key_len))) { return; }
           if (first) {
-            std::memcpy(w.ptr + w.pos, first_key, first_key_len);
+            std::memcpy(w.ptr + w.pos, first_key, padded_key_length(first_key_len));
             w.pos += first_key_len;
           } else {
-            std::memcpy(w.ptr + w.pos, rest_key, rest_key_len);
+            std::memcpy(w.ptr + w.pos, rest_key, padded_key_length(rest_key_len));
             w.pos += rest_key_len;
           }
           first = false;
@@ -65054,9 +66721,9 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
 
 } // namespace annotation_detail
 
-template <class T>
+template <class W, class T>
   requires(concepts::container_but_not_string<T> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   auto it = t.begin();
   auto end = t.end();
   if (it == end) {
@@ -65078,12 +66745,12 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   w.ptr[w.pos++] = ']';
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char *> ||
            std::is_same_v<T, char>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   // Inline the escape path through the writer so we never round-trip
   // pos through memory for string fields (Twitter is dominated by
   // these -- sync/reload around each string was a real cost).
@@ -65099,16 +66766,18 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
   // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
   // Note that this is pedantic except maybe on 32-bit targets.
-  if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-  if (!w.ensure(2 + 6 * input.size())) { return; }
+  if constexpr (W::checked) {
+    if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+    if (!w.ensure(2 + 6 * input.size())) { return; }
+  }
   w.ptr[w.pos++] = '"';
   w.pos += write_string_escaped(input, w.ptr + w.pos);
   w.ptr[w.pos++] = '"';
 }
 
-template <concepts::string_view_keyed_map T>
+template <class W, concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &m) {
+simdjson_really_inline constexpr void atom(W &w, const T &m) {
   if (m.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "{}", 2);
@@ -65131,8 +66800,10 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
     // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
     // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
     // Note that this is pedantic except maybe on 32-bit targets.
-    if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-    if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    if constexpr (W::checked) {
+      if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+      if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    }
     w.ptr[w.pos++] = '"';
     w.pos += write_string_escaped(key_sv, w.ptr + w.pos);
     w.ptr[w.pos++] = '"';
@@ -65144,9 +66815,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
 }
 
 
-template<typename number_type,
+template<class W, typename number_type,
          typename = typename std::enable_if<std::is_arithmetic<number_type>::value && !std::is_same_v<number_type, char>>::type>
-simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
+simdjson_really_inline constexpr void atom(W &w, const number_type t) {
   // Booleans / floats: defer to string_builder (rare path; keeps writer hot
   // path free of float-formatter machinery). For integers, write directly
   // via jeaiii using local pos.
@@ -65161,7 +66832,11 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
       w.pos += 5;
     }
   } else if constexpr (std::is_floating_point_v<number_type>) {
-    call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    if constexpr (W::checked) {
+      call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    } else {
+      w.pos = size_t(internal::write_double(w.ptr + w.pos, double(t)) - w.ptr);
+    }
   } else if constexpr (std::is_unsigned_v<number_type>) {
     if (!w.ensure(20)) return;
     char *end = internal::write_uint_jeaiii(
@@ -65181,7 +66856,7 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
   }
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_class_v<T> && !concepts::container_but_not_string<T> &&
            !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> &&
@@ -65191,7 +66866,7 @@ template <class T>
            !std::is_same_v<T, std::string_view> &&
            !std::is_same_v<T, const char*> &&
            !std::is_same_v<T, char> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
     // A transparent structure is serialized as its single member.
     constexpr auto dm = simdjson::detail::transparent_member(^^T);
@@ -65207,9 +66882,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
 }
 
 // Support for optional types (std::optional, etc.)
-template <concepts::optional_type T>
+template <class W, concepts::optional_type T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
+simdjson_really_inline constexpr void atom(W &w, const T &opt) {
   if (opt) {
     atom(w, opt.value());
   } else {
@@ -65220,9 +66895,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
 }
 
 // Support for smart pointers (std::unique_ptr, std::shared_ptr, etc.)
-template <concepts::smart_pointer T>
+template <class W, concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
+simdjson_really_inline constexpr void atom(W &w, const T &ptr) {
   if (ptr) {
     atom(w, *ptr);
   } else {
@@ -65233,9 +66908,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
 }
 
 // Support for enums - serialize as string representation using expand approach from P2996R12
-template <typename T>
+template <class W, typename T>
   requires(std::is_enum_v<T> && !require_custom_serialization<T>)
-simdjson_really_inline void atom(writer &w, const T &e) {
+simdjson_really_inline void atom(W &w, const T &e) {
 #if SIMDJSON_STATIC_REFLECTION
   static constexpr auto enumerators = std::define_static_array(std::meta::enumerators_of(^^T));
   template for (constexpr auto enum_val : enumerators) {
@@ -65257,12 +66932,12 @@ simdjson_really_inline void atom(writer &w, const T &e) {
 }
 
 // Support for appendable containers that don't have operator[] (sets, etc.)
-template <concepts::appendable_containers T>
+template <class W, concepts::appendable_containers T>
   requires(!concepts::container_but_not_string<T> && !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> && !concepts::smart_pointer<T> &&
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &container) {
+simdjson_really_inline constexpr void atom(W &w, const T &container) {
   if (container.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "[]", 2);
@@ -65282,6 +66957,150 @@ simdjson_really_inline constexpr void atom(writer &w, const T &container) {
   }
   if (!w.ensure(1)) return;
   w.ptr[w.pos++] = ']';
+}
+
+// =============================================================
+// Size bound: an upper bound on the number of bytes that atom(w, t) writes.
+// Computing it first lets append() reserve the capacity once and then run
+// the whole write chain through an unchecked_writer, without a capacity
+// check before every write. It mirrors the atom() overloads above.
+// =============================================================
+namespace bound_detail {
+
+// Whether size_bound covers everything that atom() writes for T: not when a
+// member is serialized by a with<Adapter> serializer, which writes an unknown
+// amount through the string_builder.
+template <class T>
+consteval bool is_bounded() {
+  if constexpr (require_custom_serialization<T>) {
+    return false;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *> || std::is_arithmetic_v<T> || std::is_enum_v<T>) {
+    return true;
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return is_bounded<std::remove_cvref_t<decltype(*std::declval<const T &>())>>();
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    return is_bounded<std::remove_cvref_t<typename T::mapped_type>>();
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    return is_bounded<std::remove_cvref_t<std::ranges::range_value_t<T>>>();
+  } else {
+    bool bounded = true;
+    template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+      if constexpr (annotation_detail::is_serialized_member(dm)) {
+        bounded = bounded && simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t) == std::meta::info{} &&
+                  is_bounded<std::remove_cvref_t<decltype(std::declval<const T &>().[:dm:])>>();
+      }
+    };
+    return bounded;
+  }
+}
+
+template <class T>
+consteval size_t enum_bound() {
+  size_t bound = 20; // the integer fallback
+  template for (constexpr auto enum_val : std::define_static_array(std::meta::enumerators_of(^^T))) {
+    constexpr size_t len = std::char_traits<char>::length(std::define_static_string(
+        constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<enum_val>())));
+    bound = (std::max)(bound, len);
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound(const T &t) noexcept;
+
+// Bound for the "key":value pairs of a structure, commas included.
+template <class T>
+simdjson_really_inline size_t fields_bound(const T &t) noexcept {
+  size_t bound = 0;
+  template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+    if constexpr (annotation_detail::is_serialized_member(dm)) {
+      if constexpr (simdjson::detail::has_annotation(dm, ^^simdjson::detail::flatten_tag)) {
+        bound += fields_bound(t.[:dm:]);
+      } else {
+        constexpr size_t rest_key_len = constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<dm>()).size() + 2;
+        bound += rest_key_len + size_bound(t.[:dm:]);
+      }
+    }
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound([[maybe_unused]] const T &t) noexcept {
+  if constexpr (std::is_same_v<T, char>) {
+    return 2 + 6;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *>) {
+    // Every byte may become \uXXXX, plus the quotes.
+    return 2 + 6 * std::string_view(t).size();
+  } else if constexpr (std::is_same_v<T, bool>) {
+    return 5;
+  } else if constexpr (std::is_floating_point_v<T>) {
+    return simdjson::internal::to_chars_buffer_size;
+  } else if constexpr (std::is_arithmetic_v<T>) {
+    return 20;
+  } else if constexpr (std::is_enum_v<T>) {
+    return enum_bound<T>();
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return t ? size_bound(*t) : 4;
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    size_t bound = 2;
+    for (const auto &[key, value] : t) {
+      // comma, quotes, colon
+      bound += 4 + 6 * std::string_view(key).size() + size_bound(value);
+    }
+    return bound;
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    using value_type = std::remove_cvref_t<std::ranges::range_value_t<T>>;
+    if constexpr (std::is_arithmetic_v<value_type> && !std::is_same_v<value_type, char>) {
+      // A fixed bound per element: no need to visit them.
+      return 2 + size_t(std::ranges::distance(t)) * (1 + size_bound(value_type{}));
+    } else {
+      size_t bound = 2;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC novector // a vector loop is slower on short containers
+#endif
+#pragma GCC unroll 4
+      for (const auto &item : t) {
+        bound += 1 + size_bound(item);
+      }
+      return bound;
+    }
+  } else if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
+    constexpr auto dm = simdjson::detail::transparent_member(^^T);
+    return size_bound(t.[:dm:]);
+  } else {
+    return 2 + fields_bound(t);
+  }
+}
+
+} // namespace bound_detail
+
+// Write t through an unchecked writer when its size bound is available,
+// reserving that many bytes first, and through the checked writer otherwise.
+template <class T>
+simdjson_really_inline void append_bounded(string_builder &b, const T &t) {
+  // On 32-bit systems, the bound could overflow: keep the checked writer.
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<T>()) {
+    const size_t bound = bound_detail::size_bound(t) + unchecked_slack;
+    const size_t pos = b.unsafe_position();
+    // The bound is a sum of in-memory sizes times a small constant: it cannot
+    // overflow on a 64-bit system. Be pedantic elsewhere.
+    if (sizeof(size_t) >= 8 || bound <= (std::numeric_limits<size_t>::max)() - pos) {
+      const size_t cap = b.unsafe_capacity();
+      // Grow geometrically so that many small appends stay amortized.
+      if (pos + bound <= cap || b.unsafe_grow((std::max)(cap * 2, pos + bound))) {
+        unchecked_writer w(b.unsafe_data(), pos);
+        atom(w, t);
+        b.unsafe_set_position(w.pos);
+      }
+      return;
+    }
+  }
+  writer w(b);
+  atom(w, t);
+  w.sync();
 }
 
 // append() -- top-level entry. Each overload constructs a stack-local
@@ -65309,17 +67128,13 @@ simdjson_inline void append(string_builder &b, const T &t) {
 template <concepts::optional_type T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::appendable_containers T>
@@ -65328,17 +67143,13 @@ template <concepts::appendable_containers T>
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 // works for struct
@@ -65353,18 +67164,14 @@ template <class Z>
            !std::is_same_v<Z, const char*> &&
            !std::is_same_v<Z, char> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 // works for container that have begin() and end() iterators
 template <class Z>
   requires(concepts::container_but_not_string<Z> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 template <class Z>
@@ -65375,22 +67182,38 @@ void append(string_builder &b, const Z &z) {
 
 
 template <class Z>
-simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<Z>()) {
+    // Write straight into s, sized by the bound: no intermediate buffer, no copy.
+    (void)initial_capacity;
+    const size_t bound = bound_detail::size_bound(z) + unchecked_slack;
+    auto write = [&z](char *p) noexcept {
+      unchecked_writer w(p, 0);
+      atom(w, z);
+      return w.pos;
+    };
+#if defined(__cpp_lib_string_resize_and_overwrite) && __cpp_lib_string_resize_and_overwrite >= 202110L
+    s.resize_and_overwrite(bound, [&write](char *p, size_t) noexcept { return write(p); });
+#else
+    s.resize(bound);
+    s.resize(write(s.data()));
+#endif
+    return SUCCESS;
+  } else {
+    string_builder b(initial_capacity);
+    append(b, z);
+    std::string_view view;
+    if(auto e = b.view().get(view); e) { return e; }
+    s.assign(view);
+    return SUCCESS;
+  }
 }
 
 template <class Z>
-simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  std::string s;
+  if(auto e = to_json(z, s, initial_capacity); e) { return e; }
+  return s;
 }
 
 template <class Z>
@@ -65450,25 +67273,18 @@ simdjson_warn_unused simdjson_result<std::string> extract_from(const T &obj, siz
   return std::string(s);
 }
 
+SIMDJSON_POP_DISABLE_WARNINGS
+
 } // namespace builder
 } // namespace lsx
 // Alias the function template to 'to' in the global namespace
 template <class Z>
 simdjson_warn_unused simdjson_result<std::string> to_json(const Z &z, size_t initial_capacity = lsx::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  lsx::builder::string_builder b(initial_capacity);
-  lsx::builder::append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+  return lsx::builder::to_json_string(z, initial_capacity);
 }
 template <class Z>
 simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = lsx::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  lsx::builder::string_builder b(initial_capacity);
-  lsx::builder::append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+  return lsx::builder::to_json(z, s, initial_capacity);
 }
 // Global namespace function for extract_from
 template<constevalutil::fixed_string... FieldNames, typename T>
@@ -65673,6 +67489,9 @@ simdjson_warn_unused simdjson_result<std::string> extract_fractured_json(
 #endif
 #if SIMDJSON_EXPERIMENTAL_HAS_SSE2
 #include <emmintrin.h>
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -66181,12 +68000,38 @@ simdjson_never_inline char *escape_block(const uint8_t *src, char *out,
 
 // Writes the escaped version of input to out, returning the number of bytes
 // written.
-inline size_t write_string_escaped(const std::string_view input, char *out) {
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out) {
   const size_t len = input.size();
   const uint8_t *src = reinterpret_cast<const uint8_t *>(input.data());
   const char *const initout = out;
 
   size_t i = 0;
+#if SIMDJSON_EXPERIMENTAL_HAS_SSE2 && defined(__AVX2__)
+  while (i + 32 <= len) {
+    const __m256i word = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(src + i));
+    const __m256i flags = _mm256_or_si256(
+        _mm256_or_si256(_mm256_cmpeq_epi8(word, _mm256_set1_epi8(34)),   // '"'
+                        _mm256_cmpeq_epi8(word, _mm256_set1_epi8(92))),  // '\\'
+        _mm256_cmpeq_epi8(_mm256_subs_epu8(word, _mm256_set1_epi8(31)),
+                          _mm256_setzero_si256()));                      // control
+    const uint32_t mask = uint32_t(_mm256_movemask_epi8(flags));
+    if (simdjson_likely(mask == 0)) {
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(out), word);
+      out += 32;
+    } else {
+      for (size_t half = 0; half < 32; half += 16) {
+        const uint64_t m = (mask >> half) & 0xFFFF;
+        if (m == 0) {
+          escape_store16(out, escape_load16(src + i + half));
+          out += 16;
+        } else {
+          out = escape_block(src, out, i + half, i + half + 16, m);
+        }
+      }
+    }
+    i += 32;
+  }
+#endif
   while (i + 16 <= len) {
     escape_vector word = escape_load16(src + i);
     escape_vector flags = escape_flags(word);
@@ -66358,96 +68203,135 @@ simdjson_inline void string_builder::clear() noexcept {
 
 namespace internal {
 
-static const char decimal_table[200] = {
-    0x30, 0x30, 0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35,
-    0x30, 0x36, 0x30, 0x37, 0x30, 0x38, 0x30, 0x39, 0x31, 0x30, 0x31, 0x31,
-    0x31, 0x32, 0x31, 0x33, 0x31, 0x34, 0x31, 0x35, 0x31, 0x36, 0x31, 0x37,
-    0x31, 0x38, 0x31, 0x39, 0x32, 0x30, 0x32, 0x31, 0x32, 0x32, 0x32, 0x33,
-    0x32, 0x34, 0x32, 0x35, 0x32, 0x36, 0x32, 0x37, 0x32, 0x38, 0x32, 0x39,
-    0x33, 0x30, 0x33, 0x31, 0x33, 0x32, 0x33, 0x33, 0x33, 0x34, 0x33, 0x35,
-    0x33, 0x36, 0x33, 0x37, 0x33, 0x38, 0x33, 0x39, 0x34, 0x30, 0x34, 0x31,
-    0x34, 0x32, 0x34, 0x33, 0x34, 0x34, 0x34, 0x35, 0x34, 0x36, 0x34, 0x37,
-    0x34, 0x38, 0x34, 0x39, 0x35, 0x30, 0x35, 0x31, 0x35, 0x32, 0x35, 0x33,
-    0x35, 0x34, 0x35, 0x35, 0x35, 0x36, 0x35, 0x37, 0x35, 0x38, 0x35, 0x39,
-    0x36, 0x30, 0x36, 0x31, 0x36, 0x32, 0x36, 0x33, 0x36, 0x34, 0x36, 0x35,
-    0x36, 0x36, 0x36, 0x37, 0x36, 0x38, 0x36, 0x39, 0x37, 0x30, 0x37, 0x31,
-    0x37, 0x32, 0x37, 0x33, 0x37, 0x34, 0x37, 0x35, 0x37, 0x36, 0x37, 0x37,
-    0x37, 0x38, 0x37, 0x39, 0x38, 0x30, 0x38, 0x31, 0x38, 0x32, 0x38, 0x33,
-    0x38, 0x34, 0x38, 0x35, 0x38, 0x36, 0x38, 0x37, 0x38, 0x38, 0x38, 0x39,
-    0x39, 0x30, 0x39, 0x31, 0x39, 0x32, 0x39, 0x33, 0x39, 0x34, 0x39, 0x35,
-    0x39, 0x36, 0x39, 0x37, 0x39, 0x38, 0x39, 0x39,
-};
+// Integer to decimal: James Edward Anhalt III's algorithm
+static const char jeaiii_dd[201] =
+    "00010203040506070809101112131415161718192021222324252627282930313233343536373839"
+    "40414243444546474849505152535455565758596061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+static const char jeaiii_fd[201] =
+    "0\0" "1\0" "2\0" "3\0" "4\0" "5\0" "6\0" "7\0" "8\0" "9\0"
+    "10111213141516171819202122232425262728293031323334353637383940414243444546474849"
+    "50515253545556575859606162636465666768697071727374757677787980818283848586878889"
+    "90919293949596979899";
 
-// Forward unsigned-int writer (cascade-on-magnitude, no upfront digit_count).
-// Built from a non-recursive DAG of always_inline helpers -- gcc and MSVC
-// refuse to inline recursive `always_inline`/`__forceinline` functions.
-// Caller must guarantee at least 20 bytes available at p. All helpers
-// return pointer past the last digit written.
-
-// Caller guarantees v < 100. Writes 1-2 digits.
-simdjson_really_inline char* write_lt100(char* p, uint64_t v) noexcept {
-  if (v < 10) { *p++ = char('0' + v); return p; }
-  std::memcpy(p, &decimal_table[v * 2], 2);
-  return p + 2;
+simdjson_really_inline void jeaiii_write_dd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_dd[2 * k], 2);
+}
+simdjson_really_inline void jeaiii_write_fd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_fd[2 * k], 2);
 }
 
-// Caller guarantees v < 10000. Writes 1-4 digits.
-simdjson_really_inline char* write_lt10000(char* p, uint64_t v) noexcept {
-  if (v < 100) return write_lt100(p, v);
-  uint64_t hi = v / 100, lo = v % 100;
-  if (v < 1000) {
-    *p++ = char('0' + hi);
+// Caller guarantees n < 10^8. Writes 1 to 8 digits.
+simdjson_really_inline char *jeaiii_lt1e8(char *b, uint32_t n) noexcept {
+  constexpr uint64_t mask24 = (uint64_t(1) << 24) - 1;
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  if (n < 100) {
+    jeaiii_write_fd(b, n);
+    return n < 10 ? b + 1 : b + 2;
+  }
+  if (n < 1000000) {
+    if (n < 10000) {
+      const uint32_t f0 = uint32_t(10 * (1 << 24) / 1e3 + 1) * n;
+      jeaiii_write_fd(b, f0 >> 24);
+      b -= n < 1000;
+      const uint32_t f2 = uint32_t(f0 & mask24) * 100;
+      jeaiii_write_dd(b + 2, f2 >> 24);
+      return b + 4;
+    }
+    const uint64_t f0 = uint64_t(10 * (1ull << 32) / 1e5 + 1) * n;
+    jeaiii_write_fd(b, f0 >> 32);
+    b -= n < 100000;
+    const uint64_t f2 = (f0 & mask32) * 100;
+    jeaiii_write_dd(b + 2, f2 >> 32);
+    const uint64_t f4 = (f2 & mask32) * 100;
+    jeaiii_write_dd(b + 4, f4 >> 32);
+    return b + 6;
+  }
+  const uint64_t f0 = uint64_t(10 * (1ull << 48) / 1e7 + 1) * n >> 16;
+  jeaiii_write_fd(b, f0 >> 32);
+  b -= n < 10000000;
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees z < 10^8. Always writes exactly 8 digits.
+simdjson_really_inline char *jeaiii_8_digits(char *b, uint32_t z) noexcept {
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  const uint64_t f0 = (uint64_t((1ull << 48) / 1e6 + 1) * z >> 16) + 1;
+  jeaiii_write_dd(b, f0 >> 32);
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees 10^8 <= n < 2^32. Writes 9 or 10 digits.
+simdjson_really_inline char *jeaiii_9_or_10(char *b, uint64_t n) noexcept {
+  constexpr uint64_t mask57 = (uint64_t(1) << 57) - 1;
+  const uint64_t f0 = uint64_t(10 * (1ull << 57) / 1e9 + 1) * n;
+  jeaiii_write_fd(b, f0 >> 57);
+  b -= n < 1000000000;
+  const uint64_t f2 = (f0 & mask57) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 57);
+  const uint64_t f4 = (f2 & mask57) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 57);
+  const uint64_t f6 = (f4 & mask57) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 57);
+  const uint64_t f8 = (f6 & mask57) * 100;
+  jeaiii_write_dd(b + 8, f8 >> 57);
+  return b + 10;
+}
+
+simdjson_really_inline char *write_uint_jeaiii(char *b, uint64_t n) noexcept {
+  if (n < 100000000) {
+    return jeaiii_lt1e8(b, uint32_t(n));
+  }
+  if (n < (uint64_t(1) << 32)) {
+    return jeaiii_9_or_10(b, n);
+  }
+  // At least 10 digits: the low 8 digits, and 2 to 12 digits above them.
+  const uint32_t z = uint32_t(n % 100000000);
+  uint64_t u = n / 100000000;
+  if (u < 100000000) {
+    // u has 2 to 8 digits (if u < 10, n would be below 2^32).
+    b = jeaiii_lt1e8(b, uint32_t(u));
+  } else if (u < (uint64_t(1) << 32)) {
+    b = jeaiii_9_or_10(b, u);
   } else {
-    std::memcpy(p, &decimal_table[hi * 2], 2);
-    p += 2;
+    // u has 11 or 12 digits: split off 8 more.
+    const uint32_t y = uint32_t(u % 100000000);
+    u /= 100000000;
+    b = jeaiii_lt1e8(b, uint32_t(u)); // 3 or 4 digits
+    b = jeaiii_8_digits(b, y);
   }
-  std::memcpy(p, &decimal_table[lo * 2], 2);
-  return p + 2;
+  return jeaiii_8_digits(b, z);
 }
 
-// Caller guarantees v < 10000. Always writes exactly 4 digits.
-simdjson_really_inline void write_4_digits(char* p, uint64_t v) noexcept {
-  uint64_t hi = v / 100, lo = v % 100;
-  std::memcpy(p,     &decimal_table[hi * 2], 2);
-  std::memcpy(p + 2, &decimal_table[lo * 2], 2);
-}
-
-// Caller guarantees v < 10^8. Writes 1-8 digits.
-simdjson_really_inline char* write_lt1e8(char* p, uint64_t v) noexcept {
-  if (v < 10000) return write_lt10000(p, v);
-  uint64_t hi = v / 10000, lo = v % 10000;
-  p = write_lt10000(p, hi);
-  write_4_digits(p, lo);
-  return p + 4;
-}
-
-simdjson_really_inline char* write_uint_jeaiii(char* p, uint64_t v) noexcept {
-  if (v < 10000ULL) return write_lt10000(p, v);
-  if (v < 100000000ULL) {                   // 5-8 digits
-    uint64_t hi = v / 10000, lo = v % 10000;
-    p = write_lt10000(p, hi);
-    write_4_digits(p, lo);
-    return p + 4;
-  }
-  if (v < 10000000000000000ULL) {           // 9-16 digits
-    uint64_t hi = v / 100000000ULL, lo = v % 100000000ULL;
-    p = write_lt1e8(p, hi);
-    uint64_t lo_hi = lo / 10000, lo_lo = lo % 10000;
-    write_4_digits(p,     lo_hi);
-    write_4_digits(p + 4, lo_lo);
+// Writes v at p, which must have to_chars_buffer_size bytes available, and
+// returns the end of what was written.
+simdjson_inline char *write_double(char *p, double v) noexcept {
+#if SIMDJSON_ENABLE_NAN_INF
+  if (simdjson_unlikely(!std::isfinite(v))) {
+    if (std::isnan(v)) {
+      std::memcpy(p, "NaN", 3);
+      return p + 3;
+    }
+    if (v < 0) {
+      *p++ = '-';
+    }
+    std::memcpy(p, "Infinity", 8);
     return p + 8;
   }
-  // 17-20 digits
-  uint64_t hi = v / 10000000000000000ULL, lo = v % 10000000000000000ULL;
-  p = write_lt10000(p, hi);
-  uint64_t lo_a = lo / 100000000ULL, lo_b = lo % 100000000ULL;
-  uint64_t lo_a_hi = lo_a / 10000, lo_a_lo = lo_a % 10000;
-  uint64_t lo_b_hi = lo_b / 10000, lo_b_lo = lo_b % 10000;
-  write_4_digits(p,      lo_a_hi);
-  write_4_digits(p + 4,  lo_a_lo);
-  write_4_digits(p + 8,  lo_b_hi);
-  write_4_digits(p + 12, lo_b_lo);
-  return p + 16;
+#endif
+  return simdjson::internal::to_chars(p, nullptr, v);
 }
 } // namespace internal
 
@@ -67856,8 +69740,15 @@ namespace builder {
 // name lookup falls back to the wrong outer namespace).
 namespace internal {
 simdjson_really_inline char *write_uint_jeaiii(char *p, uint64_t v) noexcept;
+simdjson_inline char *write_double(char *p, double v) noexcept;
 } // namespace internal
-inline size_t write_string_escaped(const std::string_view input, char *out);
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out);
+
+SIMDJSON_PUSH_DISABLE_WARNINGS
+SIMDJSON_DISABLE_GCC_WARNING(-Warray-bounds)
+#if !defined(__clang__)
+SIMDJSON_DISABLE_GCC_WARNING(-Wstringop-overflow)
+#endif
 
 // =============================================================
 // `writer`: position-as-local hot-path writer used by the reflection
@@ -67870,8 +69761,14 @@ inline size_t write_string_escaped(const std::string_view input, char *out);
 // breaks the strict-aliasing penalty on every char* write through the
 // buffer, which forces a reload of `b.position` and `b.capacity`
 // after every byte.
+//
+// basic_writer<false> (below) is the unchecked variant: the caller has
+// already reserved enough capacity for everything the write chain can
+// produce (see bound_detail::size_bound), so ensure() compiles away.
 // =============================================================
-struct writer {
+template <bool Checked>
+struct basic_writer {
+  static constexpr bool checked = Checked;
   char *ptr;        // buffer pointer (refreshed after a grow)
   size_t pos;       // write position (local)
   size_t cap;       // capacity (refreshed after a grow)
@@ -67879,7 +69776,7 @@ struct writer {
 
   // Snapshot string_builder state into a writer for the duration of
   // a write chain.
-  simdjson_really_inline writer(string_builder &builder) noexcept
+  simdjson_really_inline basic_writer(string_builder &builder) noexcept
       : ptr(builder.unsafe_data())
       , pos(builder.unsafe_position())
       , cap(builder.unsafe_capacity())
@@ -67905,9 +69802,7 @@ struct writer {
     return grow_slow(n);
   }
 
-  // Slow path of ensure(). Out-of-line via simdjson_inline (not
-  // simdjson_really_inline) to keep the hot path short.
-  simdjson_inline bool grow_slow(size_t n) noexcept {
+  simdjson_never_inline bool grow_slow(size_t n) noexcept {
     // Detect overflow.
     // This is pedantic except maybe on 32-bit targets.
     if (simdjson_unlikely(pos + n < pos)) return false;
@@ -67930,14 +69825,40 @@ struct writer {
   }
 };
 
+// The unchecked writer writes into a raw buffer that the caller sized with
+// serialized_size_bound: it never grows and needs no string_builder.
+template <>
+struct basic_writer<false> {
+  static constexpr bool checked = false;
+  char *ptr;
+  size_t pos;
+
+  simdjson_really_inline basic_writer(char *buffer, size_t position) noexcept
+      : ptr(buffer), pos(position) {}
+
+  simdjson_really_inline bool ensure(size_t) const noexcept { return true; }
+};
+
+using writer = basic_writer<true>;
+using unchecked_writer = basic_writer<false>;
+
+// Bytes reserved past the size bound for an unchecked writer: it may then
+// write a little past the end of what it produces (e.g., copy keys as whole
+// 16-byte blocks).
+inline constexpr size_t unchecked_slack = 64;
+
+consteval size_t padded_key_length(size_t length) {
+  return (length + 15) / 16 * 16;
+}
+
 // === Helper: invoke a string_builder member that writes variable-length
 // content (escape_and_append_with_quotes etc), syncing the writer's local
 // state before the call and reloading after. Used for string fields where
 // rewriting the entire SIMD escape path through the writer would be a much
 // bigger refactor. f may be user code (a with<Adapter> serializer) that
 // throws: the exception then propagates to the caller.
-template <class F>
-simdjson_really_inline void call_through_string_builder(writer &w, F &&f) noexcept(noexcept(f(w.sb))) {
+template <class W, class F>
+simdjson_really_inline void call_through_string_builder(W &w, F &&f) noexcept(noexcept(f(w.sb))) {
   w.sync();
   f(w.sb);
   w.ptr = w.sb.unsafe_data();
@@ -67971,8 +69892,8 @@ simdjson_really_inline bool should_serialize(const V &value) {
 
 // Serialize a member value, through its with<Adapter> annotation when the
 // adapter provides a serialize function.
-template <auto dm, typename V>
-simdjson_really_inline void atom_member(writer &w, const V &value) {
+template <auto dm, class W, typename V>
+simdjson_really_inline void atom_member(W &w, const V &value) {
   constexpr std::meta::info with_type = simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t);
   if constexpr (with_type != std::meta::info{}) {
     using adapter = typename [: with_type :]::adapter;
@@ -67989,8 +69910,8 @@ simdjson_really_inline void atom_member(writer &w, const V &value) {
 // Write the "key":value pairs of the members of t (without the braces), each
 // preceded by a comma unless it is the first one. The members of a member
 // annotated with flatten are written in its place.
-template <class T>
-simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
+template <class W, class T>
+simdjson_really_inline void atom_fields(W &w, const T &t, bool &first) {
   // Per-field block: ensure key+value worst case, then write key + value
   // through the writer's local pos. For arithmetic fields, the integer
   // write happens directly via write_uint_jeaiii on w.ptr+w.pos, so pos
@@ -68008,19 +69929,24 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
                         "simdjson::flatten requires a member whose type is a structure serialized member by member");
           atom_fields(w, t.[:dm:], first);
         } else {
+          // Copy the key as whole 16-byte blocks from a zero-padded copy (one
+          // load and one store); ensure() reserves the padded length, and the
+          // unchecked writer has slack past its bound.
           constexpr const char* key_name = simdjson::get_json_key_name<dm>();
+          constexpr size_t first_key_len = constevalutil::consteval_to_quoted_escaped(key_name).size() + 1;
+          constexpr size_t rest_key_len = first_key_len + 1;
           constexpr auto first_key = std::define_static_string(
-              constevalutil::consteval_to_quoted_escaped(key_name) + ":");
+              constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(first_key_len) - first_key_len, '\0'));
           constexpr auto rest_key = std::define_static_string(
-              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":");
-          constexpr size_t first_key_len = std::char_traits<char>::length(first_key);
-          constexpr size_t rest_key_len = std::char_traits<char>::length(rest_key);
-          if (!w.ensure(rest_key_len)) { return; }
+              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(rest_key_len) - rest_key_len, '\0'));
+          if (!w.ensure(padded_key_length(rest_key_len))) { return; }
           if (first) {
-            std::memcpy(w.ptr + w.pos, first_key, first_key_len);
+            std::memcpy(w.ptr + w.pos, first_key, padded_key_length(first_key_len));
             w.pos += first_key_len;
           } else {
-            std::memcpy(w.ptr + w.pos, rest_key, rest_key_len);
+            std::memcpy(w.ptr + w.pos, rest_key, padded_key_length(rest_key_len));
             w.pos += rest_key_len;
           }
           first = false;
@@ -68033,9 +69959,9 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
 
 } // namespace annotation_detail
 
-template <class T>
+template <class W, class T>
   requires(concepts::container_but_not_string<T> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   auto it = t.begin();
   auto end = t.end();
   if (it == end) {
@@ -68057,12 +69983,12 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   w.ptr[w.pos++] = ']';
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char *> ||
            std::is_same_v<T, char>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   // Inline the escape path through the writer so we never round-trip
   // pos through memory for string fields (Twitter is dominated by
   // these -- sync/reload around each string was a real cost).
@@ -68078,16 +70004,18 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
   // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
   // Note that this is pedantic except maybe on 32-bit targets.
-  if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-  if (!w.ensure(2 + 6 * input.size())) { return; }
+  if constexpr (W::checked) {
+    if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+    if (!w.ensure(2 + 6 * input.size())) { return; }
+  }
   w.ptr[w.pos++] = '"';
   w.pos += write_string_escaped(input, w.ptr + w.pos);
   w.ptr[w.pos++] = '"';
 }
 
-template <concepts::string_view_keyed_map T>
+template <class W, concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &m) {
+simdjson_really_inline constexpr void atom(W &w, const T &m) {
   if (m.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "{}", 2);
@@ -68110,8 +70038,10 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
     // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
     // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
     // Note that this is pedantic except maybe on 32-bit targets.
-    if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-    if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    if constexpr (W::checked) {
+      if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+      if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    }
     w.ptr[w.pos++] = '"';
     w.pos += write_string_escaped(key_sv, w.ptr + w.pos);
     w.ptr[w.pos++] = '"';
@@ -68123,9 +70053,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
 }
 
 
-template<typename number_type,
+template<class W, typename number_type,
          typename = typename std::enable_if<std::is_arithmetic<number_type>::value && !std::is_same_v<number_type, char>>::type>
-simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
+simdjson_really_inline constexpr void atom(W &w, const number_type t) {
   // Booleans / floats: defer to string_builder (rare path; keeps writer hot
   // path free of float-formatter machinery). For integers, write directly
   // via jeaiii using local pos.
@@ -68140,7 +70070,11 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
       w.pos += 5;
     }
   } else if constexpr (std::is_floating_point_v<number_type>) {
-    call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    if constexpr (W::checked) {
+      call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    } else {
+      w.pos = size_t(internal::write_double(w.ptr + w.pos, double(t)) - w.ptr);
+    }
   } else if constexpr (std::is_unsigned_v<number_type>) {
     if (!w.ensure(20)) return;
     char *end = internal::write_uint_jeaiii(
@@ -68160,7 +70094,7 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
   }
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_class_v<T> && !concepts::container_but_not_string<T> &&
            !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> &&
@@ -68170,7 +70104,7 @@ template <class T>
            !std::is_same_v<T, std::string_view> &&
            !std::is_same_v<T, const char*> &&
            !std::is_same_v<T, char> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
     // A transparent structure is serialized as its single member.
     constexpr auto dm = simdjson::detail::transparent_member(^^T);
@@ -68186,9 +70120,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
 }
 
 // Support for optional types (std::optional, etc.)
-template <concepts::optional_type T>
+template <class W, concepts::optional_type T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
+simdjson_really_inline constexpr void atom(W &w, const T &opt) {
   if (opt) {
     atom(w, opt.value());
   } else {
@@ -68199,9 +70133,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
 }
 
 // Support for smart pointers (std::unique_ptr, std::shared_ptr, etc.)
-template <concepts::smart_pointer T>
+template <class W, concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
+simdjson_really_inline constexpr void atom(W &w, const T &ptr) {
   if (ptr) {
     atom(w, *ptr);
   } else {
@@ -68212,9 +70146,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
 }
 
 // Support for enums - serialize as string representation using expand approach from P2996R12
-template <typename T>
+template <class W, typename T>
   requires(std::is_enum_v<T> && !require_custom_serialization<T>)
-simdjson_really_inline void atom(writer &w, const T &e) {
+simdjson_really_inline void atom(W &w, const T &e) {
 #if SIMDJSON_STATIC_REFLECTION
   static constexpr auto enumerators = std::define_static_array(std::meta::enumerators_of(^^T));
   template for (constexpr auto enum_val : enumerators) {
@@ -68236,12 +70170,12 @@ simdjson_really_inline void atom(writer &w, const T &e) {
 }
 
 // Support for appendable containers that don't have operator[] (sets, etc.)
-template <concepts::appendable_containers T>
+template <class W, concepts::appendable_containers T>
   requires(!concepts::container_but_not_string<T> && !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> && !concepts::smart_pointer<T> &&
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &container) {
+simdjson_really_inline constexpr void atom(W &w, const T &container) {
   if (container.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "[]", 2);
@@ -68261,6 +70195,150 @@ simdjson_really_inline constexpr void atom(writer &w, const T &container) {
   }
   if (!w.ensure(1)) return;
   w.ptr[w.pos++] = ']';
+}
+
+// =============================================================
+// Size bound: an upper bound on the number of bytes that atom(w, t) writes.
+// Computing it first lets append() reserve the capacity once and then run
+// the whole write chain through an unchecked_writer, without a capacity
+// check before every write. It mirrors the atom() overloads above.
+// =============================================================
+namespace bound_detail {
+
+// Whether size_bound covers everything that atom() writes for T: not when a
+// member is serialized by a with<Adapter> serializer, which writes an unknown
+// amount through the string_builder.
+template <class T>
+consteval bool is_bounded() {
+  if constexpr (require_custom_serialization<T>) {
+    return false;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *> || std::is_arithmetic_v<T> || std::is_enum_v<T>) {
+    return true;
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return is_bounded<std::remove_cvref_t<decltype(*std::declval<const T &>())>>();
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    return is_bounded<std::remove_cvref_t<typename T::mapped_type>>();
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    return is_bounded<std::remove_cvref_t<std::ranges::range_value_t<T>>>();
+  } else {
+    bool bounded = true;
+    template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+      if constexpr (annotation_detail::is_serialized_member(dm)) {
+        bounded = bounded && simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t) == std::meta::info{} &&
+                  is_bounded<std::remove_cvref_t<decltype(std::declval<const T &>().[:dm:])>>();
+      }
+    };
+    return bounded;
+  }
+}
+
+template <class T>
+consteval size_t enum_bound() {
+  size_t bound = 20; // the integer fallback
+  template for (constexpr auto enum_val : std::define_static_array(std::meta::enumerators_of(^^T))) {
+    constexpr size_t len = std::char_traits<char>::length(std::define_static_string(
+        constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<enum_val>())));
+    bound = (std::max)(bound, len);
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound(const T &t) noexcept;
+
+// Bound for the "key":value pairs of a structure, commas included.
+template <class T>
+simdjson_really_inline size_t fields_bound(const T &t) noexcept {
+  size_t bound = 0;
+  template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+    if constexpr (annotation_detail::is_serialized_member(dm)) {
+      if constexpr (simdjson::detail::has_annotation(dm, ^^simdjson::detail::flatten_tag)) {
+        bound += fields_bound(t.[:dm:]);
+      } else {
+        constexpr size_t rest_key_len = constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<dm>()).size() + 2;
+        bound += rest_key_len + size_bound(t.[:dm:]);
+      }
+    }
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound([[maybe_unused]] const T &t) noexcept {
+  if constexpr (std::is_same_v<T, char>) {
+    return 2 + 6;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *>) {
+    // Every byte may become \uXXXX, plus the quotes.
+    return 2 + 6 * std::string_view(t).size();
+  } else if constexpr (std::is_same_v<T, bool>) {
+    return 5;
+  } else if constexpr (std::is_floating_point_v<T>) {
+    return simdjson::internal::to_chars_buffer_size;
+  } else if constexpr (std::is_arithmetic_v<T>) {
+    return 20;
+  } else if constexpr (std::is_enum_v<T>) {
+    return enum_bound<T>();
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return t ? size_bound(*t) : 4;
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    size_t bound = 2;
+    for (const auto &[key, value] : t) {
+      // comma, quotes, colon
+      bound += 4 + 6 * std::string_view(key).size() + size_bound(value);
+    }
+    return bound;
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    using value_type = std::remove_cvref_t<std::ranges::range_value_t<T>>;
+    if constexpr (std::is_arithmetic_v<value_type> && !std::is_same_v<value_type, char>) {
+      // A fixed bound per element: no need to visit them.
+      return 2 + size_t(std::ranges::distance(t)) * (1 + size_bound(value_type{}));
+    } else {
+      size_t bound = 2;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC novector // a vector loop is slower on short containers
+#endif
+#pragma GCC unroll 4
+      for (const auto &item : t) {
+        bound += 1 + size_bound(item);
+      }
+      return bound;
+    }
+  } else if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
+    constexpr auto dm = simdjson::detail::transparent_member(^^T);
+    return size_bound(t.[:dm:]);
+  } else {
+    return 2 + fields_bound(t);
+  }
+}
+
+} // namespace bound_detail
+
+// Write t through an unchecked writer when its size bound is available,
+// reserving that many bytes first, and through the checked writer otherwise.
+template <class T>
+simdjson_really_inline void append_bounded(string_builder &b, const T &t) {
+  // On 32-bit systems, the bound could overflow: keep the checked writer.
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<T>()) {
+    const size_t bound = bound_detail::size_bound(t) + unchecked_slack;
+    const size_t pos = b.unsafe_position();
+    // The bound is a sum of in-memory sizes times a small constant: it cannot
+    // overflow on a 64-bit system. Be pedantic elsewhere.
+    if (sizeof(size_t) >= 8 || bound <= (std::numeric_limits<size_t>::max)() - pos) {
+      const size_t cap = b.unsafe_capacity();
+      // Grow geometrically so that many small appends stay amortized.
+      if (pos + bound <= cap || b.unsafe_grow((std::max)(cap * 2, pos + bound))) {
+        unchecked_writer w(b.unsafe_data(), pos);
+        atom(w, t);
+        b.unsafe_set_position(w.pos);
+      }
+      return;
+    }
+  }
+  writer w(b);
+  atom(w, t);
+  w.sync();
 }
 
 // append() -- top-level entry. Each overload constructs a stack-local
@@ -68288,17 +70366,13 @@ simdjson_inline void append(string_builder &b, const T &t) {
 template <concepts::optional_type T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::appendable_containers T>
@@ -68307,17 +70381,13 @@ template <concepts::appendable_containers T>
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 // works for struct
@@ -68332,18 +70402,14 @@ template <class Z>
            !std::is_same_v<Z, const char*> &&
            !std::is_same_v<Z, char> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 // works for container that have begin() and end() iterators
 template <class Z>
   requires(concepts::container_but_not_string<Z> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 template <class Z>
@@ -68354,22 +70420,38 @@ void append(string_builder &b, const Z &z) {
 
 
 template <class Z>
-simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<Z>()) {
+    // Write straight into s, sized by the bound: no intermediate buffer, no copy.
+    (void)initial_capacity;
+    const size_t bound = bound_detail::size_bound(z) + unchecked_slack;
+    auto write = [&z](char *p) noexcept {
+      unchecked_writer w(p, 0);
+      atom(w, z);
+      return w.pos;
+    };
+#if defined(__cpp_lib_string_resize_and_overwrite) && __cpp_lib_string_resize_and_overwrite >= 202110L
+    s.resize_and_overwrite(bound, [&write](char *p, size_t) noexcept { return write(p); });
+#else
+    s.resize(bound);
+    s.resize(write(s.data()));
+#endif
+    return SUCCESS;
+  } else {
+    string_builder b(initial_capacity);
+    append(b, z);
+    std::string_view view;
+    if(auto e = b.view().get(view); e) { return e; }
+    s.assign(view);
+    return SUCCESS;
+  }
 }
 
 template <class Z>
-simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  std::string s;
+  if(auto e = to_json(z, s, initial_capacity); e) { return e; }
+  return s;
 }
 
 template <class Z>
@@ -68429,25 +70511,18 @@ simdjson_warn_unused simdjson_result<std::string> extract_from(const T &obj, siz
   return std::string(s);
 }
 
+SIMDJSON_POP_DISABLE_WARNINGS
+
 } // namespace builder
 } // namespace lasx
 // Alias the function template to 'to' in the global namespace
 template <class Z>
 simdjson_warn_unused simdjson_result<std::string> to_json(const Z &z, size_t initial_capacity = lasx::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  lasx::builder::string_builder b(initial_capacity);
-  lasx::builder::append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+  return lasx::builder::to_json_string(z, initial_capacity);
 }
 template <class Z>
 simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = lasx::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  lasx::builder::string_builder b(initial_capacity);
-  lasx::builder::append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+  return lasx::builder::to_json(z, s, initial_capacity);
 }
 // Global namespace function for extract_from
 template<constevalutil::fixed_string... FieldNames, typename T>
@@ -68652,6 +70727,9 @@ simdjson_warn_unused simdjson_result<std::string> extract_fractured_json(
 #endif
 #if SIMDJSON_EXPERIMENTAL_HAS_SSE2
 #include <emmintrin.h>
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -69160,12 +71238,38 @@ simdjson_never_inline char *escape_block(const uint8_t *src, char *out,
 
 // Writes the escaped version of input to out, returning the number of bytes
 // written.
-inline size_t write_string_escaped(const std::string_view input, char *out) {
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out) {
   const size_t len = input.size();
   const uint8_t *src = reinterpret_cast<const uint8_t *>(input.data());
   const char *const initout = out;
 
   size_t i = 0;
+#if SIMDJSON_EXPERIMENTAL_HAS_SSE2 && defined(__AVX2__)
+  while (i + 32 <= len) {
+    const __m256i word = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(src + i));
+    const __m256i flags = _mm256_or_si256(
+        _mm256_or_si256(_mm256_cmpeq_epi8(word, _mm256_set1_epi8(34)),   // '"'
+                        _mm256_cmpeq_epi8(word, _mm256_set1_epi8(92))),  // '\\'
+        _mm256_cmpeq_epi8(_mm256_subs_epu8(word, _mm256_set1_epi8(31)),
+                          _mm256_setzero_si256()));                      // control
+    const uint32_t mask = uint32_t(_mm256_movemask_epi8(flags));
+    if (simdjson_likely(mask == 0)) {
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(out), word);
+      out += 32;
+    } else {
+      for (size_t half = 0; half < 32; half += 16) {
+        const uint64_t m = (mask >> half) & 0xFFFF;
+        if (m == 0) {
+          escape_store16(out, escape_load16(src + i + half));
+          out += 16;
+        } else {
+          out = escape_block(src, out, i + half, i + half + 16, m);
+        }
+      }
+    }
+    i += 32;
+  }
+#endif
   while (i + 16 <= len) {
     escape_vector word = escape_load16(src + i);
     escape_vector flags = escape_flags(word);
@@ -69337,96 +71441,135 @@ simdjson_inline void string_builder::clear() noexcept {
 
 namespace internal {
 
-static const char decimal_table[200] = {
-    0x30, 0x30, 0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35,
-    0x30, 0x36, 0x30, 0x37, 0x30, 0x38, 0x30, 0x39, 0x31, 0x30, 0x31, 0x31,
-    0x31, 0x32, 0x31, 0x33, 0x31, 0x34, 0x31, 0x35, 0x31, 0x36, 0x31, 0x37,
-    0x31, 0x38, 0x31, 0x39, 0x32, 0x30, 0x32, 0x31, 0x32, 0x32, 0x32, 0x33,
-    0x32, 0x34, 0x32, 0x35, 0x32, 0x36, 0x32, 0x37, 0x32, 0x38, 0x32, 0x39,
-    0x33, 0x30, 0x33, 0x31, 0x33, 0x32, 0x33, 0x33, 0x33, 0x34, 0x33, 0x35,
-    0x33, 0x36, 0x33, 0x37, 0x33, 0x38, 0x33, 0x39, 0x34, 0x30, 0x34, 0x31,
-    0x34, 0x32, 0x34, 0x33, 0x34, 0x34, 0x34, 0x35, 0x34, 0x36, 0x34, 0x37,
-    0x34, 0x38, 0x34, 0x39, 0x35, 0x30, 0x35, 0x31, 0x35, 0x32, 0x35, 0x33,
-    0x35, 0x34, 0x35, 0x35, 0x35, 0x36, 0x35, 0x37, 0x35, 0x38, 0x35, 0x39,
-    0x36, 0x30, 0x36, 0x31, 0x36, 0x32, 0x36, 0x33, 0x36, 0x34, 0x36, 0x35,
-    0x36, 0x36, 0x36, 0x37, 0x36, 0x38, 0x36, 0x39, 0x37, 0x30, 0x37, 0x31,
-    0x37, 0x32, 0x37, 0x33, 0x37, 0x34, 0x37, 0x35, 0x37, 0x36, 0x37, 0x37,
-    0x37, 0x38, 0x37, 0x39, 0x38, 0x30, 0x38, 0x31, 0x38, 0x32, 0x38, 0x33,
-    0x38, 0x34, 0x38, 0x35, 0x38, 0x36, 0x38, 0x37, 0x38, 0x38, 0x38, 0x39,
-    0x39, 0x30, 0x39, 0x31, 0x39, 0x32, 0x39, 0x33, 0x39, 0x34, 0x39, 0x35,
-    0x39, 0x36, 0x39, 0x37, 0x39, 0x38, 0x39, 0x39,
-};
+// Integer to decimal: James Edward Anhalt III's algorithm
+static const char jeaiii_dd[201] =
+    "00010203040506070809101112131415161718192021222324252627282930313233343536373839"
+    "40414243444546474849505152535455565758596061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+static const char jeaiii_fd[201] =
+    "0\0" "1\0" "2\0" "3\0" "4\0" "5\0" "6\0" "7\0" "8\0" "9\0"
+    "10111213141516171819202122232425262728293031323334353637383940414243444546474849"
+    "50515253545556575859606162636465666768697071727374757677787980818283848586878889"
+    "90919293949596979899";
 
-// Forward unsigned-int writer (cascade-on-magnitude, no upfront digit_count).
-// Built from a non-recursive DAG of always_inline helpers -- gcc and MSVC
-// refuse to inline recursive `always_inline`/`__forceinline` functions.
-// Caller must guarantee at least 20 bytes available at p. All helpers
-// return pointer past the last digit written.
-
-// Caller guarantees v < 100. Writes 1-2 digits.
-simdjson_really_inline char* write_lt100(char* p, uint64_t v) noexcept {
-  if (v < 10) { *p++ = char('0' + v); return p; }
-  std::memcpy(p, &decimal_table[v * 2], 2);
-  return p + 2;
+simdjson_really_inline void jeaiii_write_dd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_dd[2 * k], 2);
+}
+simdjson_really_inline void jeaiii_write_fd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_fd[2 * k], 2);
 }
 
-// Caller guarantees v < 10000. Writes 1-4 digits.
-simdjson_really_inline char* write_lt10000(char* p, uint64_t v) noexcept {
-  if (v < 100) return write_lt100(p, v);
-  uint64_t hi = v / 100, lo = v % 100;
-  if (v < 1000) {
-    *p++ = char('0' + hi);
+// Caller guarantees n < 10^8. Writes 1 to 8 digits.
+simdjson_really_inline char *jeaiii_lt1e8(char *b, uint32_t n) noexcept {
+  constexpr uint64_t mask24 = (uint64_t(1) << 24) - 1;
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  if (n < 100) {
+    jeaiii_write_fd(b, n);
+    return n < 10 ? b + 1 : b + 2;
+  }
+  if (n < 1000000) {
+    if (n < 10000) {
+      const uint32_t f0 = uint32_t(10 * (1 << 24) / 1e3 + 1) * n;
+      jeaiii_write_fd(b, f0 >> 24);
+      b -= n < 1000;
+      const uint32_t f2 = uint32_t(f0 & mask24) * 100;
+      jeaiii_write_dd(b + 2, f2 >> 24);
+      return b + 4;
+    }
+    const uint64_t f0 = uint64_t(10 * (1ull << 32) / 1e5 + 1) * n;
+    jeaiii_write_fd(b, f0 >> 32);
+    b -= n < 100000;
+    const uint64_t f2 = (f0 & mask32) * 100;
+    jeaiii_write_dd(b + 2, f2 >> 32);
+    const uint64_t f4 = (f2 & mask32) * 100;
+    jeaiii_write_dd(b + 4, f4 >> 32);
+    return b + 6;
+  }
+  const uint64_t f0 = uint64_t(10 * (1ull << 48) / 1e7 + 1) * n >> 16;
+  jeaiii_write_fd(b, f0 >> 32);
+  b -= n < 10000000;
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees z < 10^8. Always writes exactly 8 digits.
+simdjson_really_inline char *jeaiii_8_digits(char *b, uint32_t z) noexcept {
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  const uint64_t f0 = (uint64_t((1ull << 48) / 1e6 + 1) * z >> 16) + 1;
+  jeaiii_write_dd(b, f0 >> 32);
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees 10^8 <= n < 2^32. Writes 9 or 10 digits.
+simdjson_really_inline char *jeaiii_9_or_10(char *b, uint64_t n) noexcept {
+  constexpr uint64_t mask57 = (uint64_t(1) << 57) - 1;
+  const uint64_t f0 = uint64_t(10 * (1ull << 57) / 1e9 + 1) * n;
+  jeaiii_write_fd(b, f0 >> 57);
+  b -= n < 1000000000;
+  const uint64_t f2 = (f0 & mask57) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 57);
+  const uint64_t f4 = (f2 & mask57) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 57);
+  const uint64_t f6 = (f4 & mask57) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 57);
+  const uint64_t f8 = (f6 & mask57) * 100;
+  jeaiii_write_dd(b + 8, f8 >> 57);
+  return b + 10;
+}
+
+simdjson_really_inline char *write_uint_jeaiii(char *b, uint64_t n) noexcept {
+  if (n < 100000000) {
+    return jeaiii_lt1e8(b, uint32_t(n));
+  }
+  if (n < (uint64_t(1) << 32)) {
+    return jeaiii_9_or_10(b, n);
+  }
+  // At least 10 digits: the low 8 digits, and 2 to 12 digits above them.
+  const uint32_t z = uint32_t(n % 100000000);
+  uint64_t u = n / 100000000;
+  if (u < 100000000) {
+    // u has 2 to 8 digits (if u < 10, n would be below 2^32).
+    b = jeaiii_lt1e8(b, uint32_t(u));
+  } else if (u < (uint64_t(1) << 32)) {
+    b = jeaiii_9_or_10(b, u);
   } else {
-    std::memcpy(p, &decimal_table[hi * 2], 2);
-    p += 2;
+    // u has 11 or 12 digits: split off 8 more.
+    const uint32_t y = uint32_t(u % 100000000);
+    u /= 100000000;
+    b = jeaiii_lt1e8(b, uint32_t(u)); // 3 or 4 digits
+    b = jeaiii_8_digits(b, y);
   }
-  std::memcpy(p, &decimal_table[lo * 2], 2);
-  return p + 2;
+  return jeaiii_8_digits(b, z);
 }
 
-// Caller guarantees v < 10000. Always writes exactly 4 digits.
-simdjson_really_inline void write_4_digits(char* p, uint64_t v) noexcept {
-  uint64_t hi = v / 100, lo = v % 100;
-  std::memcpy(p,     &decimal_table[hi * 2], 2);
-  std::memcpy(p + 2, &decimal_table[lo * 2], 2);
-}
-
-// Caller guarantees v < 10^8. Writes 1-8 digits.
-simdjson_really_inline char* write_lt1e8(char* p, uint64_t v) noexcept {
-  if (v < 10000) return write_lt10000(p, v);
-  uint64_t hi = v / 10000, lo = v % 10000;
-  p = write_lt10000(p, hi);
-  write_4_digits(p, lo);
-  return p + 4;
-}
-
-simdjson_really_inline char* write_uint_jeaiii(char* p, uint64_t v) noexcept {
-  if (v < 10000ULL) return write_lt10000(p, v);
-  if (v < 100000000ULL) {                   // 5-8 digits
-    uint64_t hi = v / 10000, lo = v % 10000;
-    p = write_lt10000(p, hi);
-    write_4_digits(p, lo);
-    return p + 4;
-  }
-  if (v < 10000000000000000ULL) {           // 9-16 digits
-    uint64_t hi = v / 100000000ULL, lo = v % 100000000ULL;
-    p = write_lt1e8(p, hi);
-    uint64_t lo_hi = lo / 10000, lo_lo = lo % 10000;
-    write_4_digits(p,     lo_hi);
-    write_4_digits(p + 4, lo_lo);
+// Writes v at p, which must have to_chars_buffer_size bytes available, and
+// returns the end of what was written.
+simdjson_inline char *write_double(char *p, double v) noexcept {
+#if SIMDJSON_ENABLE_NAN_INF
+  if (simdjson_unlikely(!std::isfinite(v))) {
+    if (std::isnan(v)) {
+      std::memcpy(p, "NaN", 3);
+      return p + 3;
+    }
+    if (v < 0) {
+      *p++ = '-';
+    }
+    std::memcpy(p, "Infinity", 8);
     return p + 8;
   }
-  // 17-20 digits
-  uint64_t hi = v / 10000000000000000ULL, lo = v % 10000000000000000ULL;
-  p = write_lt10000(p, hi);
-  uint64_t lo_a = lo / 100000000ULL, lo_b = lo % 100000000ULL;
-  uint64_t lo_a_hi = lo_a / 10000, lo_a_lo = lo_a % 10000;
-  uint64_t lo_b_hi = lo_b / 10000, lo_b_lo = lo_b % 10000;
-  write_4_digits(p,      lo_a_hi);
-  write_4_digits(p + 4,  lo_a_lo);
-  write_4_digits(p + 8,  lo_b_hi);
-  write_4_digits(p + 12, lo_b_lo);
-  return p + 16;
+#endif
+  return simdjson::internal::to_chars(p, nullptr, v);
 }
 } // namespace internal
 
@@ -70838,8 +72981,15 @@ namespace builder {
 // name lookup falls back to the wrong outer namespace).
 namespace internal {
 simdjson_really_inline char *write_uint_jeaiii(char *p, uint64_t v) noexcept;
+simdjson_inline char *write_double(char *p, double v) noexcept;
 } // namespace internal
-inline size_t write_string_escaped(const std::string_view input, char *out);
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out);
+
+SIMDJSON_PUSH_DISABLE_WARNINGS
+SIMDJSON_DISABLE_GCC_WARNING(-Warray-bounds)
+#if !defined(__clang__)
+SIMDJSON_DISABLE_GCC_WARNING(-Wstringop-overflow)
+#endif
 
 // =============================================================
 // `writer`: position-as-local hot-path writer used by the reflection
@@ -70852,8 +73002,14 @@ inline size_t write_string_escaped(const std::string_view input, char *out);
 // breaks the strict-aliasing penalty on every char* write through the
 // buffer, which forces a reload of `b.position` and `b.capacity`
 // after every byte.
+//
+// basic_writer<false> (below) is the unchecked variant: the caller has
+// already reserved enough capacity for everything the write chain can
+// produce (see bound_detail::size_bound), so ensure() compiles away.
 // =============================================================
-struct writer {
+template <bool Checked>
+struct basic_writer {
+  static constexpr bool checked = Checked;
   char *ptr;        // buffer pointer (refreshed after a grow)
   size_t pos;       // write position (local)
   size_t cap;       // capacity (refreshed after a grow)
@@ -70861,7 +73017,7 @@ struct writer {
 
   // Snapshot string_builder state into a writer for the duration of
   // a write chain.
-  simdjson_really_inline writer(string_builder &builder) noexcept
+  simdjson_really_inline basic_writer(string_builder &builder) noexcept
       : ptr(builder.unsafe_data())
       , pos(builder.unsafe_position())
       , cap(builder.unsafe_capacity())
@@ -70887,9 +73043,7 @@ struct writer {
     return grow_slow(n);
   }
 
-  // Slow path of ensure(). Out-of-line via simdjson_inline (not
-  // simdjson_really_inline) to keep the hot path short.
-  simdjson_inline bool grow_slow(size_t n) noexcept {
+  simdjson_never_inline bool grow_slow(size_t n) noexcept {
     // Detect overflow.
     // This is pedantic except maybe on 32-bit targets.
     if (simdjson_unlikely(pos + n < pos)) return false;
@@ -70912,14 +73066,40 @@ struct writer {
   }
 };
 
+// The unchecked writer writes into a raw buffer that the caller sized with
+// serialized_size_bound: it never grows and needs no string_builder.
+template <>
+struct basic_writer<false> {
+  static constexpr bool checked = false;
+  char *ptr;
+  size_t pos;
+
+  simdjson_really_inline basic_writer(char *buffer, size_t position) noexcept
+      : ptr(buffer), pos(position) {}
+
+  simdjson_really_inline bool ensure(size_t) const noexcept { return true; }
+};
+
+using writer = basic_writer<true>;
+using unchecked_writer = basic_writer<false>;
+
+// Bytes reserved past the size bound for an unchecked writer: it may then
+// write a little past the end of what it produces (e.g., copy keys as whole
+// 16-byte blocks).
+inline constexpr size_t unchecked_slack = 64;
+
+consteval size_t padded_key_length(size_t length) {
+  return (length + 15) / 16 * 16;
+}
+
 // === Helper: invoke a string_builder member that writes variable-length
 // content (escape_and_append_with_quotes etc), syncing the writer's local
 // state before the call and reloading after. Used for string fields where
 // rewriting the entire SIMD escape path through the writer would be a much
 // bigger refactor. f may be user code (a with<Adapter> serializer) that
 // throws: the exception then propagates to the caller.
-template <class F>
-simdjson_really_inline void call_through_string_builder(writer &w, F &&f) noexcept(noexcept(f(w.sb))) {
+template <class W, class F>
+simdjson_really_inline void call_through_string_builder(W &w, F &&f) noexcept(noexcept(f(w.sb))) {
   w.sync();
   f(w.sb);
   w.ptr = w.sb.unsafe_data();
@@ -70953,8 +73133,8 @@ simdjson_really_inline bool should_serialize(const V &value) {
 
 // Serialize a member value, through its with<Adapter> annotation when the
 // adapter provides a serialize function.
-template <auto dm, typename V>
-simdjson_really_inline void atom_member(writer &w, const V &value) {
+template <auto dm, class W, typename V>
+simdjson_really_inline void atom_member(W &w, const V &value) {
   constexpr std::meta::info with_type = simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t);
   if constexpr (with_type != std::meta::info{}) {
     using adapter = typename [: with_type :]::adapter;
@@ -70971,8 +73151,8 @@ simdjson_really_inline void atom_member(writer &w, const V &value) {
 // Write the "key":value pairs of the members of t (without the braces), each
 // preceded by a comma unless it is the first one. The members of a member
 // annotated with flatten are written in its place.
-template <class T>
-simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
+template <class W, class T>
+simdjson_really_inline void atom_fields(W &w, const T &t, bool &first) {
   // Per-field block: ensure key+value worst case, then write key + value
   // through the writer's local pos. For arithmetic fields, the integer
   // write happens directly via write_uint_jeaiii on w.ptr+w.pos, so pos
@@ -70990,19 +73170,24 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
                         "simdjson::flatten requires a member whose type is a structure serialized member by member");
           atom_fields(w, t.[:dm:], first);
         } else {
+          // Copy the key as whole 16-byte blocks from a zero-padded copy (one
+          // load and one store); ensure() reserves the padded length, and the
+          // unchecked writer has slack past its bound.
           constexpr const char* key_name = simdjson::get_json_key_name<dm>();
+          constexpr size_t first_key_len = constevalutil::consteval_to_quoted_escaped(key_name).size() + 1;
+          constexpr size_t rest_key_len = first_key_len + 1;
           constexpr auto first_key = std::define_static_string(
-              constevalutil::consteval_to_quoted_escaped(key_name) + ":");
+              constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(first_key_len) - first_key_len, '\0'));
           constexpr auto rest_key = std::define_static_string(
-              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":");
-          constexpr size_t first_key_len = std::char_traits<char>::length(first_key);
-          constexpr size_t rest_key_len = std::char_traits<char>::length(rest_key);
-          if (!w.ensure(rest_key_len)) { return; }
+              std::string(",") + constevalutil::consteval_to_quoted_escaped(key_name) + ":" +
+              std::string(padded_key_length(rest_key_len) - rest_key_len, '\0'));
+          if (!w.ensure(padded_key_length(rest_key_len))) { return; }
           if (first) {
-            std::memcpy(w.ptr + w.pos, first_key, first_key_len);
+            std::memcpy(w.ptr + w.pos, first_key, padded_key_length(first_key_len));
             w.pos += first_key_len;
           } else {
-            std::memcpy(w.ptr + w.pos, rest_key, rest_key_len);
+            std::memcpy(w.ptr + w.pos, rest_key, padded_key_length(rest_key_len));
             w.pos += rest_key_len;
           }
           first = false;
@@ -71015,9 +73200,9 @@ simdjson_really_inline void atom_fields(writer &w, const T &t, bool &first) {
 
 } // namespace annotation_detail
 
-template <class T>
+template <class W, class T>
   requires(concepts::container_but_not_string<T> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   auto it = t.begin();
   auto end = t.end();
   if (it == end) {
@@ -71039,12 +73224,12 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   w.ptr[w.pos++] = ']';
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_same_v<T, std::string> ||
            std::is_same_v<T, std::string_view> ||
            std::is_same_v<T, const char *> ||
            std::is_same_v<T, char>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   // Inline the escape path through the writer so we never round-trip
   // pos through memory for string fields (Twitter is dominated by
   // these -- sync/reload around each string was a real cost).
@@ -71060,16 +73245,18 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
   // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
   // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
   // Note that this is pedantic except maybe on 32-bit targets.
-  if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-  if (!w.ensure(2 + 6 * input.size())) { return; }
+  if constexpr (W::checked) {
+    if (simdjson_unlikely(input.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+    if (!w.ensure(2 + 6 * input.size())) { return; }
+  }
   w.ptr[w.pos++] = '"';
   w.pos += write_string_escaped(input, w.ptr + w.pos);
   w.ptr[w.pos++] = '"';
 }
 
-template <concepts::string_view_keyed_map T>
+template <class W, concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &m) {
+simdjson_really_inline constexpr void atom(W &w, const T &m) {
   if (m.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "{}", 2);
@@ -71092,8 +73279,10 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
     // subsequent escape would overflow the buffer. max - w.pos cannot wrap, and
     // size < (max - pos) / 6 implies pos + 6 * size + 6 <= max.
     // Note that this is pedantic except maybe on 32-bit targets.
-    if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
-    if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    if constexpr (W::checked) {
+      if (simdjson_unlikely(key_sv.size() >= ((std::numeric_limits<size_t>::max)() - w.pos) / 6)) { return; }
+      if (!w.ensure(2 + 6 * key_sv.size() + 1)) { return; }
+    }
     w.ptr[w.pos++] = '"';
     w.pos += write_string_escaped(key_sv, w.ptr + w.pos);
     w.ptr[w.pos++] = '"';
@@ -71105,9 +73294,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &m) {
 }
 
 
-template<typename number_type,
+template<class W, typename number_type,
          typename = typename std::enable_if<std::is_arithmetic<number_type>::value && !std::is_same_v<number_type, char>>::type>
-simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
+simdjson_really_inline constexpr void atom(W &w, const number_type t) {
   // Booleans / floats: defer to string_builder (rare path; keeps writer hot
   // path free of float-formatter machinery). For integers, write directly
   // via jeaiii using local pos.
@@ -71122,7 +73311,11 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
       w.pos += 5;
     }
   } else if constexpr (std::is_floating_point_v<number_type>) {
-    call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    if constexpr (W::checked) {
+      call_through_string_builder(w, [&](string_builder &b) { b.append(t); });
+    } else {
+      w.pos = size_t(internal::write_double(w.ptr + w.pos, double(t)) - w.ptr);
+    }
   } else if constexpr (std::is_unsigned_v<number_type>) {
     if (!w.ensure(20)) return;
     char *end = internal::write_uint_jeaiii(
@@ -71142,7 +73335,7 @@ simdjson_really_inline constexpr void atom(writer &w, const number_type t) {
   }
 }
 
-template <class T>
+template <class W, class T>
   requires(std::is_class_v<T> && !concepts::container_but_not_string<T> &&
            !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> &&
@@ -71152,7 +73345,7 @@ template <class T>
            !std::is_same_v<T, std::string_view> &&
            !std::is_same_v<T, const char*> &&
            !std::is_same_v<T, char> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &t) {
+simdjson_really_inline constexpr void atom(W &w, const T &t) {
   if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
     // A transparent structure is serialized as its single member.
     constexpr auto dm = simdjson::detail::transparent_member(^^T);
@@ -71168,9 +73361,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &t) {
 }
 
 // Support for optional types (std::optional, etc.)
-template <concepts::optional_type T>
+template <class W, concepts::optional_type T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
+simdjson_really_inline constexpr void atom(W &w, const T &opt) {
   if (opt) {
     atom(w, opt.value());
   } else {
@@ -71181,9 +73374,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &opt) {
 }
 
 // Support for smart pointers (std::unique_ptr, std::shared_ptr, etc.)
-template <concepts::smart_pointer T>
+template <class W, concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
+simdjson_really_inline constexpr void atom(W &w, const T &ptr) {
   if (ptr) {
     atom(w, *ptr);
   } else {
@@ -71194,9 +73387,9 @@ simdjson_really_inline constexpr void atom(writer &w, const T &ptr) {
 }
 
 // Support for enums - serialize as string representation using expand approach from P2996R12
-template <typename T>
+template <class W, typename T>
   requires(std::is_enum_v<T> && !require_custom_serialization<T>)
-simdjson_really_inline void atom(writer &w, const T &e) {
+simdjson_really_inline void atom(W &w, const T &e) {
 #if SIMDJSON_STATIC_REFLECTION
   static constexpr auto enumerators = std::define_static_array(std::meta::enumerators_of(^^T));
   template for (constexpr auto enum_val : enumerators) {
@@ -71218,12 +73411,12 @@ simdjson_really_inline void atom(writer &w, const T &e) {
 }
 
 // Support for appendable containers that don't have operator[] (sets, etc.)
-template <concepts::appendable_containers T>
+template <class W, concepts::appendable_containers T>
   requires(!concepts::container_but_not_string<T> && !concepts::string_view_keyed_map<T> &&
            !concepts::optional_type<T> && !concepts::smart_pointer<T> &&
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
-simdjson_really_inline constexpr void atom(writer &w, const T &container) {
+simdjson_really_inline constexpr void atom(W &w, const T &container) {
   if (container.empty()) {
     if (!w.ensure(2)) return;
     std::memcpy(w.ptr + w.pos, "[]", 2);
@@ -71243,6 +73436,150 @@ simdjson_really_inline constexpr void atom(writer &w, const T &container) {
   }
   if (!w.ensure(1)) return;
   w.ptr[w.pos++] = ']';
+}
+
+// =============================================================
+// Size bound: an upper bound on the number of bytes that atom(w, t) writes.
+// Computing it first lets append() reserve the capacity once and then run
+// the whole write chain through an unchecked_writer, without a capacity
+// check before every write. It mirrors the atom() overloads above.
+// =============================================================
+namespace bound_detail {
+
+// Whether size_bound covers everything that atom() writes for T: not when a
+// member is serialized by a with<Adapter> serializer, which writes an unknown
+// amount through the string_builder.
+template <class T>
+consteval bool is_bounded() {
+  if constexpr (require_custom_serialization<T>) {
+    return false;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *> || std::is_arithmetic_v<T> || std::is_enum_v<T>) {
+    return true;
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return is_bounded<std::remove_cvref_t<decltype(*std::declval<const T &>())>>();
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    return is_bounded<std::remove_cvref_t<typename T::mapped_type>>();
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    return is_bounded<std::remove_cvref_t<std::ranges::range_value_t<T>>>();
+  } else {
+    bool bounded = true;
+    template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+      if constexpr (annotation_detail::is_serialized_member(dm)) {
+        bounded = bounded && simdjson::detail::annotation_of_template(dm, ^^simdjson::detail::with_t) == std::meta::info{} &&
+                  is_bounded<std::remove_cvref_t<decltype(std::declval<const T &>().[:dm:])>>();
+      }
+    };
+    return bounded;
+  }
+}
+
+template <class T>
+consteval size_t enum_bound() {
+  size_t bound = 20; // the integer fallback
+  template for (constexpr auto enum_val : std::define_static_array(std::meta::enumerators_of(^^T))) {
+    constexpr size_t len = std::char_traits<char>::length(std::define_static_string(
+        constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<enum_val>())));
+    bound = (std::max)(bound, len);
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound(const T &t) noexcept;
+
+// Bound for the "key":value pairs of a structure, commas included.
+template <class T>
+simdjson_really_inline size_t fields_bound(const T &t) noexcept {
+  size_t bound = 0;
+  template for (constexpr auto dm : std::define_static_array(std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))) {
+    if constexpr (annotation_detail::is_serialized_member(dm)) {
+      if constexpr (simdjson::detail::has_annotation(dm, ^^simdjson::detail::flatten_tag)) {
+        bound += fields_bound(t.[:dm:]);
+      } else {
+        constexpr size_t rest_key_len = constevalutil::consteval_to_quoted_escaped(simdjson::get_json_key_name<dm>()).size() + 2;
+        bound += rest_key_len + size_bound(t.[:dm:]);
+      }
+    }
+  };
+  return bound;
+}
+
+template <class T>
+simdjson_really_inline size_t size_bound([[maybe_unused]] const T &t) noexcept {
+  if constexpr (std::is_same_v<T, char>) {
+    return 2 + 6;
+  } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+                       std::is_same_v<T, const char *>) {
+    // Every byte may become \uXXXX, plus the quotes.
+    return 2 + 6 * std::string_view(t).size();
+  } else if constexpr (std::is_same_v<T, bool>) {
+    return 5;
+  } else if constexpr (std::is_floating_point_v<T>) {
+    return simdjson::internal::to_chars_buffer_size;
+  } else if constexpr (std::is_arithmetic_v<T>) {
+    return 20;
+  } else if constexpr (std::is_enum_v<T>) {
+    return enum_bound<T>();
+  } else if constexpr (concepts::optional_type<T> || concepts::smart_pointer<T>) {
+    return t ? size_bound(*t) : 4;
+  } else if constexpr (concepts::string_view_keyed_map<T>) {
+    size_t bound = 2;
+    for (const auto &[key, value] : t) {
+      // comma, quotes, colon
+      bound += 4 + 6 * std::string_view(key).size() + size_bound(value);
+    }
+    return bound;
+  } else if constexpr (concepts::container_but_not_string<T> || concepts::appendable_containers<T>) {
+    using value_type = std::remove_cvref_t<std::ranges::range_value_t<T>>;
+    if constexpr (std::is_arithmetic_v<value_type> && !std::is_same_v<value_type, char>) {
+      // A fixed bound per element: no need to visit them.
+      return 2 + size_t(std::ranges::distance(t)) * (1 + size_bound(value_type{}));
+    } else {
+      size_t bound = 2;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC novector // a vector loop is slower on short containers
+#endif
+#pragma GCC unroll 4
+      for (const auto &item : t) {
+        bound += 1 + size_bound(item);
+      }
+      return bound;
+    }
+  } else if constexpr (simdjson::detail::has_annotation(^^T, ^^simdjson::detail::transparent_tag)) {
+    constexpr auto dm = simdjson::detail::transparent_member(^^T);
+    return size_bound(t.[:dm:]);
+  } else {
+    return 2 + fields_bound(t);
+  }
+}
+
+} // namespace bound_detail
+
+// Write t through an unchecked writer when its size bound is available,
+// reserving that many bytes first, and through the checked writer otherwise.
+template <class T>
+simdjson_really_inline void append_bounded(string_builder &b, const T &t) {
+  // On 32-bit systems, the bound could overflow: keep the checked writer.
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<T>()) {
+    const size_t bound = bound_detail::size_bound(t) + unchecked_slack;
+    const size_t pos = b.unsafe_position();
+    // The bound is a sum of in-memory sizes times a small constant: it cannot
+    // overflow on a 64-bit system. Be pedantic elsewhere.
+    if (sizeof(size_t) >= 8 || bound <= (std::numeric_limits<size_t>::max)() - pos) {
+      const size_t cap = b.unsafe_capacity();
+      // Grow geometrically so that many small appends stay amortized.
+      if (pos + bound <= cap || b.unsafe_grow((std::max)(cap * 2, pos + bound))) {
+        unchecked_writer w(b.unsafe_data(), pos);
+        atom(w, t);
+        b.unsafe_set_position(w.pos);
+      }
+      return;
+    }
+  }
+  writer w(b);
+  atom(w, t);
+  w.sync();
 }
 
 // append() -- top-level entry. Each overload constructs a stack-local
@@ -71270,17 +73607,13 @@ simdjson_inline void append(string_builder &b, const T &t) {
 template <concepts::optional_type T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::smart_pointer T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::appendable_containers T>
@@ -71289,17 +73622,13 @@ template <concepts::appendable_containers T>
            !std::is_same_v<T, std::string> &&
            !std::is_same_v<T, std::string_view> && !std::is_same_v<T, const char*> && !require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 template <concepts::string_view_keyed_map T>
   requires(!require_custom_serialization<T>)
 simdjson_inline void append(string_builder &b, const T &t) {
-  writer w(b);
-  atom(w, t);
-  w.sync();
+  append_bounded(b, t);
 }
 
 // works for struct
@@ -71314,18 +73643,14 @@ template <class Z>
            !std::is_same_v<Z, const char*> &&
            !std::is_same_v<Z, char> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 // works for container that have begin() and end() iterators
 template <class Z>
   requires(concepts::container_but_not_string<Z> && !require_custom_serialization<Z>)
 simdjson_inline void append(string_builder &b, const Z &z) {
-  writer w(b);
-  atom(w, z);
-  w.sync();
+  append_bounded(b, z);
 }
 
 template <class Z>
@@ -71336,22 +73661,38 @@ void append(string_builder &b, const Z &z) {
 
 
 template <class Z>
-simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  if constexpr (sizeof(size_t) >= 8 && bound_detail::is_bounded<Z>()) {
+    // Write straight into s, sized by the bound: no intermediate buffer, no copy.
+    (void)initial_capacity;
+    const size_t bound = bound_detail::size_bound(z) + unchecked_slack;
+    auto write = [&z](char *p) noexcept {
+      unchecked_writer w(p, 0);
+      atom(w, z);
+      return w.pos;
+    };
+#if defined(__cpp_lib_string_resize_and_overwrite) && __cpp_lib_string_resize_and_overwrite >= 202110L
+    s.resize_and_overwrite(bound, [&write](char *p, size_t) noexcept { return write(p); });
+#else
+    s.resize(bound);
+    s.resize(write(s.data()));
+#endif
+    return SUCCESS;
+  } else {
+    string_builder b(initial_capacity);
+    append(b, z);
+    std::string_view view;
+    if(auto e = b.view().get(view); e) { return e; }
+    s.assign(view);
+    return SUCCESS;
+  }
 }
 
 template <class Z>
-simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
-  string_builder b(initial_capacity);
-  append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+simdjson_warn_unused simdjson_result<std::string> to_json_string(const Z &z, size_t initial_capacity = string_builder::DEFAULT_INITIAL_CAPACITY) {
+  std::string s;
+  if(auto e = to_json(z, s, initial_capacity); e) { return e; }
+  return s;
 }
 
 template <class Z>
@@ -71411,25 +73752,18 @@ simdjson_warn_unused simdjson_result<std::string> extract_from(const T &obj, siz
   return std::string(s);
 }
 
+SIMDJSON_POP_DISABLE_WARNINGS
+
 } // namespace builder
 } // namespace rvv_vls
 // Alias the function template to 'to' in the global namespace
 template <class Z>
 simdjson_warn_unused simdjson_result<std::string> to_json(const Z &z, size_t initial_capacity = rvv_vls::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  rvv_vls::builder::string_builder b(initial_capacity);
-  rvv_vls::builder::append(b, z);
-  std::string_view s;
-  if(auto e = b.view().get(s); e) { return e; }
-  return std::string(s);
+  return rvv_vls::builder::to_json_string(z, initial_capacity);
 }
 template <class Z>
 simdjson_warn_unused error_code to_json(const Z &z, std::string &s, size_t initial_capacity = rvv_vls::builder::string_builder::DEFAULT_INITIAL_CAPACITY) {
-  rvv_vls::builder::string_builder b(initial_capacity);
-  rvv_vls::builder::append(b, z);
-  std::string_view view;
-  if(auto e = b.view().get(view); e) { return e; }
-  s.assign(view);
-  return SUCCESS;
+  return rvv_vls::builder::to_json(z, s, initial_capacity);
 }
 // Global namespace function for extract_from
 template<constevalutil::fixed_string... FieldNames, typename T>
@@ -71634,6 +73968,9 @@ simdjson_warn_unused simdjson_result<std::string> extract_fractured_json(
 #endif
 #if SIMDJSON_EXPERIMENTAL_HAS_SSE2
 #include <emmintrin.h>
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -72142,12 +74479,38 @@ simdjson_never_inline char *escape_block(const uint8_t *src, char *out,
 
 // Writes the escaped version of input to out, returning the number of bytes
 // written.
-inline size_t write_string_escaped(const std::string_view input, char *out) {
+simdjson_really_inline size_t write_string_escaped(const std::string_view input, char *out) {
   const size_t len = input.size();
   const uint8_t *src = reinterpret_cast<const uint8_t *>(input.data());
   const char *const initout = out;
 
   size_t i = 0;
+#if SIMDJSON_EXPERIMENTAL_HAS_SSE2 && defined(__AVX2__)
+  while (i + 32 <= len) {
+    const __m256i word = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(src + i));
+    const __m256i flags = _mm256_or_si256(
+        _mm256_or_si256(_mm256_cmpeq_epi8(word, _mm256_set1_epi8(34)),   // '"'
+                        _mm256_cmpeq_epi8(word, _mm256_set1_epi8(92))),  // '\\'
+        _mm256_cmpeq_epi8(_mm256_subs_epu8(word, _mm256_set1_epi8(31)),
+                          _mm256_setzero_si256()));                      // control
+    const uint32_t mask = uint32_t(_mm256_movemask_epi8(flags));
+    if (simdjson_likely(mask == 0)) {
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(out), word);
+      out += 32;
+    } else {
+      for (size_t half = 0; half < 32; half += 16) {
+        const uint64_t m = (mask >> half) & 0xFFFF;
+        if (m == 0) {
+          escape_store16(out, escape_load16(src + i + half));
+          out += 16;
+        } else {
+          out = escape_block(src, out, i + half, i + half + 16, m);
+        }
+      }
+    }
+    i += 32;
+  }
+#endif
   while (i + 16 <= len) {
     escape_vector word = escape_load16(src + i);
     escape_vector flags = escape_flags(word);
@@ -72319,96 +74682,135 @@ simdjson_inline void string_builder::clear() noexcept {
 
 namespace internal {
 
-static const char decimal_table[200] = {
-    0x30, 0x30, 0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35,
-    0x30, 0x36, 0x30, 0x37, 0x30, 0x38, 0x30, 0x39, 0x31, 0x30, 0x31, 0x31,
-    0x31, 0x32, 0x31, 0x33, 0x31, 0x34, 0x31, 0x35, 0x31, 0x36, 0x31, 0x37,
-    0x31, 0x38, 0x31, 0x39, 0x32, 0x30, 0x32, 0x31, 0x32, 0x32, 0x32, 0x33,
-    0x32, 0x34, 0x32, 0x35, 0x32, 0x36, 0x32, 0x37, 0x32, 0x38, 0x32, 0x39,
-    0x33, 0x30, 0x33, 0x31, 0x33, 0x32, 0x33, 0x33, 0x33, 0x34, 0x33, 0x35,
-    0x33, 0x36, 0x33, 0x37, 0x33, 0x38, 0x33, 0x39, 0x34, 0x30, 0x34, 0x31,
-    0x34, 0x32, 0x34, 0x33, 0x34, 0x34, 0x34, 0x35, 0x34, 0x36, 0x34, 0x37,
-    0x34, 0x38, 0x34, 0x39, 0x35, 0x30, 0x35, 0x31, 0x35, 0x32, 0x35, 0x33,
-    0x35, 0x34, 0x35, 0x35, 0x35, 0x36, 0x35, 0x37, 0x35, 0x38, 0x35, 0x39,
-    0x36, 0x30, 0x36, 0x31, 0x36, 0x32, 0x36, 0x33, 0x36, 0x34, 0x36, 0x35,
-    0x36, 0x36, 0x36, 0x37, 0x36, 0x38, 0x36, 0x39, 0x37, 0x30, 0x37, 0x31,
-    0x37, 0x32, 0x37, 0x33, 0x37, 0x34, 0x37, 0x35, 0x37, 0x36, 0x37, 0x37,
-    0x37, 0x38, 0x37, 0x39, 0x38, 0x30, 0x38, 0x31, 0x38, 0x32, 0x38, 0x33,
-    0x38, 0x34, 0x38, 0x35, 0x38, 0x36, 0x38, 0x37, 0x38, 0x38, 0x38, 0x39,
-    0x39, 0x30, 0x39, 0x31, 0x39, 0x32, 0x39, 0x33, 0x39, 0x34, 0x39, 0x35,
-    0x39, 0x36, 0x39, 0x37, 0x39, 0x38, 0x39, 0x39,
-};
+// Integer to decimal: James Edward Anhalt III's algorithm
+static const char jeaiii_dd[201] =
+    "00010203040506070809101112131415161718192021222324252627282930313233343536373839"
+    "40414243444546474849505152535455565758596061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+static const char jeaiii_fd[201] =
+    "0\0" "1\0" "2\0" "3\0" "4\0" "5\0" "6\0" "7\0" "8\0" "9\0"
+    "10111213141516171819202122232425262728293031323334353637383940414243444546474849"
+    "50515253545556575859606162636465666768697071727374757677787980818283848586878889"
+    "90919293949596979899";
 
-// Forward unsigned-int writer (cascade-on-magnitude, no upfront digit_count).
-// Built from a non-recursive DAG of always_inline helpers -- gcc and MSVC
-// refuse to inline recursive `always_inline`/`__forceinline` functions.
-// Caller must guarantee at least 20 bytes available at p. All helpers
-// return pointer past the last digit written.
-
-// Caller guarantees v < 100. Writes 1-2 digits.
-simdjson_really_inline char* write_lt100(char* p, uint64_t v) noexcept {
-  if (v < 10) { *p++ = char('0' + v); return p; }
-  std::memcpy(p, &decimal_table[v * 2], 2);
-  return p + 2;
+simdjson_really_inline void jeaiii_write_dd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_dd[2 * k], 2);
+}
+simdjson_really_inline void jeaiii_write_fd(char *p, uint64_t k) noexcept {
+  std::memcpy(p, &jeaiii_fd[2 * k], 2);
 }
 
-// Caller guarantees v < 10000. Writes 1-4 digits.
-simdjson_really_inline char* write_lt10000(char* p, uint64_t v) noexcept {
-  if (v < 100) return write_lt100(p, v);
-  uint64_t hi = v / 100, lo = v % 100;
-  if (v < 1000) {
-    *p++ = char('0' + hi);
+// Caller guarantees n < 10^8. Writes 1 to 8 digits.
+simdjson_really_inline char *jeaiii_lt1e8(char *b, uint32_t n) noexcept {
+  constexpr uint64_t mask24 = (uint64_t(1) << 24) - 1;
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  if (n < 100) {
+    jeaiii_write_fd(b, n);
+    return n < 10 ? b + 1 : b + 2;
+  }
+  if (n < 1000000) {
+    if (n < 10000) {
+      const uint32_t f0 = uint32_t(10 * (1 << 24) / 1e3 + 1) * n;
+      jeaiii_write_fd(b, f0 >> 24);
+      b -= n < 1000;
+      const uint32_t f2 = uint32_t(f0 & mask24) * 100;
+      jeaiii_write_dd(b + 2, f2 >> 24);
+      return b + 4;
+    }
+    const uint64_t f0 = uint64_t(10 * (1ull << 32) / 1e5 + 1) * n;
+    jeaiii_write_fd(b, f0 >> 32);
+    b -= n < 100000;
+    const uint64_t f2 = (f0 & mask32) * 100;
+    jeaiii_write_dd(b + 2, f2 >> 32);
+    const uint64_t f4 = (f2 & mask32) * 100;
+    jeaiii_write_dd(b + 4, f4 >> 32);
+    return b + 6;
+  }
+  const uint64_t f0 = uint64_t(10 * (1ull << 48) / 1e7 + 1) * n >> 16;
+  jeaiii_write_fd(b, f0 >> 32);
+  b -= n < 10000000;
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees z < 10^8. Always writes exactly 8 digits.
+simdjson_really_inline char *jeaiii_8_digits(char *b, uint32_t z) noexcept {
+  constexpr uint64_t mask32 = (uint64_t(1) << 32) - 1;
+  const uint64_t f0 = (uint64_t((1ull << 48) / 1e6 + 1) * z >> 16) + 1;
+  jeaiii_write_dd(b, f0 >> 32);
+  const uint64_t f2 = (f0 & mask32) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 32);
+  const uint64_t f4 = (f2 & mask32) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 32);
+  const uint64_t f6 = (f4 & mask32) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 32);
+  return b + 8;
+}
+
+// Caller guarantees 10^8 <= n < 2^32. Writes 9 or 10 digits.
+simdjson_really_inline char *jeaiii_9_or_10(char *b, uint64_t n) noexcept {
+  constexpr uint64_t mask57 = (uint64_t(1) << 57) - 1;
+  const uint64_t f0 = uint64_t(10 * (1ull << 57) / 1e9 + 1) * n;
+  jeaiii_write_fd(b, f0 >> 57);
+  b -= n < 1000000000;
+  const uint64_t f2 = (f0 & mask57) * 100;
+  jeaiii_write_dd(b + 2, f2 >> 57);
+  const uint64_t f4 = (f2 & mask57) * 100;
+  jeaiii_write_dd(b + 4, f4 >> 57);
+  const uint64_t f6 = (f4 & mask57) * 100;
+  jeaiii_write_dd(b + 6, f6 >> 57);
+  const uint64_t f8 = (f6 & mask57) * 100;
+  jeaiii_write_dd(b + 8, f8 >> 57);
+  return b + 10;
+}
+
+simdjson_really_inline char *write_uint_jeaiii(char *b, uint64_t n) noexcept {
+  if (n < 100000000) {
+    return jeaiii_lt1e8(b, uint32_t(n));
+  }
+  if (n < (uint64_t(1) << 32)) {
+    return jeaiii_9_or_10(b, n);
+  }
+  // At least 10 digits: the low 8 digits, and 2 to 12 digits above them.
+  const uint32_t z = uint32_t(n % 100000000);
+  uint64_t u = n / 100000000;
+  if (u < 100000000) {
+    // u has 2 to 8 digits (if u < 10, n would be below 2^32).
+    b = jeaiii_lt1e8(b, uint32_t(u));
+  } else if (u < (uint64_t(1) << 32)) {
+    b = jeaiii_9_or_10(b, u);
   } else {
-    std::memcpy(p, &decimal_table[hi * 2], 2);
-    p += 2;
+    // u has 11 or 12 digits: split off 8 more.
+    const uint32_t y = uint32_t(u % 100000000);
+    u /= 100000000;
+    b = jeaiii_lt1e8(b, uint32_t(u)); // 3 or 4 digits
+    b = jeaiii_8_digits(b, y);
   }
-  std::memcpy(p, &decimal_table[lo * 2], 2);
-  return p + 2;
+  return jeaiii_8_digits(b, z);
 }
 
-// Caller guarantees v < 10000. Always writes exactly 4 digits.
-simdjson_really_inline void write_4_digits(char* p, uint64_t v) noexcept {
-  uint64_t hi = v / 100, lo = v % 100;
-  std::memcpy(p,     &decimal_table[hi * 2], 2);
-  std::memcpy(p + 2, &decimal_table[lo * 2], 2);
-}
-
-// Caller guarantees v < 10^8. Writes 1-8 digits.
-simdjson_really_inline char* write_lt1e8(char* p, uint64_t v) noexcept {
-  if (v < 10000) return write_lt10000(p, v);
-  uint64_t hi = v / 10000, lo = v % 10000;
-  p = write_lt10000(p, hi);
-  write_4_digits(p, lo);
-  return p + 4;
-}
-
-simdjson_really_inline char* write_uint_jeaiii(char* p, uint64_t v) noexcept {
-  if (v < 10000ULL) return write_lt10000(p, v);
-  if (v < 100000000ULL) {                   // 5-8 digits
-    uint64_t hi = v / 10000, lo = v % 10000;
-    p = write_lt10000(p, hi);
-    write_4_digits(p, lo);
-    return p + 4;
-  }
-  if (v < 10000000000000000ULL) {           // 9-16 digits
-    uint64_t hi = v / 100000000ULL, lo = v % 100000000ULL;
-    p = write_lt1e8(p, hi);
-    uint64_t lo_hi = lo / 10000, lo_lo = lo % 10000;
-    write_4_digits(p,     lo_hi);
-    write_4_digits(p + 4, lo_lo);
+// Writes v at p, which must have to_chars_buffer_size bytes available, and
+// returns the end of what was written.
+simdjson_inline char *write_double(char *p, double v) noexcept {
+#if SIMDJSON_ENABLE_NAN_INF
+  if (simdjson_unlikely(!std::isfinite(v))) {
+    if (std::isnan(v)) {
+      std::memcpy(p, "NaN", 3);
+      return p + 3;
+    }
+    if (v < 0) {
+      *p++ = '-';
+    }
+    std::memcpy(p, "Infinity", 8);
     return p + 8;
   }
-  // 17-20 digits
-  uint64_t hi = v / 10000000000000000ULL, lo = v % 10000000000000000ULL;
-  p = write_lt10000(p, hi);
-  uint64_t lo_a = lo / 100000000ULL, lo_b = lo % 100000000ULL;
-  uint64_t lo_a_hi = lo_a / 10000, lo_a_lo = lo_a % 10000;
-  uint64_t lo_b_hi = lo_b / 10000, lo_b_lo = lo_b % 10000;
-  write_4_digits(p,      lo_a_hi);
-  write_4_digits(p + 4,  lo_a_lo);
-  write_4_digits(p + 8,  lo_b_hi);
-  write_4_digits(p + 12, lo_b_lo);
-  return p + 16;
+#endif
+  return simdjson::internal::to_chars(p, nullptr, v);
 }
 } // namespace internal
 
@@ -76969,8 +79371,19 @@ public:
    * Begin array iteration.
    *
    * Part of the std::iterable interface.
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this array while it is
+   * alive, so that reentrant access (at(), count_elements(), reset(), ...) is
+   * reported as OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<array_iterator> begin() & noexcept;
+  /**
+   * Begin iteration over a temporary array, e.g., `v.get_array().begin()`.
+   *
+   * The iterator does not depend on the array instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<array_iterator> begin() && noexcept;
   /**
    * Sentinel representing the end of the array.
    *
@@ -77169,6 +79582,10 @@ protected:
    * iter.is_alive() == false indicates iteration is complete.
    */
   value_iterator iter{};
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  bool locked{false};
+  simdjson_inline void set_locked(bool _locked) noexcept;
+#endif
 
   friend class value;
   friend class document;
@@ -77190,7 +79607,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<arm64::ondemand::array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<arm64::ondemand::array_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<arm64::ondemand::array_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<arm64::ondemand::array_iterator> end() noexcept;
   inline simdjson_result<size_t> count_elements() & noexcept;
   inline simdjson_result<bool> is_empty() & noexcept;
@@ -77270,6 +79688,15 @@ public:
   /** Create a new, invalid array iterator. */
   simdjson_inline array_iterator() noexcept = default;
 
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  simdjson_inline ~array_iterator() noexcept;
+
+  simdjson_inline array_iterator(array_iterator&&) noexcept;
+  simdjson_inline array_iterator& operator=(array_iterator&&) noexcept;
+  simdjson_inline array_iterator(const array_iterator&) noexcept;
+  simdjson_inline array_iterator& operator=(const array_iterator&) noexcept;
+#endif
+
   //
   // Iterator interface
   //
@@ -77312,6 +79739,9 @@ public:
 private:
 #if SIMDJSON_DEVELOPMENT_CHECKS
    bool has_been_referenced{false};
+   array* parent{nullptr};
+
+   simdjson_inline array_iterator(const value_iterator &_iter, array* _parent) noexcept;
 #endif
   value_iterator iter{};
 
@@ -78874,7 +81304,6 @@ public:
    *
    * IMPORTANT: this value is only meaningful under the conditions below.
    *
-   *   - the format is whitespace_delimited or newline_delimited;
    *   - you iterated all the way to the end of the stream;
    *   - no document reported an error. Iteration stops at the first failed
    *     document, which can leave the bookkeeping from a mid-stream batch.
@@ -78882,6 +81311,9 @@ public:
    * If you need to know about a truncated tail outside those conditions, track
    * it yourself from the last successful document (see iterator::current_index()
    * and iterator::source()).
+   *
+   * An empty input (zero bytes) or an input made only of white space contains
+   * no document: truncated_bytes() returns zero.
    */
   inline size_t truncated_bytes() const noexcept;
 
@@ -78941,7 +81373,10 @@ public:
      *
      * The returned string_view instance is simply a map to the (unparsed)
      * source string: it may thus include white-space characters and all manner
-     * of padding.
+     * of padding. It spans the whole current document, whether or not you
+     * have already accessed (part of) the document. Thus
+     * current_index() + source().size() is the offset just past the end of the
+     * current document, which is useful when reading a stream in chunks.
      *
      * This function (source()) is experimental and the usage
      * may change in future versions of simdjson: we find the API somewhat
@@ -80327,7 +82762,7 @@ match_window_candidate(const char* p, std::uint8_t ki,
 // --- describe() string helpers (constexpr; no std::to_string, which is not) ---
 
 // Append the decimal form of v to s.
-constexpr void append_uint(std::string& s, std::size_t v) {
+SIMDJSON_CONSTEXPR_STRING void append_uint(std::string& s, std::size_t v) {
     if (v == 0) { s.push_back('0'); return; }
     char buf[20];
     std::size_t n = 0;
@@ -80337,7 +82772,7 @@ constexpr void append_uint(std::string& s, std::size_t v) {
 
 // Append a byte as its decimal value, plus the printable character in quotes
 // when it is in the printable ASCII range (e.g. "110 ('n')").
-constexpr void append_byte(std::string& s, unsigned b) {
+SIMDJSON_CONSTEXPR_STRING void append_byte(std::string& s, unsigned b) {
     append_uint(s, b);
     if (b >= 0x20 && b < 0x7f) {
         s += " ('";
@@ -80498,14 +82933,15 @@ struct key_selector {
      * match_raw() does step by step.
      *
      * Everything it reports is derived from the compile-time tables, so describe()
-     * is itself usable in a constant expression:
+     * is itself usable in a constant expression when the standard library supports
+     * constexpr std::string (__cpp_lib_constexpr_string):
      *
      *   static_assert(!key_selector<"name", "city">::describe().empty());
      *
      * It allocates a std::string and is meant for documentation, debugging and
      * tests, not for any hot path.
      */
-    static constexpr std::string describe() {
+    static SIMDJSON_CONSTEXPR_STRING std::string describe() {
         std::string s;
         s += "key_selector: ";
         key_selector_detail::append_uint(s, N);
@@ -80803,8 +83239,19 @@ public:
    * Using the iterator directly is also possible but error-prone and discouraged. In particular,
    * you must dereference the iterator exactly once per iteration (before calling '++').
    * Doing otherwise is unsafe and may lead to errors. You are responsible for ensuring
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this object while it is
+   * alive, so that reentrant access (find_field(), reset(), ...) is reported as
+   * OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<object_iterator> begin() & noexcept;
+  /**
+   * Get an iterator to the start of a temporary object, e.g., `v.get_object().begin()`.
+   *
+   * The iterator does not depend on the object instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<object_iterator> end() noexcept;
   /**
    * Look up a field by name on an object (order-sensitive). By order-sensitive, we mean that
@@ -81227,7 +83674,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<arm64::ondemand::object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<arm64::ondemand::object_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<arm64::ondemand::object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<arm64::ondemand::object_iterator> end() noexcept;
   simdjson_inline simdjson_result<arm64::ondemand::value> find_field(std::string_view key) & noexcept;
   simdjson_inline simdjson_result<arm64::ondemand::value> find_field(std::string_view key) && noexcept;
@@ -81824,7 +84272,13 @@ template <concepts::constructible_from_string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::string_view>) {
   std::string_view str;
   SIMDJSON_TRY(val.get_string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::string): building a temporary and
+    // move-assigning it is markedly slower.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 
@@ -81835,11 +84289,41 @@ template <concepts::constructible_from_u8string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::u8string_view>) {
   std::u8string_view str;
   SIMDJSON_TRY(val.get_u8string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::u8string), as for std::string above.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 #endif // SIMDJSON_SUPPORTS_CHAR8_T
 
+
+namespace details {
+// Whether to deserialize the elements of the container T directly into a new
+// element (emplace_one(out) and then get) rather than into a temporary that is
+// then moved into the container. A temporary of a trivially copyable type lives
+// in registers and is cheap to move, and value-initializing a small element in
+// place costs more than it saves (GCC zeroes it with rep stos). But moving a
+// large element, or a string (whose deserialization then needs a temporary
+// string and a move assignment of its own), is expensive.
+template <typename T>
+concept deserialize_in_place =
+    concepts::returns_reference<T> && requires(T &c) { c.pop_back(); } &&
+    !std::is_trivially_copyable_v<typename T::value_type> &&
+    (sizeof(typename T::value_type) > 32 || concepts::constructible_from_string_view<typename T::value_type>);
+
+// Removes the last element of the container on destruction while armed.
+template <typename T>
+struct pop_back_guard {
+  T &container;
+  bool armed{true};
+  ~pop_back_guard() {
+    if (armed) { container.pop_back(); }
+  }
+};
+} // namespace details
 
 /**
  * STL containers have several constructors including one that takes a single
@@ -81864,14 +84348,66 @@ error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(false) {
     SIMDJSON_TRY(val.get_array().get(arr));
   }
 
-  for (auto v : arr) {
-    // Deserialize into a temporary first: an error or an exception (a user
-    // tag_invoke may throw) must not leave a default-constructed element behind.
-    value_type temp;
-    if (auto const err = v.get<value_type>(temp); err) {
-      return err;
+  if constexpr (std::is_same_v<T, std::vector<value_type>> && !std::is_same_v<value_type, bool>) {
+    // Collect the elements in a per-thread scratch vector that keeps its
+    // capacity from call to call, then move them into out after reserving the
+    // exact size: out is allocated once instead of being regrown. A nested
+    // array of the same type finds the scratch busy and takes the paths below.
+    struct scratch_space {
+      std::vector<value_type> elements{};
+      bool busy{false};
+    };
+    static thread_local scratch_space scratch;
+    if (!scratch.busy && out.empty()) {
+      struct release_scratch {
+        scratch_space &s;
+        T &out;
+        size_t parsed{0};
+        bool complete{false};
+        // On an error or an exception, out gets the elements parsed so far (as
+        // with the loops below), without allocating. Kept out of the hot path.
+        simdjson_never_inline void keep_parsed() noexcept {
+          s.elements.resize(parsed);
+          out.swap(s.elements);
+        }
+        ~release_scratch() {
+          if (simdjson_unlikely(!complete)) { keep_parsed(); }
+          s.elements.clear();
+          // Do not hold on to the memory of a very large array.
+          if (s.elements.capacity() * sizeof(value_type) > (1 << 20)) { std::vector<value_type>().swap(s.elements); }
+          s.busy = false;
+        }
+      } release{scratch, out};
+      scratch.busy = true;
+      for (auto v : arr) {
+        SIMDJSON_TRY(v.get<value_type>(scratch.elements.emplace_back()));
+        release.parsed++;
+      }
+      out.reserve(release.parsed);
+      release.complete = true;
+      for (auto &e : scratch.elements) { out.emplace_back(std::move(e)); }
+      return SUCCESS;
     }
-    concepts::emplace_one(out, std::move(temp));
+  }
+  if constexpr (details::deserialize_in_place<T>) {
+    for (auto v : arr) {
+      auto &slot = concepts::emplace_one(out);
+      // An error or an exception (a user tag_invoke may throw) must not leave
+      // a partially deserialized element behind.
+      details::pop_back_guard<T> guard{out};
+      SIMDJSON_TRY(v.get<value_type>(slot));
+      guard.armed = false;
+    }
+  } else {
+    for (auto v : arr) {
+      // Deserialize into a temporary first: an error or an exception (a user
+      // tag_invoke may throw) must not leave a default-constructed element behind.
+      value_type temp;
+      if (auto const err = v.get<value_type>(temp); err) {
+        return err;
+      }
+      concepts::emplace_one(out, std::move(temp));
+    }
   }
   return SUCCESS;
 }
@@ -82943,9 +85479,17 @@ simdjson_inline simdjson_result<array> array::started(value_iterator &iter) noex
   return array(iter);
 }
 
-simdjson_inline simdjson_result<array_iterator> array::begin() noexcept {
+simdjson_inline simdjson_result<array_iterator> array::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
-  if (!iter.is_at_iterator_start()) { return OUT_OF_ORDER_ITERATION; }
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
+  return array_iterator(iter, this);
+#endif
+  return array_iterator(iter);
+}
+simdjson_inline simdjson_result<array_iterator> array::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The array is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return array_iterator(iter);
 }
@@ -82972,6 +85516,9 @@ simdjson_inline simdjson_result<std::string_view> array::raw_json() noexcept {
 SIMDJSON_PUSH_DISABLE_WARNINGS
 SIMDJSON_DISABLE_STRICT_OVERFLOW_WARNING
 simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t count{0};
   // Important: we do not consume any of the values.
   for(simdjson_unused auto v : *this) { count++; }
@@ -82985,6 +85532,9 @@ simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
 SIMDJSON_POP_DISABLE_WARNINGS
 
 simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   bool is_not_empty;
   auto error = iter.reset_array().get(is_not_empty);
   if(error) { return error; }
@@ -82992,8 +85542,17 @@ simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
 }
 
 inline simdjson_result<bool> array::reset() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   return iter.reset_array();
 }
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline void array::set_locked(bool _locked) noexcept {
+  locked = _locked;
+}
+#endif
 
 inline simdjson_result<value> array::at_pointer(std::string_view json_pointer) noexcept {
   if (json_pointer[0] != '/') { return INVALID_JSON_POINTER; }
@@ -83078,6 +85637,9 @@ inline error_code array::for_each_at_path_with_wildcard(std::string_view json_pa
 }
 
 simdjson_inline simdjson_result<value> array::at(size_t index) noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t i = 0;
   for (auto value : *this) {
     if (i == index) { return value; }
@@ -83107,9 +85669,13 @@ simdjson_inline simdjson_result<arm64::ondemand::array>::simdjson_result(
 {
 }
 
-simdjson_inline simdjson_result<arm64::ondemand::array_iterator> simdjson_result<arm64::ondemand::array>::begin() noexcept {
+simdjson_inline simdjson_result<arm64::ondemand::array_iterator> simdjson_result<arm64::ondemand::array>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<arm64::ondemand::array_iterator> simdjson_result<arm64::ondemand::array>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<arm64::ondemand::array_iterator> simdjson_result<arm64::ondemand::array>::end() noexcept {
   if (error()) { return error(); }
@@ -83172,6 +85738,59 @@ namespace ondemand {
 simdjson_inline array_iterator::array_iterator(const value_iterator &_iter) noexcept
   : iter{_iter}
 {}
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline array_iterator::array_iterator(const value_iterator &_iter, array* _parent) noexcept
+  : parent{_parent}, iter{_iter}
+{
+  if (parent) parent->set_locked(true);
+}
+
+simdjson_inline array_iterator::~array_iterator() noexcept
+{
+  if (parent) parent->set_locked(false);
+}
+
+simdjson_inline array_iterator::array_iterator(array_iterator&& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{other.parent},
+    iter{std::move(other.iter)}
+{
+  other.parent = nullptr;
+}
+
+simdjson_inline array_iterator& array_iterator::operator=(array_iterator&& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = other.parent;
+    iter = std::move(other.iter);
+
+    other.parent = nullptr;
+  }
+  return *this;
+}
+
+simdjson_inline array_iterator::array_iterator(const array_iterator& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{nullptr},
+    iter{other.iter}
+{}
+
+simdjson_inline array_iterator& array_iterator::operator=(const array_iterator& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = nullptr;
+    iter = other.iter;
+  }
+  return *this;
+}
+#endif
 
 simdjson_inline simdjson_result<value> array_iterator::operator*() noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
@@ -85521,6 +88140,9 @@ inline size_t document_stream::size_in_bytes() const noexcept {
 }
 
 inline size_t document_stream::truncated_bytes() const noexcept {
+  // Stage 1 returns EMPTY on zero-length input before it writes the index
+  // sentinels read below, so they would still hold a previous stream's values.
+  if (len == 0) { return 0; }
   if(error == CAPACITY) { return len - batch_start; }
   return parser->implementation->structural_indexes[parser->implementation->n_structural_indexes] - parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
@@ -85812,11 +88434,19 @@ simdjson_inline size_t document_stream::iterator::current_index() const noexcept
 }
 
 simdjson_inline std::string_view document_stream::iterator::source() const noexcept {
-  auto depth = stream->doc.iter.depth();
+  // On error (e.g., CAPACITY), there is no document to walk: return the rest of
+  // the input, as the DOM document_stream does.
+  if (stream->error) {
+    return std::string_view(reinterpret_cast<const char*>(stream->buf) + current_index(), stream->len - current_index());
+  }
+  // Always walk from the root of the document, whatever the current position
+  // of the document iterator: the user may have already consumed part of the
+  // document, so the iterator's current depth must not be used here.
+  depth_t depth = 1;
   auto cur_struct_index = stream->doc.iter._root - stream->parser->implementation->structural_indexes.get();
 
-  // If at root, process the first token to determine if scalar value
-  if (stream->doc.iter.at_root()) {
+  // Process the first token to determine if scalar value
+  {
     switch (stream->buf[stream->batch_start + stream->parser->implementation->structural_indexes[cur_struct_index]]) {
       case '{': case '[':   // Depth=1 already at start of document
         break;
@@ -85830,6 +88460,32 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
           // normally the length would be next_index - current_index() - 1, except for the last document
           size_t svlen = next_index - current_index();
           const char *start = reinterpret_cast<const char*>(stream->buf) + current_index();
+          // When the scalar is followed by a truncated document, the structural
+          // indexes of that document were dropped and next_index is the end of
+          // the input, so we bound the scalar by scanning the token itself.
+          size_t token_len = 0;
+          if (*start == '"') {
+            token_len = 1;
+            while (token_len < svlen) {
+              char c = start[token_len++];
+              if (c == '\\') {
+                token_len++;
+              } else if (c == '"') {
+                break;
+              }
+            }
+          } else {
+            while (token_len < svlen) {
+              char c = start[token_len];
+              if (std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == '{' || c == '[' || c == '\0' || static_cast<uint8_t>(c) == 0x1E) {
+                break;
+              }
+              token_len++;
+            }
+          }
+          if (token_len > 0 && token_len < svlen) {
+            svlen = token_len;
+          }
           // Trim trailing whitespace, NUL, and RS (0x1E). In RFC 7464
           // json_sequence mode the scanner classifies RS as a scalar
           // character, so an RS-prefixed scalar document (number / true /
@@ -86225,7 +88881,8 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
 #endif // SIMDJSON_CHECK_EOF
       break;
     case '"':
-      if(*peek() == ':') {
+      // At the end, peek() would read the sentinel, which points into the padding.
+      if(!at_end() && *peek() == ':') {
         // We are at a key!!!
         // This might happen if you just started an object and you skip it immediately.
         // Performance note: it would be nice to get rid of this check as it is somewhat
@@ -86268,7 +88925,7 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
     }
   }
 
-  return report_error(TAPE_ERROR, "not enough close braces");
+  return report_error(INCOMPLETE_ARRAY_OR_OBJECT, "not enough close braces");
 }
 
 SIMDJSON_POP_DISABLE_WARNINGS
@@ -87189,10 +89846,17 @@ simdjson_inline object::object(const value_iterator &_iter) noexcept
 {
 }
 
-simdjson_inline simdjson_result<object_iterator> object::begin() noexcept {
+simdjson_inline simdjson_result<object_iterator> object::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
   if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
   return object_iterator(iter, this);
+#endif
+  return object_iterator(iter);
+}
+simdjson_inline simdjson_result<object_iterator> object::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The object is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return object_iterator(iter);
 }
@@ -87405,9 +90069,13 @@ simdjson_inline simdjson_result<arm64::ondemand::object>::simdjson_result(arm64:
 simdjson_inline simdjson_result<arm64::ondemand::object>::simdjson_result(error_code error) noexcept
     : implementation_simdjson_result_base<arm64::ondemand::object>(error) {}
 
-simdjson_inline simdjson_result<arm64::ondemand::object_iterator> simdjson_result<arm64::ondemand::object>::begin() noexcept {
+simdjson_inline simdjson_result<arm64::ondemand::object_iterator> simdjson_result<arm64::ondemand::object>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<arm64::ondemand::object_iterator> simdjson_result<arm64::ondemand::object>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<arm64::ondemand::object_iterator> simdjson_result<arm64::ondemand::object>::end() noexcept {
   if (error()) { return error(); }
@@ -94407,8 +97075,19 @@ public:
    * Begin array iteration.
    *
    * Part of the std::iterable interface.
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this array while it is
+   * alive, so that reentrant access (at(), count_elements(), reset(), ...) is
+   * reported as OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<array_iterator> begin() & noexcept;
+  /**
+   * Begin iteration over a temporary array, e.g., `v.get_array().begin()`.
+   *
+   * The iterator does not depend on the array instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<array_iterator> begin() && noexcept;
   /**
    * Sentinel representing the end of the array.
    *
@@ -94607,6 +97286,10 @@ protected:
    * iter.is_alive() == false indicates iteration is complete.
    */
   value_iterator iter{};
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  bool locked{false};
+  simdjson_inline void set_locked(bool _locked) noexcept;
+#endif
 
   friend class value;
   friend class document;
@@ -94628,7 +97311,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<fallback::ondemand::array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<fallback::ondemand::array_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<fallback::ondemand::array_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<fallback::ondemand::array_iterator> end() noexcept;
   inline simdjson_result<size_t> count_elements() & noexcept;
   inline simdjson_result<bool> is_empty() & noexcept;
@@ -94708,6 +97392,15 @@ public:
   /** Create a new, invalid array iterator. */
   simdjson_inline array_iterator() noexcept = default;
 
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  simdjson_inline ~array_iterator() noexcept;
+
+  simdjson_inline array_iterator(array_iterator&&) noexcept;
+  simdjson_inline array_iterator& operator=(array_iterator&&) noexcept;
+  simdjson_inline array_iterator(const array_iterator&) noexcept;
+  simdjson_inline array_iterator& operator=(const array_iterator&) noexcept;
+#endif
+
   //
   // Iterator interface
   //
@@ -94750,6 +97443,9 @@ public:
 private:
 #if SIMDJSON_DEVELOPMENT_CHECKS
    bool has_been_referenced{false};
+   array* parent{nullptr};
+
+   simdjson_inline array_iterator(const value_iterator &_iter, array* _parent) noexcept;
 #endif
   value_iterator iter{};
 
@@ -96312,7 +99008,6 @@ public:
    *
    * IMPORTANT: this value is only meaningful under the conditions below.
    *
-   *   - the format is whitespace_delimited or newline_delimited;
    *   - you iterated all the way to the end of the stream;
    *   - no document reported an error. Iteration stops at the first failed
    *     document, which can leave the bookkeeping from a mid-stream batch.
@@ -96320,6 +99015,9 @@ public:
    * If you need to know about a truncated tail outside those conditions, track
    * it yourself from the last successful document (see iterator::current_index()
    * and iterator::source()).
+   *
+   * An empty input (zero bytes) or an input made only of white space contains
+   * no document: truncated_bytes() returns zero.
    */
   inline size_t truncated_bytes() const noexcept;
 
@@ -96379,7 +99077,10 @@ public:
      *
      * The returned string_view instance is simply a map to the (unparsed)
      * source string: it may thus include white-space characters and all manner
-     * of padding.
+     * of padding. It spans the whole current document, whether or not you
+     * have already accessed (part of) the document. Thus
+     * current_index() + source().size() is the offset just past the end of the
+     * current document, which is useful when reading a stream in chunks.
      *
      * This function (source()) is experimental and the usage
      * may change in future versions of simdjson: we find the API somewhat
@@ -97765,7 +100466,7 @@ match_window_candidate(const char* p, std::uint8_t ki,
 // --- describe() string helpers (constexpr; no std::to_string, which is not) ---
 
 // Append the decimal form of v to s.
-constexpr void append_uint(std::string& s, std::size_t v) {
+SIMDJSON_CONSTEXPR_STRING void append_uint(std::string& s, std::size_t v) {
     if (v == 0) { s.push_back('0'); return; }
     char buf[20];
     std::size_t n = 0;
@@ -97775,7 +100476,7 @@ constexpr void append_uint(std::string& s, std::size_t v) {
 
 // Append a byte as its decimal value, plus the printable character in quotes
 // when it is in the printable ASCII range (e.g. "110 ('n')").
-constexpr void append_byte(std::string& s, unsigned b) {
+SIMDJSON_CONSTEXPR_STRING void append_byte(std::string& s, unsigned b) {
     append_uint(s, b);
     if (b >= 0x20 && b < 0x7f) {
         s += " ('";
@@ -97936,14 +100637,15 @@ struct key_selector {
      * match_raw() does step by step.
      *
      * Everything it reports is derived from the compile-time tables, so describe()
-     * is itself usable in a constant expression:
+     * is itself usable in a constant expression when the standard library supports
+     * constexpr std::string (__cpp_lib_constexpr_string):
      *
      *   static_assert(!key_selector<"name", "city">::describe().empty());
      *
      * It allocates a std::string and is meant for documentation, debugging and
      * tests, not for any hot path.
      */
-    static constexpr std::string describe() {
+    static SIMDJSON_CONSTEXPR_STRING std::string describe() {
         std::string s;
         s += "key_selector: ";
         key_selector_detail::append_uint(s, N);
@@ -98241,8 +100943,19 @@ public:
    * Using the iterator directly is also possible but error-prone and discouraged. In particular,
    * you must dereference the iterator exactly once per iteration (before calling '++').
    * Doing otherwise is unsafe and may lead to errors. You are responsible for ensuring
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this object while it is
+   * alive, so that reentrant access (find_field(), reset(), ...) is reported as
+   * OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<object_iterator> begin() & noexcept;
+  /**
+   * Get an iterator to the start of a temporary object, e.g., `v.get_object().begin()`.
+   *
+   * The iterator does not depend on the object instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<object_iterator> end() noexcept;
   /**
    * Look up a field by name on an object (order-sensitive). By order-sensitive, we mean that
@@ -98665,7 +101378,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<fallback::ondemand::object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<fallback::ondemand::object_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<fallback::ondemand::object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<fallback::ondemand::object_iterator> end() noexcept;
   simdjson_inline simdjson_result<fallback::ondemand::value> find_field(std::string_view key) & noexcept;
   simdjson_inline simdjson_result<fallback::ondemand::value> find_field(std::string_view key) && noexcept;
@@ -99262,7 +101976,13 @@ template <concepts::constructible_from_string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::string_view>) {
   std::string_view str;
   SIMDJSON_TRY(val.get_string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::string): building a temporary and
+    // move-assigning it is markedly slower.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 
@@ -99273,11 +101993,41 @@ template <concepts::constructible_from_u8string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::u8string_view>) {
   std::u8string_view str;
   SIMDJSON_TRY(val.get_u8string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::u8string), as for std::string above.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 #endif // SIMDJSON_SUPPORTS_CHAR8_T
 
+
+namespace details {
+// Whether to deserialize the elements of the container T directly into a new
+// element (emplace_one(out) and then get) rather than into a temporary that is
+// then moved into the container. A temporary of a trivially copyable type lives
+// in registers and is cheap to move, and value-initializing a small element in
+// place costs more than it saves (GCC zeroes it with rep stos). But moving a
+// large element, or a string (whose deserialization then needs a temporary
+// string and a move assignment of its own), is expensive.
+template <typename T>
+concept deserialize_in_place =
+    concepts::returns_reference<T> && requires(T &c) { c.pop_back(); } &&
+    !std::is_trivially_copyable_v<typename T::value_type> &&
+    (sizeof(typename T::value_type) > 32 || concepts::constructible_from_string_view<typename T::value_type>);
+
+// Removes the last element of the container on destruction while armed.
+template <typename T>
+struct pop_back_guard {
+  T &container;
+  bool armed{true};
+  ~pop_back_guard() {
+    if (armed) { container.pop_back(); }
+  }
+};
+} // namespace details
 
 /**
  * STL containers have several constructors including one that takes a single
@@ -99302,14 +102052,66 @@ error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(false) {
     SIMDJSON_TRY(val.get_array().get(arr));
   }
 
-  for (auto v : arr) {
-    // Deserialize into a temporary first: an error or an exception (a user
-    // tag_invoke may throw) must not leave a default-constructed element behind.
-    value_type temp;
-    if (auto const err = v.get<value_type>(temp); err) {
-      return err;
+  if constexpr (std::is_same_v<T, std::vector<value_type>> && !std::is_same_v<value_type, bool>) {
+    // Collect the elements in a per-thread scratch vector that keeps its
+    // capacity from call to call, then move them into out after reserving the
+    // exact size: out is allocated once instead of being regrown. A nested
+    // array of the same type finds the scratch busy and takes the paths below.
+    struct scratch_space {
+      std::vector<value_type> elements{};
+      bool busy{false};
+    };
+    static thread_local scratch_space scratch;
+    if (!scratch.busy && out.empty()) {
+      struct release_scratch {
+        scratch_space &s;
+        T &out;
+        size_t parsed{0};
+        bool complete{false};
+        // On an error or an exception, out gets the elements parsed so far (as
+        // with the loops below), without allocating. Kept out of the hot path.
+        simdjson_never_inline void keep_parsed() noexcept {
+          s.elements.resize(parsed);
+          out.swap(s.elements);
+        }
+        ~release_scratch() {
+          if (simdjson_unlikely(!complete)) { keep_parsed(); }
+          s.elements.clear();
+          // Do not hold on to the memory of a very large array.
+          if (s.elements.capacity() * sizeof(value_type) > (1 << 20)) { std::vector<value_type>().swap(s.elements); }
+          s.busy = false;
+        }
+      } release{scratch, out};
+      scratch.busy = true;
+      for (auto v : arr) {
+        SIMDJSON_TRY(v.get<value_type>(scratch.elements.emplace_back()));
+        release.parsed++;
+      }
+      out.reserve(release.parsed);
+      release.complete = true;
+      for (auto &e : scratch.elements) { out.emplace_back(std::move(e)); }
+      return SUCCESS;
     }
-    concepts::emplace_one(out, std::move(temp));
+  }
+  if constexpr (details::deserialize_in_place<T>) {
+    for (auto v : arr) {
+      auto &slot = concepts::emplace_one(out);
+      // An error or an exception (a user tag_invoke may throw) must not leave
+      // a partially deserialized element behind.
+      details::pop_back_guard<T> guard{out};
+      SIMDJSON_TRY(v.get<value_type>(slot));
+      guard.armed = false;
+    }
+  } else {
+    for (auto v : arr) {
+      // Deserialize into a temporary first: an error or an exception (a user
+      // tag_invoke may throw) must not leave a default-constructed element behind.
+      value_type temp;
+      if (auto const err = v.get<value_type>(temp); err) {
+        return err;
+      }
+      concepts::emplace_one(out, std::move(temp));
+    }
   }
   return SUCCESS;
 }
@@ -100381,9 +103183,17 @@ simdjson_inline simdjson_result<array> array::started(value_iterator &iter) noex
   return array(iter);
 }
 
-simdjson_inline simdjson_result<array_iterator> array::begin() noexcept {
+simdjson_inline simdjson_result<array_iterator> array::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
-  if (!iter.is_at_iterator_start()) { return OUT_OF_ORDER_ITERATION; }
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
+  return array_iterator(iter, this);
+#endif
+  return array_iterator(iter);
+}
+simdjson_inline simdjson_result<array_iterator> array::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The array is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return array_iterator(iter);
 }
@@ -100410,6 +103220,9 @@ simdjson_inline simdjson_result<std::string_view> array::raw_json() noexcept {
 SIMDJSON_PUSH_DISABLE_WARNINGS
 SIMDJSON_DISABLE_STRICT_OVERFLOW_WARNING
 simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t count{0};
   // Important: we do not consume any of the values.
   for(simdjson_unused auto v : *this) { count++; }
@@ -100423,6 +103236,9 @@ simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
 SIMDJSON_POP_DISABLE_WARNINGS
 
 simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   bool is_not_empty;
   auto error = iter.reset_array().get(is_not_empty);
   if(error) { return error; }
@@ -100430,8 +103246,17 @@ simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
 }
 
 inline simdjson_result<bool> array::reset() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   return iter.reset_array();
 }
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline void array::set_locked(bool _locked) noexcept {
+  locked = _locked;
+}
+#endif
 
 inline simdjson_result<value> array::at_pointer(std::string_view json_pointer) noexcept {
   if (json_pointer[0] != '/') { return INVALID_JSON_POINTER; }
@@ -100516,6 +103341,9 @@ inline error_code array::for_each_at_path_with_wildcard(std::string_view json_pa
 }
 
 simdjson_inline simdjson_result<value> array::at(size_t index) noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t i = 0;
   for (auto value : *this) {
     if (i == index) { return value; }
@@ -100545,9 +103373,13 @@ simdjson_inline simdjson_result<fallback::ondemand::array>::simdjson_result(
 {
 }
 
-simdjson_inline simdjson_result<fallback::ondemand::array_iterator> simdjson_result<fallback::ondemand::array>::begin() noexcept {
+simdjson_inline simdjson_result<fallback::ondemand::array_iterator> simdjson_result<fallback::ondemand::array>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<fallback::ondemand::array_iterator> simdjson_result<fallback::ondemand::array>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<fallback::ondemand::array_iterator> simdjson_result<fallback::ondemand::array>::end() noexcept {
   if (error()) { return error(); }
@@ -100610,6 +103442,59 @@ namespace ondemand {
 simdjson_inline array_iterator::array_iterator(const value_iterator &_iter) noexcept
   : iter{_iter}
 {}
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline array_iterator::array_iterator(const value_iterator &_iter, array* _parent) noexcept
+  : parent{_parent}, iter{_iter}
+{
+  if (parent) parent->set_locked(true);
+}
+
+simdjson_inline array_iterator::~array_iterator() noexcept
+{
+  if (parent) parent->set_locked(false);
+}
+
+simdjson_inline array_iterator::array_iterator(array_iterator&& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{other.parent},
+    iter{std::move(other.iter)}
+{
+  other.parent = nullptr;
+}
+
+simdjson_inline array_iterator& array_iterator::operator=(array_iterator&& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = other.parent;
+    iter = std::move(other.iter);
+
+    other.parent = nullptr;
+  }
+  return *this;
+}
+
+simdjson_inline array_iterator::array_iterator(const array_iterator& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{nullptr},
+    iter{other.iter}
+{}
+
+simdjson_inline array_iterator& array_iterator::operator=(const array_iterator& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = nullptr;
+    iter = other.iter;
+  }
+  return *this;
+}
+#endif
 
 simdjson_inline simdjson_result<value> array_iterator::operator*() noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
@@ -102959,6 +105844,9 @@ inline size_t document_stream::size_in_bytes() const noexcept {
 }
 
 inline size_t document_stream::truncated_bytes() const noexcept {
+  // Stage 1 returns EMPTY on zero-length input before it writes the index
+  // sentinels read below, so they would still hold a previous stream's values.
+  if (len == 0) { return 0; }
   if(error == CAPACITY) { return len - batch_start; }
   return parser->implementation->structural_indexes[parser->implementation->n_structural_indexes] - parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
@@ -103250,11 +106138,19 @@ simdjson_inline size_t document_stream::iterator::current_index() const noexcept
 }
 
 simdjson_inline std::string_view document_stream::iterator::source() const noexcept {
-  auto depth = stream->doc.iter.depth();
+  // On error (e.g., CAPACITY), there is no document to walk: return the rest of
+  // the input, as the DOM document_stream does.
+  if (stream->error) {
+    return std::string_view(reinterpret_cast<const char*>(stream->buf) + current_index(), stream->len - current_index());
+  }
+  // Always walk from the root of the document, whatever the current position
+  // of the document iterator: the user may have already consumed part of the
+  // document, so the iterator's current depth must not be used here.
+  depth_t depth = 1;
   auto cur_struct_index = stream->doc.iter._root - stream->parser->implementation->structural_indexes.get();
 
-  // If at root, process the first token to determine if scalar value
-  if (stream->doc.iter.at_root()) {
+  // Process the first token to determine if scalar value
+  {
     switch (stream->buf[stream->batch_start + stream->parser->implementation->structural_indexes[cur_struct_index]]) {
       case '{': case '[':   // Depth=1 already at start of document
         break;
@@ -103268,6 +106164,32 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
           // normally the length would be next_index - current_index() - 1, except for the last document
           size_t svlen = next_index - current_index();
           const char *start = reinterpret_cast<const char*>(stream->buf) + current_index();
+          // When the scalar is followed by a truncated document, the structural
+          // indexes of that document were dropped and next_index is the end of
+          // the input, so we bound the scalar by scanning the token itself.
+          size_t token_len = 0;
+          if (*start == '"') {
+            token_len = 1;
+            while (token_len < svlen) {
+              char c = start[token_len++];
+              if (c == '\\') {
+                token_len++;
+              } else if (c == '"') {
+                break;
+              }
+            }
+          } else {
+            while (token_len < svlen) {
+              char c = start[token_len];
+              if (std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == '{' || c == '[' || c == '\0' || static_cast<uint8_t>(c) == 0x1E) {
+                break;
+              }
+              token_len++;
+            }
+          }
+          if (token_len > 0 && token_len < svlen) {
+            svlen = token_len;
+          }
           // Trim trailing whitespace, NUL, and RS (0x1E). In RFC 7464
           // json_sequence mode the scanner classifies RS as a scalar
           // character, so an RS-prefixed scalar document (number / true /
@@ -103663,7 +106585,8 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
 #endif // SIMDJSON_CHECK_EOF
       break;
     case '"':
-      if(*peek() == ':') {
+      // At the end, peek() would read the sentinel, which points into the padding.
+      if(!at_end() && *peek() == ':') {
         // We are at a key!!!
         // This might happen if you just started an object and you skip it immediately.
         // Performance note: it would be nice to get rid of this check as it is somewhat
@@ -103706,7 +106629,7 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
     }
   }
 
-  return report_error(TAPE_ERROR, "not enough close braces");
+  return report_error(INCOMPLETE_ARRAY_OR_OBJECT, "not enough close braces");
 }
 
 SIMDJSON_POP_DISABLE_WARNINGS
@@ -104627,10 +107550,17 @@ simdjson_inline object::object(const value_iterator &_iter) noexcept
 {
 }
 
-simdjson_inline simdjson_result<object_iterator> object::begin() noexcept {
+simdjson_inline simdjson_result<object_iterator> object::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
   if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
   return object_iterator(iter, this);
+#endif
+  return object_iterator(iter);
+}
+simdjson_inline simdjson_result<object_iterator> object::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The object is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return object_iterator(iter);
 }
@@ -104843,9 +107773,13 @@ simdjson_inline simdjson_result<fallback::ondemand::object>::simdjson_result(fal
 simdjson_inline simdjson_result<fallback::ondemand::object>::simdjson_result(error_code error) noexcept
     : implementation_simdjson_result_base<fallback::ondemand::object>(error) {}
 
-simdjson_inline simdjson_result<fallback::ondemand::object_iterator> simdjson_result<fallback::ondemand::object>::begin() noexcept {
+simdjson_inline simdjson_result<fallback::ondemand::object_iterator> simdjson_result<fallback::ondemand::object>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<fallback::ondemand::object_iterator> simdjson_result<fallback::ondemand::object>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<fallback::ondemand::object_iterator> simdjson_result<fallback::ondemand::object>::end() noexcept {
   if (error()) { return error(); }
@@ -112322,8 +115256,19 @@ public:
    * Begin array iteration.
    *
    * Part of the std::iterable interface.
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this array while it is
+   * alive, so that reentrant access (at(), count_elements(), reset(), ...) is
+   * reported as OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<array_iterator> begin() & noexcept;
+  /**
+   * Begin iteration over a temporary array, e.g., `v.get_array().begin()`.
+   *
+   * The iterator does not depend on the array instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<array_iterator> begin() && noexcept;
   /**
    * Sentinel representing the end of the array.
    *
@@ -112522,6 +115467,10 @@ protected:
    * iter.is_alive() == false indicates iteration is complete.
    */
   value_iterator iter{};
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  bool locked{false};
+  simdjson_inline void set_locked(bool _locked) noexcept;
+#endif
 
   friend class value;
   friend class document;
@@ -112543,7 +115492,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<haswell::ondemand::array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<haswell::ondemand::array_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<haswell::ondemand::array_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<haswell::ondemand::array_iterator> end() noexcept;
   inline simdjson_result<size_t> count_elements() & noexcept;
   inline simdjson_result<bool> is_empty() & noexcept;
@@ -112623,6 +115573,15 @@ public:
   /** Create a new, invalid array iterator. */
   simdjson_inline array_iterator() noexcept = default;
 
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  simdjson_inline ~array_iterator() noexcept;
+
+  simdjson_inline array_iterator(array_iterator&&) noexcept;
+  simdjson_inline array_iterator& operator=(array_iterator&&) noexcept;
+  simdjson_inline array_iterator(const array_iterator&) noexcept;
+  simdjson_inline array_iterator& operator=(const array_iterator&) noexcept;
+#endif
+
   //
   // Iterator interface
   //
@@ -112665,6 +115624,9 @@ public:
 private:
 #if SIMDJSON_DEVELOPMENT_CHECKS
    bool has_been_referenced{false};
+   array* parent{nullptr};
+
+   simdjson_inline array_iterator(const value_iterator &_iter, array* _parent) noexcept;
 #endif
   value_iterator iter{};
 
@@ -114227,7 +117189,6 @@ public:
    *
    * IMPORTANT: this value is only meaningful under the conditions below.
    *
-   *   - the format is whitespace_delimited or newline_delimited;
    *   - you iterated all the way to the end of the stream;
    *   - no document reported an error. Iteration stops at the first failed
    *     document, which can leave the bookkeeping from a mid-stream batch.
@@ -114235,6 +117196,9 @@ public:
    * If you need to know about a truncated tail outside those conditions, track
    * it yourself from the last successful document (see iterator::current_index()
    * and iterator::source()).
+   *
+   * An empty input (zero bytes) or an input made only of white space contains
+   * no document: truncated_bytes() returns zero.
    */
   inline size_t truncated_bytes() const noexcept;
 
@@ -114294,7 +117258,10 @@ public:
      *
      * The returned string_view instance is simply a map to the (unparsed)
      * source string: it may thus include white-space characters and all manner
-     * of padding.
+     * of padding. It spans the whole current document, whether or not you
+     * have already accessed (part of) the document. Thus
+     * current_index() + source().size() is the offset just past the end of the
+     * current document, which is useful when reading a stream in chunks.
      *
      * This function (source()) is experimental and the usage
      * may change in future versions of simdjson: we find the API somewhat
@@ -115680,7 +118647,7 @@ match_window_candidate(const char* p, std::uint8_t ki,
 // --- describe() string helpers (constexpr; no std::to_string, which is not) ---
 
 // Append the decimal form of v to s.
-constexpr void append_uint(std::string& s, std::size_t v) {
+SIMDJSON_CONSTEXPR_STRING void append_uint(std::string& s, std::size_t v) {
     if (v == 0) { s.push_back('0'); return; }
     char buf[20];
     std::size_t n = 0;
@@ -115690,7 +118657,7 @@ constexpr void append_uint(std::string& s, std::size_t v) {
 
 // Append a byte as its decimal value, plus the printable character in quotes
 // when it is in the printable ASCII range (e.g. "110 ('n')").
-constexpr void append_byte(std::string& s, unsigned b) {
+SIMDJSON_CONSTEXPR_STRING void append_byte(std::string& s, unsigned b) {
     append_uint(s, b);
     if (b >= 0x20 && b < 0x7f) {
         s += " ('";
@@ -115851,14 +118818,15 @@ struct key_selector {
      * match_raw() does step by step.
      *
      * Everything it reports is derived from the compile-time tables, so describe()
-     * is itself usable in a constant expression:
+     * is itself usable in a constant expression when the standard library supports
+     * constexpr std::string (__cpp_lib_constexpr_string):
      *
      *   static_assert(!key_selector<"name", "city">::describe().empty());
      *
      * It allocates a std::string and is meant for documentation, debugging and
      * tests, not for any hot path.
      */
-    static constexpr std::string describe() {
+    static SIMDJSON_CONSTEXPR_STRING std::string describe() {
         std::string s;
         s += "key_selector: ";
         key_selector_detail::append_uint(s, N);
@@ -116156,8 +119124,19 @@ public:
    * Using the iterator directly is also possible but error-prone and discouraged. In particular,
    * you must dereference the iterator exactly once per iteration (before calling '++').
    * Doing otherwise is unsafe and may lead to errors. You are responsible for ensuring
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this object while it is
+   * alive, so that reentrant access (find_field(), reset(), ...) is reported as
+   * OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<object_iterator> begin() & noexcept;
+  /**
+   * Get an iterator to the start of a temporary object, e.g., `v.get_object().begin()`.
+   *
+   * The iterator does not depend on the object instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<object_iterator> end() noexcept;
   /**
    * Look up a field by name on an object (order-sensitive). By order-sensitive, we mean that
@@ -116580,7 +119559,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<haswell::ondemand::object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<haswell::ondemand::object_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<haswell::ondemand::object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<haswell::ondemand::object_iterator> end() noexcept;
   simdjson_inline simdjson_result<haswell::ondemand::value> find_field(std::string_view key) & noexcept;
   simdjson_inline simdjson_result<haswell::ondemand::value> find_field(std::string_view key) && noexcept;
@@ -117177,7 +120157,13 @@ template <concepts::constructible_from_string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::string_view>) {
   std::string_view str;
   SIMDJSON_TRY(val.get_string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::string): building a temporary and
+    // move-assigning it is markedly slower.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 
@@ -117188,11 +120174,41 @@ template <concepts::constructible_from_u8string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::u8string_view>) {
   std::u8string_view str;
   SIMDJSON_TRY(val.get_u8string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::u8string), as for std::string above.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 #endif // SIMDJSON_SUPPORTS_CHAR8_T
 
+
+namespace details {
+// Whether to deserialize the elements of the container T directly into a new
+// element (emplace_one(out) and then get) rather than into a temporary that is
+// then moved into the container. A temporary of a trivially copyable type lives
+// in registers and is cheap to move, and value-initializing a small element in
+// place costs more than it saves (GCC zeroes it with rep stos). But moving a
+// large element, or a string (whose deserialization then needs a temporary
+// string and a move assignment of its own), is expensive.
+template <typename T>
+concept deserialize_in_place =
+    concepts::returns_reference<T> && requires(T &c) { c.pop_back(); } &&
+    !std::is_trivially_copyable_v<typename T::value_type> &&
+    (sizeof(typename T::value_type) > 32 || concepts::constructible_from_string_view<typename T::value_type>);
+
+// Removes the last element of the container on destruction while armed.
+template <typename T>
+struct pop_back_guard {
+  T &container;
+  bool armed{true};
+  ~pop_back_guard() {
+    if (armed) { container.pop_back(); }
+  }
+};
+} // namespace details
 
 /**
  * STL containers have several constructors including one that takes a single
@@ -117217,14 +120233,66 @@ error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(false) {
     SIMDJSON_TRY(val.get_array().get(arr));
   }
 
-  for (auto v : arr) {
-    // Deserialize into a temporary first: an error or an exception (a user
-    // tag_invoke may throw) must not leave a default-constructed element behind.
-    value_type temp;
-    if (auto const err = v.get<value_type>(temp); err) {
-      return err;
+  if constexpr (std::is_same_v<T, std::vector<value_type>> && !std::is_same_v<value_type, bool>) {
+    // Collect the elements in a per-thread scratch vector that keeps its
+    // capacity from call to call, then move them into out after reserving the
+    // exact size: out is allocated once instead of being regrown. A nested
+    // array of the same type finds the scratch busy and takes the paths below.
+    struct scratch_space {
+      std::vector<value_type> elements{};
+      bool busy{false};
+    };
+    static thread_local scratch_space scratch;
+    if (!scratch.busy && out.empty()) {
+      struct release_scratch {
+        scratch_space &s;
+        T &out;
+        size_t parsed{0};
+        bool complete{false};
+        // On an error or an exception, out gets the elements parsed so far (as
+        // with the loops below), without allocating. Kept out of the hot path.
+        simdjson_never_inline void keep_parsed() noexcept {
+          s.elements.resize(parsed);
+          out.swap(s.elements);
+        }
+        ~release_scratch() {
+          if (simdjson_unlikely(!complete)) { keep_parsed(); }
+          s.elements.clear();
+          // Do not hold on to the memory of a very large array.
+          if (s.elements.capacity() * sizeof(value_type) > (1 << 20)) { std::vector<value_type>().swap(s.elements); }
+          s.busy = false;
+        }
+      } release{scratch, out};
+      scratch.busy = true;
+      for (auto v : arr) {
+        SIMDJSON_TRY(v.get<value_type>(scratch.elements.emplace_back()));
+        release.parsed++;
+      }
+      out.reserve(release.parsed);
+      release.complete = true;
+      for (auto &e : scratch.elements) { out.emplace_back(std::move(e)); }
+      return SUCCESS;
     }
-    concepts::emplace_one(out, std::move(temp));
+  }
+  if constexpr (details::deserialize_in_place<T>) {
+    for (auto v : arr) {
+      auto &slot = concepts::emplace_one(out);
+      // An error or an exception (a user tag_invoke may throw) must not leave
+      // a partially deserialized element behind.
+      details::pop_back_guard<T> guard{out};
+      SIMDJSON_TRY(v.get<value_type>(slot));
+      guard.armed = false;
+    }
+  } else {
+    for (auto v : arr) {
+      // Deserialize into a temporary first: an error or an exception (a user
+      // tag_invoke may throw) must not leave a default-constructed element behind.
+      value_type temp;
+      if (auto const err = v.get<value_type>(temp); err) {
+        return err;
+      }
+      concepts::emplace_one(out, std::move(temp));
+    }
   }
   return SUCCESS;
 }
@@ -118296,9 +121364,17 @@ simdjson_inline simdjson_result<array> array::started(value_iterator &iter) noex
   return array(iter);
 }
 
-simdjson_inline simdjson_result<array_iterator> array::begin() noexcept {
+simdjson_inline simdjson_result<array_iterator> array::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
-  if (!iter.is_at_iterator_start()) { return OUT_OF_ORDER_ITERATION; }
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
+  return array_iterator(iter, this);
+#endif
+  return array_iterator(iter);
+}
+simdjson_inline simdjson_result<array_iterator> array::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The array is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return array_iterator(iter);
 }
@@ -118325,6 +121401,9 @@ simdjson_inline simdjson_result<std::string_view> array::raw_json() noexcept {
 SIMDJSON_PUSH_DISABLE_WARNINGS
 SIMDJSON_DISABLE_STRICT_OVERFLOW_WARNING
 simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t count{0};
   // Important: we do not consume any of the values.
   for(simdjson_unused auto v : *this) { count++; }
@@ -118338,6 +121417,9 @@ simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
 SIMDJSON_POP_DISABLE_WARNINGS
 
 simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   bool is_not_empty;
   auto error = iter.reset_array().get(is_not_empty);
   if(error) { return error; }
@@ -118345,8 +121427,17 @@ simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
 }
 
 inline simdjson_result<bool> array::reset() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   return iter.reset_array();
 }
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline void array::set_locked(bool _locked) noexcept {
+  locked = _locked;
+}
+#endif
 
 inline simdjson_result<value> array::at_pointer(std::string_view json_pointer) noexcept {
   if (json_pointer[0] != '/') { return INVALID_JSON_POINTER; }
@@ -118431,6 +121522,9 @@ inline error_code array::for_each_at_path_with_wildcard(std::string_view json_pa
 }
 
 simdjson_inline simdjson_result<value> array::at(size_t index) noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t i = 0;
   for (auto value : *this) {
     if (i == index) { return value; }
@@ -118460,9 +121554,13 @@ simdjson_inline simdjson_result<haswell::ondemand::array>::simdjson_result(
 {
 }
 
-simdjson_inline simdjson_result<haswell::ondemand::array_iterator> simdjson_result<haswell::ondemand::array>::begin() noexcept {
+simdjson_inline simdjson_result<haswell::ondemand::array_iterator> simdjson_result<haswell::ondemand::array>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<haswell::ondemand::array_iterator> simdjson_result<haswell::ondemand::array>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<haswell::ondemand::array_iterator> simdjson_result<haswell::ondemand::array>::end() noexcept {
   if (error()) { return error(); }
@@ -118525,6 +121623,59 @@ namespace ondemand {
 simdjson_inline array_iterator::array_iterator(const value_iterator &_iter) noexcept
   : iter{_iter}
 {}
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline array_iterator::array_iterator(const value_iterator &_iter, array* _parent) noexcept
+  : parent{_parent}, iter{_iter}
+{
+  if (parent) parent->set_locked(true);
+}
+
+simdjson_inline array_iterator::~array_iterator() noexcept
+{
+  if (parent) parent->set_locked(false);
+}
+
+simdjson_inline array_iterator::array_iterator(array_iterator&& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{other.parent},
+    iter{std::move(other.iter)}
+{
+  other.parent = nullptr;
+}
+
+simdjson_inline array_iterator& array_iterator::operator=(array_iterator&& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = other.parent;
+    iter = std::move(other.iter);
+
+    other.parent = nullptr;
+  }
+  return *this;
+}
+
+simdjson_inline array_iterator::array_iterator(const array_iterator& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{nullptr},
+    iter{other.iter}
+{}
+
+simdjson_inline array_iterator& array_iterator::operator=(const array_iterator& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = nullptr;
+    iter = other.iter;
+  }
+  return *this;
+}
+#endif
 
 simdjson_inline simdjson_result<value> array_iterator::operator*() noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
@@ -120874,6 +124025,9 @@ inline size_t document_stream::size_in_bytes() const noexcept {
 }
 
 inline size_t document_stream::truncated_bytes() const noexcept {
+  // Stage 1 returns EMPTY on zero-length input before it writes the index
+  // sentinels read below, so they would still hold a previous stream's values.
+  if (len == 0) { return 0; }
   if(error == CAPACITY) { return len - batch_start; }
   return parser->implementation->structural_indexes[parser->implementation->n_structural_indexes] - parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
@@ -121165,11 +124319,19 @@ simdjson_inline size_t document_stream::iterator::current_index() const noexcept
 }
 
 simdjson_inline std::string_view document_stream::iterator::source() const noexcept {
-  auto depth = stream->doc.iter.depth();
+  // On error (e.g., CAPACITY), there is no document to walk: return the rest of
+  // the input, as the DOM document_stream does.
+  if (stream->error) {
+    return std::string_view(reinterpret_cast<const char*>(stream->buf) + current_index(), stream->len - current_index());
+  }
+  // Always walk from the root of the document, whatever the current position
+  // of the document iterator: the user may have already consumed part of the
+  // document, so the iterator's current depth must not be used here.
+  depth_t depth = 1;
   auto cur_struct_index = stream->doc.iter._root - stream->parser->implementation->structural_indexes.get();
 
-  // If at root, process the first token to determine if scalar value
-  if (stream->doc.iter.at_root()) {
+  // Process the first token to determine if scalar value
+  {
     switch (stream->buf[stream->batch_start + stream->parser->implementation->structural_indexes[cur_struct_index]]) {
       case '{': case '[':   // Depth=1 already at start of document
         break;
@@ -121183,6 +124345,32 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
           // normally the length would be next_index - current_index() - 1, except for the last document
           size_t svlen = next_index - current_index();
           const char *start = reinterpret_cast<const char*>(stream->buf) + current_index();
+          // When the scalar is followed by a truncated document, the structural
+          // indexes of that document were dropped and next_index is the end of
+          // the input, so we bound the scalar by scanning the token itself.
+          size_t token_len = 0;
+          if (*start == '"') {
+            token_len = 1;
+            while (token_len < svlen) {
+              char c = start[token_len++];
+              if (c == '\\') {
+                token_len++;
+              } else if (c == '"') {
+                break;
+              }
+            }
+          } else {
+            while (token_len < svlen) {
+              char c = start[token_len];
+              if (std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == '{' || c == '[' || c == '\0' || static_cast<uint8_t>(c) == 0x1E) {
+                break;
+              }
+              token_len++;
+            }
+          }
+          if (token_len > 0 && token_len < svlen) {
+            svlen = token_len;
+          }
           // Trim trailing whitespace, NUL, and RS (0x1E). In RFC 7464
           // json_sequence mode the scanner classifies RS as a scalar
           // character, so an RS-prefixed scalar document (number / true /
@@ -121578,7 +124766,8 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
 #endif // SIMDJSON_CHECK_EOF
       break;
     case '"':
-      if(*peek() == ':') {
+      // At the end, peek() would read the sentinel, which points into the padding.
+      if(!at_end() && *peek() == ':') {
         // We are at a key!!!
         // This might happen if you just started an object and you skip it immediately.
         // Performance note: it would be nice to get rid of this check as it is somewhat
@@ -121621,7 +124810,7 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
     }
   }
 
-  return report_error(TAPE_ERROR, "not enough close braces");
+  return report_error(INCOMPLETE_ARRAY_OR_OBJECT, "not enough close braces");
 }
 
 SIMDJSON_POP_DISABLE_WARNINGS
@@ -122542,10 +125731,17 @@ simdjson_inline object::object(const value_iterator &_iter) noexcept
 {
 }
 
-simdjson_inline simdjson_result<object_iterator> object::begin() noexcept {
+simdjson_inline simdjson_result<object_iterator> object::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
   if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
   return object_iterator(iter, this);
+#endif
+  return object_iterator(iter);
+}
+simdjson_inline simdjson_result<object_iterator> object::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The object is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return object_iterator(iter);
 }
@@ -122758,9 +125954,13 @@ simdjson_inline simdjson_result<haswell::ondemand::object>::simdjson_result(hasw
 simdjson_inline simdjson_result<haswell::ondemand::object>::simdjson_result(error_code error) noexcept
     : implementation_simdjson_result_base<haswell::ondemand::object>(error) {}
 
-simdjson_inline simdjson_result<haswell::ondemand::object_iterator> simdjson_result<haswell::ondemand::object>::begin() noexcept {
+simdjson_inline simdjson_result<haswell::ondemand::object_iterator> simdjson_result<haswell::ondemand::object>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<haswell::ondemand::object_iterator> simdjson_result<haswell::ondemand::object>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<haswell::ondemand::object_iterator> simdjson_result<haswell::ondemand::object>::end() noexcept {
   if (error()) { return error(); }
@@ -130237,8 +133437,19 @@ public:
    * Begin array iteration.
    *
    * Part of the std::iterable interface.
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this array while it is
+   * alive, so that reentrant access (at(), count_elements(), reset(), ...) is
+   * reported as OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<array_iterator> begin() & noexcept;
+  /**
+   * Begin iteration over a temporary array, e.g., `v.get_array().begin()`.
+   *
+   * The iterator does not depend on the array instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<array_iterator> begin() && noexcept;
   /**
    * Sentinel representing the end of the array.
    *
@@ -130437,6 +133648,10 @@ protected:
    * iter.is_alive() == false indicates iteration is complete.
    */
   value_iterator iter{};
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  bool locked{false};
+  simdjson_inline void set_locked(bool _locked) noexcept;
+#endif
 
   friend class value;
   friend class document;
@@ -130458,7 +133673,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<icelake::ondemand::array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<icelake::ondemand::array_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<icelake::ondemand::array_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<icelake::ondemand::array_iterator> end() noexcept;
   inline simdjson_result<size_t> count_elements() & noexcept;
   inline simdjson_result<bool> is_empty() & noexcept;
@@ -130538,6 +133754,15 @@ public:
   /** Create a new, invalid array iterator. */
   simdjson_inline array_iterator() noexcept = default;
 
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  simdjson_inline ~array_iterator() noexcept;
+
+  simdjson_inline array_iterator(array_iterator&&) noexcept;
+  simdjson_inline array_iterator& operator=(array_iterator&&) noexcept;
+  simdjson_inline array_iterator(const array_iterator&) noexcept;
+  simdjson_inline array_iterator& operator=(const array_iterator&) noexcept;
+#endif
+
   //
   // Iterator interface
   //
@@ -130580,6 +133805,9 @@ public:
 private:
 #if SIMDJSON_DEVELOPMENT_CHECKS
    bool has_been_referenced{false};
+   array* parent{nullptr};
+
+   simdjson_inline array_iterator(const value_iterator &_iter, array* _parent) noexcept;
 #endif
   value_iterator iter{};
 
@@ -132142,7 +135370,6 @@ public:
    *
    * IMPORTANT: this value is only meaningful under the conditions below.
    *
-   *   - the format is whitespace_delimited or newline_delimited;
    *   - you iterated all the way to the end of the stream;
    *   - no document reported an error. Iteration stops at the first failed
    *     document, which can leave the bookkeeping from a mid-stream batch.
@@ -132150,6 +135377,9 @@ public:
    * If you need to know about a truncated tail outside those conditions, track
    * it yourself from the last successful document (see iterator::current_index()
    * and iterator::source()).
+   *
+   * An empty input (zero bytes) or an input made only of white space contains
+   * no document: truncated_bytes() returns zero.
    */
   inline size_t truncated_bytes() const noexcept;
 
@@ -132209,7 +135439,10 @@ public:
      *
      * The returned string_view instance is simply a map to the (unparsed)
      * source string: it may thus include white-space characters and all manner
-     * of padding.
+     * of padding. It spans the whole current document, whether or not you
+     * have already accessed (part of) the document. Thus
+     * current_index() + source().size() is the offset just past the end of the
+     * current document, which is useful when reading a stream in chunks.
      *
      * This function (source()) is experimental and the usage
      * may change in future versions of simdjson: we find the API somewhat
@@ -133595,7 +136828,7 @@ match_window_candidate(const char* p, std::uint8_t ki,
 // --- describe() string helpers (constexpr; no std::to_string, which is not) ---
 
 // Append the decimal form of v to s.
-constexpr void append_uint(std::string& s, std::size_t v) {
+SIMDJSON_CONSTEXPR_STRING void append_uint(std::string& s, std::size_t v) {
     if (v == 0) { s.push_back('0'); return; }
     char buf[20];
     std::size_t n = 0;
@@ -133605,7 +136838,7 @@ constexpr void append_uint(std::string& s, std::size_t v) {
 
 // Append a byte as its decimal value, plus the printable character in quotes
 // when it is in the printable ASCII range (e.g. "110 ('n')").
-constexpr void append_byte(std::string& s, unsigned b) {
+SIMDJSON_CONSTEXPR_STRING void append_byte(std::string& s, unsigned b) {
     append_uint(s, b);
     if (b >= 0x20 && b < 0x7f) {
         s += " ('";
@@ -133766,14 +136999,15 @@ struct key_selector {
      * match_raw() does step by step.
      *
      * Everything it reports is derived from the compile-time tables, so describe()
-     * is itself usable in a constant expression:
+     * is itself usable in a constant expression when the standard library supports
+     * constexpr std::string (__cpp_lib_constexpr_string):
      *
      *   static_assert(!key_selector<"name", "city">::describe().empty());
      *
      * It allocates a std::string and is meant for documentation, debugging and
      * tests, not for any hot path.
      */
-    static constexpr std::string describe() {
+    static SIMDJSON_CONSTEXPR_STRING std::string describe() {
         std::string s;
         s += "key_selector: ";
         key_selector_detail::append_uint(s, N);
@@ -134071,8 +137305,19 @@ public:
    * Using the iterator directly is also possible but error-prone and discouraged. In particular,
    * you must dereference the iterator exactly once per iteration (before calling '++').
    * Doing otherwise is unsafe and may lead to errors. You are responsible for ensuring
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this object while it is
+   * alive, so that reentrant access (find_field(), reset(), ...) is reported as
+   * OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<object_iterator> begin() & noexcept;
+  /**
+   * Get an iterator to the start of a temporary object, e.g., `v.get_object().begin()`.
+   *
+   * The iterator does not depend on the object instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<object_iterator> end() noexcept;
   /**
    * Look up a field by name on an object (order-sensitive). By order-sensitive, we mean that
@@ -134495,7 +137740,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<icelake::ondemand::object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<icelake::ondemand::object_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<icelake::ondemand::object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<icelake::ondemand::object_iterator> end() noexcept;
   simdjson_inline simdjson_result<icelake::ondemand::value> find_field(std::string_view key) & noexcept;
   simdjson_inline simdjson_result<icelake::ondemand::value> find_field(std::string_view key) && noexcept;
@@ -135092,7 +138338,13 @@ template <concepts::constructible_from_string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::string_view>) {
   std::string_view str;
   SIMDJSON_TRY(val.get_string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::string): building a temporary and
+    // move-assigning it is markedly slower.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 
@@ -135103,11 +138355,41 @@ template <concepts::constructible_from_u8string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::u8string_view>) {
   std::u8string_view str;
   SIMDJSON_TRY(val.get_u8string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::u8string), as for std::string above.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 #endif // SIMDJSON_SUPPORTS_CHAR8_T
 
+
+namespace details {
+// Whether to deserialize the elements of the container T directly into a new
+// element (emplace_one(out) and then get) rather than into a temporary that is
+// then moved into the container. A temporary of a trivially copyable type lives
+// in registers and is cheap to move, and value-initializing a small element in
+// place costs more than it saves (GCC zeroes it with rep stos). But moving a
+// large element, or a string (whose deserialization then needs a temporary
+// string and a move assignment of its own), is expensive.
+template <typename T>
+concept deserialize_in_place =
+    concepts::returns_reference<T> && requires(T &c) { c.pop_back(); } &&
+    !std::is_trivially_copyable_v<typename T::value_type> &&
+    (sizeof(typename T::value_type) > 32 || concepts::constructible_from_string_view<typename T::value_type>);
+
+// Removes the last element of the container on destruction while armed.
+template <typename T>
+struct pop_back_guard {
+  T &container;
+  bool armed{true};
+  ~pop_back_guard() {
+    if (armed) { container.pop_back(); }
+  }
+};
+} // namespace details
 
 /**
  * STL containers have several constructors including one that takes a single
@@ -135132,14 +138414,66 @@ error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(false) {
     SIMDJSON_TRY(val.get_array().get(arr));
   }
 
-  for (auto v : arr) {
-    // Deserialize into a temporary first: an error or an exception (a user
-    // tag_invoke may throw) must not leave a default-constructed element behind.
-    value_type temp;
-    if (auto const err = v.get<value_type>(temp); err) {
-      return err;
+  if constexpr (std::is_same_v<T, std::vector<value_type>> && !std::is_same_v<value_type, bool>) {
+    // Collect the elements in a per-thread scratch vector that keeps its
+    // capacity from call to call, then move them into out after reserving the
+    // exact size: out is allocated once instead of being regrown. A nested
+    // array of the same type finds the scratch busy and takes the paths below.
+    struct scratch_space {
+      std::vector<value_type> elements{};
+      bool busy{false};
+    };
+    static thread_local scratch_space scratch;
+    if (!scratch.busy && out.empty()) {
+      struct release_scratch {
+        scratch_space &s;
+        T &out;
+        size_t parsed{0};
+        bool complete{false};
+        // On an error or an exception, out gets the elements parsed so far (as
+        // with the loops below), without allocating. Kept out of the hot path.
+        simdjson_never_inline void keep_parsed() noexcept {
+          s.elements.resize(parsed);
+          out.swap(s.elements);
+        }
+        ~release_scratch() {
+          if (simdjson_unlikely(!complete)) { keep_parsed(); }
+          s.elements.clear();
+          // Do not hold on to the memory of a very large array.
+          if (s.elements.capacity() * sizeof(value_type) > (1 << 20)) { std::vector<value_type>().swap(s.elements); }
+          s.busy = false;
+        }
+      } release{scratch, out};
+      scratch.busy = true;
+      for (auto v : arr) {
+        SIMDJSON_TRY(v.get<value_type>(scratch.elements.emplace_back()));
+        release.parsed++;
+      }
+      out.reserve(release.parsed);
+      release.complete = true;
+      for (auto &e : scratch.elements) { out.emplace_back(std::move(e)); }
+      return SUCCESS;
     }
-    concepts::emplace_one(out, std::move(temp));
+  }
+  if constexpr (details::deserialize_in_place<T>) {
+    for (auto v : arr) {
+      auto &slot = concepts::emplace_one(out);
+      // An error or an exception (a user tag_invoke may throw) must not leave
+      // a partially deserialized element behind.
+      details::pop_back_guard<T> guard{out};
+      SIMDJSON_TRY(v.get<value_type>(slot));
+      guard.armed = false;
+    }
+  } else {
+    for (auto v : arr) {
+      // Deserialize into a temporary first: an error or an exception (a user
+      // tag_invoke may throw) must not leave a default-constructed element behind.
+      value_type temp;
+      if (auto const err = v.get<value_type>(temp); err) {
+        return err;
+      }
+      concepts::emplace_one(out, std::move(temp));
+    }
   }
   return SUCCESS;
 }
@@ -136211,9 +139545,17 @@ simdjson_inline simdjson_result<array> array::started(value_iterator &iter) noex
   return array(iter);
 }
 
-simdjson_inline simdjson_result<array_iterator> array::begin() noexcept {
+simdjson_inline simdjson_result<array_iterator> array::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
-  if (!iter.is_at_iterator_start()) { return OUT_OF_ORDER_ITERATION; }
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
+  return array_iterator(iter, this);
+#endif
+  return array_iterator(iter);
+}
+simdjson_inline simdjson_result<array_iterator> array::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The array is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return array_iterator(iter);
 }
@@ -136240,6 +139582,9 @@ simdjson_inline simdjson_result<std::string_view> array::raw_json() noexcept {
 SIMDJSON_PUSH_DISABLE_WARNINGS
 SIMDJSON_DISABLE_STRICT_OVERFLOW_WARNING
 simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t count{0};
   // Important: we do not consume any of the values.
   for(simdjson_unused auto v : *this) { count++; }
@@ -136253,6 +139598,9 @@ simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
 SIMDJSON_POP_DISABLE_WARNINGS
 
 simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   bool is_not_empty;
   auto error = iter.reset_array().get(is_not_empty);
   if(error) { return error; }
@@ -136260,8 +139608,17 @@ simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
 }
 
 inline simdjson_result<bool> array::reset() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   return iter.reset_array();
 }
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline void array::set_locked(bool _locked) noexcept {
+  locked = _locked;
+}
+#endif
 
 inline simdjson_result<value> array::at_pointer(std::string_view json_pointer) noexcept {
   if (json_pointer[0] != '/') { return INVALID_JSON_POINTER; }
@@ -136346,6 +139703,9 @@ inline error_code array::for_each_at_path_with_wildcard(std::string_view json_pa
 }
 
 simdjson_inline simdjson_result<value> array::at(size_t index) noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t i = 0;
   for (auto value : *this) {
     if (i == index) { return value; }
@@ -136375,9 +139735,13 @@ simdjson_inline simdjson_result<icelake::ondemand::array>::simdjson_result(
 {
 }
 
-simdjson_inline simdjson_result<icelake::ondemand::array_iterator> simdjson_result<icelake::ondemand::array>::begin() noexcept {
+simdjson_inline simdjson_result<icelake::ondemand::array_iterator> simdjson_result<icelake::ondemand::array>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<icelake::ondemand::array_iterator> simdjson_result<icelake::ondemand::array>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<icelake::ondemand::array_iterator> simdjson_result<icelake::ondemand::array>::end() noexcept {
   if (error()) { return error(); }
@@ -136440,6 +139804,59 @@ namespace ondemand {
 simdjson_inline array_iterator::array_iterator(const value_iterator &_iter) noexcept
   : iter{_iter}
 {}
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline array_iterator::array_iterator(const value_iterator &_iter, array* _parent) noexcept
+  : parent{_parent}, iter{_iter}
+{
+  if (parent) parent->set_locked(true);
+}
+
+simdjson_inline array_iterator::~array_iterator() noexcept
+{
+  if (parent) parent->set_locked(false);
+}
+
+simdjson_inline array_iterator::array_iterator(array_iterator&& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{other.parent},
+    iter{std::move(other.iter)}
+{
+  other.parent = nullptr;
+}
+
+simdjson_inline array_iterator& array_iterator::operator=(array_iterator&& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = other.parent;
+    iter = std::move(other.iter);
+
+    other.parent = nullptr;
+  }
+  return *this;
+}
+
+simdjson_inline array_iterator::array_iterator(const array_iterator& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{nullptr},
+    iter{other.iter}
+{}
+
+simdjson_inline array_iterator& array_iterator::operator=(const array_iterator& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = nullptr;
+    iter = other.iter;
+  }
+  return *this;
+}
+#endif
 
 simdjson_inline simdjson_result<value> array_iterator::operator*() noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
@@ -138789,6 +142206,9 @@ inline size_t document_stream::size_in_bytes() const noexcept {
 }
 
 inline size_t document_stream::truncated_bytes() const noexcept {
+  // Stage 1 returns EMPTY on zero-length input before it writes the index
+  // sentinels read below, so they would still hold a previous stream's values.
+  if (len == 0) { return 0; }
   if(error == CAPACITY) { return len - batch_start; }
   return parser->implementation->structural_indexes[parser->implementation->n_structural_indexes] - parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
@@ -139080,11 +142500,19 @@ simdjson_inline size_t document_stream::iterator::current_index() const noexcept
 }
 
 simdjson_inline std::string_view document_stream::iterator::source() const noexcept {
-  auto depth = stream->doc.iter.depth();
+  // On error (e.g., CAPACITY), there is no document to walk: return the rest of
+  // the input, as the DOM document_stream does.
+  if (stream->error) {
+    return std::string_view(reinterpret_cast<const char*>(stream->buf) + current_index(), stream->len - current_index());
+  }
+  // Always walk from the root of the document, whatever the current position
+  // of the document iterator: the user may have already consumed part of the
+  // document, so the iterator's current depth must not be used here.
+  depth_t depth = 1;
   auto cur_struct_index = stream->doc.iter._root - stream->parser->implementation->structural_indexes.get();
 
-  // If at root, process the first token to determine if scalar value
-  if (stream->doc.iter.at_root()) {
+  // Process the first token to determine if scalar value
+  {
     switch (stream->buf[stream->batch_start + stream->parser->implementation->structural_indexes[cur_struct_index]]) {
       case '{': case '[':   // Depth=1 already at start of document
         break;
@@ -139098,6 +142526,32 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
           // normally the length would be next_index - current_index() - 1, except for the last document
           size_t svlen = next_index - current_index();
           const char *start = reinterpret_cast<const char*>(stream->buf) + current_index();
+          // When the scalar is followed by a truncated document, the structural
+          // indexes of that document were dropped and next_index is the end of
+          // the input, so we bound the scalar by scanning the token itself.
+          size_t token_len = 0;
+          if (*start == '"') {
+            token_len = 1;
+            while (token_len < svlen) {
+              char c = start[token_len++];
+              if (c == '\\') {
+                token_len++;
+              } else if (c == '"') {
+                break;
+              }
+            }
+          } else {
+            while (token_len < svlen) {
+              char c = start[token_len];
+              if (std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == '{' || c == '[' || c == '\0' || static_cast<uint8_t>(c) == 0x1E) {
+                break;
+              }
+              token_len++;
+            }
+          }
+          if (token_len > 0 && token_len < svlen) {
+            svlen = token_len;
+          }
           // Trim trailing whitespace, NUL, and RS (0x1E). In RFC 7464
           // json_sequence mode the scanner classifies RS as a scalar
           // character, so an RS-prefixed scalar document (number / true /
@@ -139493,7 +142947,8 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
 #endif // SIMDJSON_CHECK_EOF
       break;
     case '"':
-      if(*peek() == ':') {
+      // At the end, peek() would read the sentinel, which points into the padding.
+      if(!at_end() && *peek() == ':') {
         // We are at a key!!!
         // This might happen if you just started an object and you skip it immediately.
         // Performance note: it would be nice to get rid of this check as it is somewhat
@@ -139536,7 +142991,7 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
     }
   }
 
-  return report_error(TAPE_ERROR, "not enough close braces");
+  return report_error(INCOMPLETE_ARRAY_OR_OBJECT, "not enough close braces");
 }
 
 SIMDJSON_POP_DISABLE_WARNINGS
@@ -140457,10 +143912,17 @@ simdjson_inline object::object(const value_iterator &_iter) noexcept
 {
 }
 
-simdjson_inline simdjson_result<object_iterator> object::begin() noexcept {
+simdjson_inline simdjson_result<object_iterator> object::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
   if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
   return object_iterator(iter, this);
+#endif
+  return object_iterator(iter);
+}
+simdjson_inline simdjson_result<object_iterator> object::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The object is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return object_iterator(iter);
 }
@@ -140673,9 +144135,13 @@ simdjson_inline simdjson_result<icelake::ondemand::object>::simdjson_result(icel
 simdjson_inline simdjson_result<icelake::ondemand::object>::simdjson_result(error_code error) noexcept
     : implementation_simdjson_result_base<icelake::ondemand::object>(error) {}
 
-simdjson_inline simdjson_result<icelake::ondemand::object_iterator> simdjson_result<icelake::ondemand::object>::begin() noexcept {
+simdjson_inline simdjson_result<icelake::ondemand::object_iterator> simdjson_result<icelake::ondemand::object>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<icelake::ondemand::object_iterator> simdjson_result<icelake::ondemand::object>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<icelake::ondemand::object_iterator> simdjson_result<icelake::ondemand::object>::end() noexcept {
   if (error()) { return error(); }
@@ -148267,8 +151733,19 @@ public:
    * Begin array iteration.
    *
    * Part of the std::iterable interface.
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this array while it is
+   * alive, so that reentrant access (at(), count_elements(), reset(), ...) is
+   * reported as OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<array_iterator> begin() & noexcept;
+  /**
+   * Begin iteration over a temporary array, e.g., `v.get_array().begin()`.
+   *
+   * The iterator does not depend on the array instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<array_iterator> begin() && noexcept;
   /**
    * Sentinel representing the end of the array.
    *
@@ -148467,6 +151944,10 @@ protected:
    * iter.is_alive() == false indicates iteration is complete.
    */
   value_iterator iter{};
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  bool locked{false};
+  simdjson_inline void set_locked(bool _locked) noexcept;
+#endif
 
   friend class value;
   friend class document;
@@ -148488,7 +151969,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<ppc64::ondemand::array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<ppc64::ondemand::array_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<ppc64::ondemand::array_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<ppc64::ondemand::array_iterator> end() noexcept;
   inline simdjson_result<size_t> count_elements() & noexcept;
   inline simdjson_result<bool> is_empty() & noexcept;
@@ -148568,6 +152050,15 @@ public:
   /** Create a new, invalid array iterator. */
   simdjson_inline array_iterator() noexcept = default;
 
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  simdjson_inline ~array_iterator() noexcept;
+
+  simdjson_inline array_iterator(array_iterator&&) noexcept;
+  simdjson_inline array_iterator& operator=(array_iterator&&) noexcept;
+  simdjson_inline array_iterator(const array_iterator&) noexcept;
+  simdjson_inline array_iterator& operator=(const array_iterator&) noexcept;
+#endif
+
   //
   // Iterator interface
   //
@@ -148610,6 +152101,9 @@ public:
 private:
 #if SIMDJSON_DEVELOPMENT_CHECKS
    bool has_been_referenced{false};
+   array* parent{nullptr};
+
+   simdjson_inline array_iterator(const value_iterator &_iter, array* _parent) noexcept;
 #endif
   value_iterator iter{};
 
@@ -150172,7 +153666,6 @@ public:
    *
    * IMPORTANT: this value is only meaningful under the conditions below.
    *
-   *   - the format is whitespace_delimited or newline_delimited;
    *   - you iterated all the way to the end of the stream;
    *   - no document reported an error. Iteration stops at the first failed
    *     document, which can leave the bookkeeping from a mid-stream batch.
@@ -150180,6 +153673,9 @@ public:
    * If you need to know about a truncated tail outside those conditions, track
    * it yourself from the last successful document (see iterator::current_index()
    * and iterator::source()).
+   *
+   * An empty input (zero bytes) or an input made only of white space contains
+   * no document: truncated_bytes() returns zero.
    */
   inline size_t truncated_bytes() const noexcept;
 
@@ -150239,7 +153735,10 @@ public:
      *
      * The returned string_view instance is simply a map to the (unparsed)
      * source string: it may thus include white-space characters and all manner
-     * of padding.
+     * of padding. It spans the whole current document, whether or not you
+     * have already accessed (part of) the document. Thus
+     * current_index() + source().size() is the offset just past the end of the
+     * current document, which is useful when reading a stream in chunks.
      *
      * This function (source()) is experimental and the usage
      * may change in future versions of simdjson: we find the API somewhat
@@ -151625,7 +155124,7 @@ match_window_candidate(const char* p, std::uint8_t ki,
 // --- describe() string helpers (constexpr; no std::to_string, which is not) ---
 
 // Append the decimal form of v to s.
-constexpr void append_uint(std::string& s, std::size_t v) {
+SIMDJSON_CONSTEXPR_STRING void append_uint(std::string& s, std::size_t v) {
     if (v == 0) { s.push_back('0'); return; }
     char buf[20];
     std::size_t n = 0;
@@ -151635,7 +155134,7 @@ constexpr void append_uint(std::string& s, std::size_t v) {
 
 // Append a byte as its decimal value, plus the printable character in quotes
 // when it is in the printable ASCII range (e.g. "110 ('n')").
-constexpr void append_byte(std::string& s, unsigned b) {
+SIMDJSON_CONSTEXPR_STRING void append_byte(std::string& s, unsigned b) {
     append_uint(s, b);
     if (b >= 0x20 && b < 0x7f) {
         s += " ('";
@@ -151796,14 +155295,15 @@ struct key_selector {
      * match_raw() does step by step.
      *
      * Everything it reports is derived from the compile-time tables, so describe()
-     * is itself usable in a constant expression:
+     * is itself usable in a constant expression when the standard library supports
+     * constexpr std::string (__cpp_lib_constexpr_string):
      *
      *   static_assert(!key_selector<"name", "city">::describe().empty());
      *
      * It allocates a std::string and is meant for documentation, debugging and
      * tests, not for any hot path.
      */
-    static constexpr std::string describe() {
+    static SIMDJSON_CONSTEXPR_STRING std::string describe() {
         std::string s;
         s += "key_selector: ";
         key_selector_detail::append_uint(s, N);
@@ -152101,8 +155601,19 @@ public:
    * Using the iterator directly is also possible but error-prone and discouraged. In particular,
    * you must dereference the iterator exactly once per iteration (before calling '++').
    * Doing otherwise is unsafe and may lead to errors. You are responsible for ensuring
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this object while it is
+   * alive, so that reentrant access (find_field(), reset(), ...) is reported as
+   * OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<object_iterator> begin() & noexcept;
+  /**
+   * Get an iterator to the start of a temporary object, e.g., `v.get_object().begin()`.
+   *
+   * The iterator does not depend on the object instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<object_iterator> end() noexcept;
   /**
    * Look up a field by name on an object (order-sensitive). By order-sensitive, we mean that
@@ -152525,7 +156036,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<ppc64::ondemand::object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<ppc64::ondemand::object_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<ppc64::ondemand::object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<ppc64::ondemand::object_iterator> end() noexcept;
   simdjson_inline simdjson_result<ppc64::ondemand::value> find_field(std::string_view key) & noexcept;
   simdjson_inline simdjson_result<ppc64::ondemand::value> find_field(std::string_view key) && noexcept;
@@ -153122,7 +156634,13 @@ template <concepts::constructible_from_string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::string_view>) {
   std::string_view str;
   SIMDJSON_TRY(val.get_string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::string): building a temporary and
+    // move-assigning it is markedly slower.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 
@@ -153133,11 +156651,41 @@ template <concepts::constructible_from_u8string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::u8string_view>) {
   std::u8string_view str;
   SIMDJSON_TRY(val.get_u8string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::u8string), as for std::string above.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 #endif // SIMDJSON_SUPPORTS_CHAR8_T
 
+
+namespace details {
+// Whether to deserialize the elements of the container T directly into a new
+// element (emplace_one(out) and then get) rather than into a temporary that is
+// then moved into the container. A temporary of a trivially copyable type lives
+// in registers and is cheap to move, and value-initializing a small element in
+// place costs more than it saves (GCC zeroes it with rep stos). But moving a
+// large element, or a string (whose deserialization then needs a temporary
+// string and a move assignment of its own), is expensive.
+template <typename T>
+concept deserialize_in_place =
+    concepts::returns_reference<T> && requires(T &c) { c.pop_back(); } &&
+    !std::is_trivially_copyable_v<typename T::value_type> &&
+    (sizeof(typename T::value_type) > 32 || concepts::constructible_from_string_view<typename T::value_type>);
+
+// Removes the last element of the container on destruction while armed.
+template <typename T>
+struct pop_back_guard {
+  T &container;
+  bool armed{true};
+  ~pop_back_guard() {
+    if (armed) { container.pop_back(); }
+  }
+};
+} // namespace details
 
 /**
  * STL containers have several constructors including one that takes a single
@@ -153162,14 +156710,66 @@ error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(false) {
     SIMDJSON_TRY(val.get_array().get(arr));
   }
 
-  for (auto v : arr) {
-    // Deserialize into a temporary first: an error or an exception (a user
-    // tag_invoke may throw) must not leave a default-constructed element behind.
-    value_type temp;
-    if (auto const err = v.get<value_type>(temp); err) {
-      return err;
+  if constexpr (std::is_same_v<T, std::vector<value_type>> && !std::is_same_v<value_type, bool>) {
+    // Collect the elements in a per-thread scratch vector that keeps its
+    // capacity from call to call, then move them into out after reserving the
+    // exact size: out is allocated once instead of being regrown. A nested
+    // array of the same type finds the scratch busy and takes the paths below.
+    struct scratch_space {
+      std::vector<value_type> elements{};
+      bool busy{false};
+    };
+    static thread_local scratch_space scratch;
+    if (!scratch.busy && out.empty()) {
+      struct release_scratch {
+        scratch_space &s;
+        T &out;
+        size_t parsed{0};
+        bool complete{false};
+        // On an error or an exception, out gets the elements parsed so far (as
+        // with the loops below), without allocating. Kept out of the hot path.
+        simdjson_never_inline void keep_parsed() noexcept {
+          s.elements.resize(parsed);
+          out.swap(s.elements);
+        }
+        ~release_scratch() {
+          if (simdjson_unlikely(!complete)) { keep_parsed(); }
+          s.elements.clear();
+          // Do not hold on to the memory of a very large array.
+          if (s.elements.capacity() * sizeof(value_type) > (1 << 20)) { std::vector<value_type>().swap(s.elements); }
+          s.busy = false;
+        }
+      } release{scratch, out};
+      scratch.busy = true;
+      for (auto v : arr) {
+        SIMDJSON_TRY(v.get<value_type>(scratch.elements.emplace_back()));
+        release.parsed++;
+      }
+      out.reserve(release.parsed);
+      release.complete = true;
+      for (auto &e : scratch.elements) { out.emplace_back(std::move(e)); }
+      return SUCCESS;
     }
-    concepts::emplace_one(out, std::move(temp));
+  }
+  if constexpr (details::deserialize_in_place<T>) {
+    for (auto v : arr) {
+      auto &slot = concepts::emplace_one(out);
+      // An error or an exception (a user tag_invoke may throw) must not leave
+      // a partially deserialized element behind.
+      details::pop_back_guard<T> guard{out};
+      SIMDJSON_TRY(v.get<value_type>(slot));
+      guard.armed = false;
+    }
+  } else {
+    for (auto v : arr) {
+      // Deserialize into a temporary first: an error or an exception (a user
+      // tag_invoke may throw) must not leave a default-constructed element behind.
+      value_type temp;
+      if (auto const err = v.get<value_type>(temp); err) {
+        return err;
+      }
+      concepts::emplace_one(out, std::move(temp));
+    }
   }
   return SUCCESS;
 }
@@ -154241,9 +157841,17 @@ simdjson_inline simdjson_result<array> array::started(value_iterator &iter) noex
   return array(iter);
 }
 
-simdjson_inline simdjson_result<array_iterator> array::begin() noexcept {
+simdjson_inline simdjson_result<array_iterator> array::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
-  if (!iter.is_at_iterator_start()) { return OUT_OF_ORDER_ITERATION; }
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
+  return array_iterator(iter, this);
+#endif
+  return array_iterator(iter);
+}
+simdjson_inline simdjson_result<array_iterator> array::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The array is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return array_iterator(iter);
 }
@@ -154270,6 +157878,9 @@ simdjson_inline simdjson_result<std::string_view> array::raw_json() noexcept {
 SIMDJSON_PUSH_DISABLE_WARNINGS
 SIMDJSON_DISABLE_STRICT_OVERFLOW_WARNING
 simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t count{0};
   // Important: we do not consume any of the values.
   for(simdjson_unused auto v : *this) { count++; }
@@ -154283,6 +157894,9 @@ simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
 SIMDJSON_POP_DISABLE_WARNINGS
 
 simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   bool is_not_empty;
   auto error = iter.reset_array().get(is_not_empty);
   if(error) { return error; }
@@ -154290,8 +157904,17 @@ simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
 }
 
 inline simdjson_result<bool> array::reset() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   return iter.reset_array();
 }
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline void array::set_locked(bool _locked) noexcept {
+  locked = _locked;
+}
+#endif
 
 inline simdjson_result<value> array::at_pointer(std::string_view json_pointer) noexcept {
   if (json_pointer[0] != '/') { return INVALID_JSON_POINTER; }
@@ -154376,6 +157999,9 @@ inline error_code array::for_each_at_path_with_wildcard(std::string_view json_pa
 }
 
 simdjson_inline simdjson_result<value> array::at(size_t index) noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t i = 0;
   for (auto value : *this) {
     if (i == index) { return value; }
@@ -154405,9 +158031,13 @@ simdjson_inline simdjson_result<ppc64::ondemand::array>::simdjson_result(
 {
 }
 
-simdjson_inline simdjson_result<ppc64::ondemand::array_iterator> simdjson_result<ppc64::ondemand::array>::begin() noexcept {
+simdjson_inline simdjson_result<ppc64::ondemand::array_iterator> simdjson_result<ppc64::ondemand::array>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<ppc64::ondemand::array_iterator> simdjson_result<ppc64::ondemand::array>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<ppc64::ondemand::array_iterator> simdjson_result<ppc64::ondemand::array>::end() noexcept {
   if (error()) { return error(); }
@@ -154470,6 +158100,59 @@ namespace ondemand {
 simdjson_inline array_iterator::array_iterator(const value_iterator &_iter) noexcept
   : iter{_iter}
 {}
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline array_iterator::array_iterator(const value_iterator &_iter, array* _parent) noexcept
+  : parent{_parent}, iter{_iter}
+{
+  if (parent) parent->set_locked(true);
+}
+
+simdjson_inline array_iterator::~array_iterator() noexcept
+{
+  if (parent) parent->set_locked(false);
+}
+
+simdjson_inline array_iterator::array_iterator(array_iterator&& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{other.parent},
+    iter{std::move(other.iter)}
+{
+  other.parent = nullptr;
+}
+
+simdjson_inline array_iterator& array_iterator::operator=(array_iterator&& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = other.parent;
+    iter = std::move(other.iter);
+
+    other.parent = nullptr;
+  }
+  return *this;
+}
+
+simdjson_inline array_iterator::array_iterator(const array_iterator& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{nullptr},
+    iter{other.iter}
+{}
+
+simdjson_inline array_iterator& array_iterator::operator=(const array_iterator& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = nullptr;
+    iter = other.iter;
+  }
+  return *this;
+}
+#endif
 
 simdjson_inline simdjson_result<value> array_iterator::operator*() noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
@@ -156819,6 +160502,9 @@ inline size_t document_stream::size_in_bytes() const noexcept {
 }
 
 inline size_t document_stream::truncated_bytes() const noexcept {
+  // Stage 1 returns EMPTY on zero-length input before it writes the index
+  // sentinels read below, so they would still hold a previous stream's values.
+  if (len == 0) { return 0; }
   if(error == CAPACITY) { return len - batch_start; }
   return parser->implementation->structural_indexes[parser->implementation->n_structural_indexes] - parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
@@ -157110,11 +160796,19 @@ simdjson_inline size_t document_stream::iterator::current_index() const noexcept
 }
 
 simdjson_inline std::string_view document_stream::iterator::source() const noexcept {
-  auto depth = stream->doc.iter.depth();
+  // On error (e.g., CAPACITY), there is no document to walk: return the rest of
+  // the input, as the DOM document_stream does.
+  if (stream->error) {
+    return std::string_view(reinterpret_cast<const char*>(stream->buf) + current_index(), stream->len - current_index());
+  }
+  // Always walk from the root of the document, whatever the current position
+  // of the document iterator: the user may have already consumed part of the
+  // document, so the iterator's current depth must not be used here.
+  depth_t depth = 1;
   auto cur_struct_index = stream->doc.iter._root - stream->parser->implementation->structural_indexes.get();
 
-  // If at root, process the first token to determine if scalar value
-  if (stream->doc.iter.at_root()) {
+  // Process the first token to determine if scalar value
+  {
     switch (stream->buf[stream->batch_start + stream->parser->implementation->structural_indexes[cur_struct_index]]) {
       case '{': case '[':   // Depth=1 already at start of document
         break;
@@ -157128,6 +160822,32 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
           // normally the length would be next_index - current_index() - 1, except for the last document
           size_t svlen = next_index - current_index();
           const char *start = reinterpret_cast<const char*>(stream->buf) + current_index();
+          // When the scalar is followed by a truncated document, the structural
+          // indexes of that document were dropped and next_index is the end of
+          // the input, so we bound the scalar by scanning the token itself.
+          size_t token_len = 0;
+          if (*start == '"') {
+            token_len = 1;
+            while (token_len < svlen) {
+              char c = start[token_len++];
+              if (c == '\\') {
+                token_len++;
+              } else if (c == '"') {
+                break;
+              }
+            }
+          } else {
+            while (token_len < svlen) {
+              char c = start[token_len];
+              if (std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == '{' || c == '[' || c == '\0' || static_cast<uint8_t>(c) == 0x1E) {
+                break;
+              }
+              token_len++;
+            }
+          }
+          if (token_len > 0 && token_len < svlen) {
+            svlen = token_len;
+          }
           // Trim trailing whitespace, NUL, and RS (0x1E). In RFC 7464
           // json_sequence mode the scanner classifies RS as a scalar
           // character, so an RS-prefixed scalar document (number / true /
@@ -157523,7 +161243,8 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
 #endif // SIMDJSON_CHECK_EOF
       break;
     case '"':
-      if(*peek() == ':') {
+      // At the end, peek() would read the sentinel, which points into the padding.
+      if(!at_end() && *peek() == ':') {
         // We are at a key!!!
         // This might happen if you just started an object and you skip it immediately.
         // Performance note: it would be nice to get rid of this check as it is somewhat
@@ -157566,7 +161287,7 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
     }
   }
 
-  return report_error(TAPE_ERROR, "not enough close braces");
+  return report_error(INCOMPLETE_ARRAY_OR_OBJECT, "not enough close braces");
 }
 
 SIMDJSON_POP_DISABLE_WARNINGS
@@ -158487,10 +162208,17 @@ simdjson_inline object::object(const value_iterator &_iter) noexcept
 {
 }
 
-simdjson_inline simdjson_result<object_iterator> object::begin() noexcept {
+simdjson_inline simdjson_result<object_iterator> object::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
   if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
   return object_iterator(iter, this);
+#endif
+  return object_iterator(iter);
+}
+simdjson_inline simdjson_result<object_iterator> object::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The object is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return object_iterator(iter);
 }
@@ -158703,9 +162431,13 @@ simdjson_inline simdjson_result<ppc64::ondemand::object>::simdjson_result(ppc64:
 simdjson_inline simdjson_result<ppc64::ondemand::object>::simdjson_result(error_code error) noexcept
     : implementation_simdjson_result_base<ppc64::ondemand::object>(error) {}
 
-simdjson_inline simdjson_result<ppc64::ondemand::object_iterator> simdjson_result<ppc64::ondemand::object>::begin() noexcept {
+simdjson_inline simdjson_result<ppc64::ondemand::object_iterator> simdjson_result<ppc64::ondemand::object>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<ppc64::ondemand::object_iterator> simdjson_result<ppc64::ondemand::object>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<ppc64::ondemand::object_iterator> simdjson_result<ppc64::ondemand::object>::end() noexcept {
   if (error()) { return error(); }
@@ -166604,8 +170336,19 @@ public:
    * Begin array iteration.
    *
    * Part of the std::iterable interface.
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this array while it is
+   * alive, so that reentrant access (at(), count_elements(), reset(), ...) is
+   * reported as OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<array_iterator> begin() & noexcept;
+  /**
+   * Begin iteration over a temporary array, e.g., `v.get_array().begin()`.
+   *
+   * The iterator does not depend on the array instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<array_iterator> begin() && noexcept;
   /**
    * Sentinel representing the end of the array.
    *
@@ -166804,6 +170547,10 @@ protected:
    * iter.is_alive() == false indicates iteration is complete.
    */
   value_iterator iter{};
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  bool locked{false};
+  simdjson_inline void set_locked(bool _locked) noexcept;
+#endif
 
   friend class value;
   friend class document;
@@ -166825,7 +170572,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<westmere::ondemand::array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<westmere::ondemand::array_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<westmere::ondemand::array_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<westmere::ondemand::array_iterator> end() noexcept;
   inline simdjson_result<size_t> count_elements() & noexcept;
   inline simdjson_result<bool> is_empty() & noexcept;
@@ -166905,6 +170653,15 @@ public:
   /** Create a new, invalid array iterator. */
   simdjson_inline array_iterator() noexcept = default;
 
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  simdjson_inline ~array_iterator() noexcept;
+
+  simdjson_inline array_iterator(array_iterator&&) noexcept;
+  simdjson_inline array_iterator& operator=(array_iterator&&) noexcept;
+  simdjson_inline array_iterator(const array_iterator&) noexcept;
+  simdjson_inline array_iterator& operator=(const array_iterator&) noexcept;
+#endif
+
   //
   // Iterator interface
   //
@@ -166947,6 +170704,9 @@ public:
 private:
 #if SIMDJSON_DEVELOPMENT_CHECKS
    bool has_been_referenced{false};
+   array* parent{nullptr};
+
+   simdjson_inline array_iterator(const value_iterator &_iter, array* _parent) noexcept;
 #endif
   value_iterator iter{};
 
@@ -168509,7 +172269,6 @@ public:
    *
    * IMPORTANT: this value is only meaningful under the conditions below.
    *
-   *   - the format is whitespace_delimited or newline_delimited;
    *   - you iterated all the way to the end of the stream;
    *   - no document reported an error. Iteration stops at the first failed
    *     document, which can leave the bookkeeping from a mid-stream batch.
@@ -168517,6 +172276,9 @@ public:
    * If you need to know about a truncated tail outside those conditions, track
    * it yourself from the last successful document (see iterator::current_index()
    * and iterator::source()).
+   *
+   * An empty input (zero bytes) or an input made only of white space contains
+   * no document: truncated_bytes() returns zero.
    */
   inline size_t truncated_bytes() const noexcept;
 
@@ -168576,7 +172338,10 @@ public:
      *
      * The returned string_view instance is simply a map to the (unparsed)
      * source string: it may thus include white-space characters and all manner
-     * of padding.
+     * of padding. It spans the whole current document, whether or not you
+     * have already accessed (part of) the document. Thus
+     * current_index() + source().size() is the offset just past the end of the
+     * current document, which is useful when reading a stream in chunks.
      *
      * This function (source()) is experimental and the usage
      * may change in future versions of simdjson: we find the API somewhat
@@ -169962,7 +173727,7 @@ match_window_candidate(const char* p, std::uint8_t ki,
 // --- describe() string helpers (constexpr; no std::to_string, which is not) ---
 
 // Append the decimal form of v to s.
-constexpr void append_uint(std::string& s, std::size_t v) {
+SIMDJSON_CONSTEXPR_STRING void append_uint(std::string& s, std::size_t v) {
     if (v == 0) { s.push_back('0'); return; }
     char buf[20];
     std::size_t n = 0;
@@ -169972,7 +173737,7 @@ constexpr void append_uint(std::string& s, std::size_t v) {
 
 // Append a byte as its decimal value, plus the printable character in quotes
 // when it is in the printable ASCII range (e.g. "110 ('n')").
-constexpr void append_byte(std::string& s, unsigned b) {
+SIMDJSON_CONSTEXPR_STRING void append_byte(std::string& s, unsigned b) {
     append_uint(s, b);
     if (b >= 0x20 && b < 0x7f) {
         s += " ('";
@@ -170133,14 +173898,15 @@ struct key_selector {
      * match_raw() does step by step.
      *
      * Everything it reports is derived from the compile-time tables, so describe()
-     * is itself usable in a constant expression:
+     * is itself usable in a constant expression when the standard library supports
+     * constexpr std::string (__cpp_lib_constexpr_string):
      *
      *   static_assert(!key_selector<"name", "city">::describe().empty());
      *
      * It allocates a std::string and is meant for documentation, debugging and
      * tests, not for any hot path.
      */
-    static constexpr std::string describe() {
+    static SIMDJSON_CONSTEXPR_STRING std::string describe() {
         std::string s;
         s += "key_selector: ";
         key_selector_detail::append_uint(s, N);
@@ -170438,8 +174204,19 @@ public:
    * Using the iterator directly is also possible but error-prone and discouraged. In particular,
    * you must dereference the iterator exactly once per iteration (before calling '++').
    * Doing otherwise is unsafe and may lead to errors. You are responsible for ensuring
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this object while it is
+   * alive, so that reentrant access (find_field(), reset(), ...) is reported as
+   * OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<object_iterator> begin() & noexcept;
+  /**
+   * Get an iterator to the start of a temporary object, e.g., `v.get_object().begin()`.
+   *
+   * The iterator does not depend on the object instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<object_iterator> end() noexcept;
   /**
    * Look up a field by name on an object (order-sensitive). By order-sensitive, we mean that
@@ -170862,7 +174639,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<westmere::ondemand::object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<westmere::ondemand::object_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<westmere::ondemand::object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<westmere::ondemand::object_iterator> end() noexcept;
   simdjson_inline simdjson_result<westmere::ondemand::value> find_field(std::string_view key) & noexcept;
   simdjson_inline simdjson_result<westmere::ondemand::value> find_field(std::string_view key) && noexcept;
@@ -171459,7 +175237,13 @@ template <concepts::constructible_from_string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::string_view>) {
   std::string_view str;
   SIMDJSON_TRY(val.get_string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::string): building a temporary and
+    // move-assigning it is markedly slower.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 
@@ -171470,11 +175254,41 @@ template <concepts::constructible_from_u8string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::u8string_view>) {
   std::u8string_view str;
   SIMDJSON_TRY(val.get_u8string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::u8string), as for std::string above.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 #endif // SIMDJSON_SUPPORTS_CHAR8_T
 
+
+namespace details {
+// Whether to deserialize the elements of the container T directly into a new
+// element (emplace_one(out) and then get) rather than into a temporary that is
+// then moved into the container. A temporary of a trivially copyable type lives
+// in registers and is cheap to move, and value-initializing a small element in
+// place costs more than it saves (GCC zeroes it with rep stos). But moving a
+// large element, or a string (whose deserialization then needs a temporary
+// string and a move assignment of its own), is expensive.
+template <typename T>
+concept deserialize_in_place =
+    concepts::returns_reference<T> && requires(T &c) { c.pop_back(); } &&
+    !std::is_trivially_copyable_v<typename T::value_type> &&
+    (sizeof(typename T::value_type) > 32 || concepts::constructible_from_string_view<typename T::value_type>);
+
+// Removes the last element of the container on destruction while armed.
+template <typename T>
+struct pop_back_guard {
+  T &container;
+  bool armed{true};
+  ~pop_back_guard() {
+    if (armed) { container.pop_back(); }
+  }
+};
+} // namespace details
 
 /**
  * STL containers have several constructors including one that takes a single
@@ -171499,14 +175313,66 @@ error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(false) {
     SIMDJSON_TRY(val.get_array().get(arr));
   }
 
-  for (auto v : arr) {
-    // Deserialize into a temporary first: an error or an exception (a user
-    // tag_invoke may throw) must not leave a default-constructed element behind.
-    value_type temp;
-    if (auto const err = v.get<value_type>(temp); err) {
-      return err;
+  if constexpr (std::is_same_v<T, std::vector<value_type>> && !std::is_same_v<value_type, bool>) {
+    // Collect the elements in a per-thread scratch vector that keeps its
+    // capacity from call to call, then move them into out after reserving the
+    // exact size: out is allocated once instead of being regrown. A nested
+    // array of the same type finds the scratch busy and takes the paths below.
+    struct scratch_space {
+      std::vector<value_type> elements{};
+      bool busy{false};
+    };
+    static thread_local scratch_space scratch;
+    if (!scratch.busy && out.empty()) {
+      struct release_scratch {
+        scratch_space &s;
+        T &out;
+        size_t parsed{0};
+        bool complete{false};
+        // On an error or an exception, out gets the elements parsed so far (as
+        // with the loops below), without allocating. Kept out of the hot path.
+        simdjson_never_inline void keep_parsed() noexcept {
+          s.elements.resize(parsed);
+          out.swap(s.elements);
+        }
+        ~release_scratch() {
+          if (simdjson_unlikely(!complete)) { keep_parsed(); }
+          s.elements.clear();
+          // Do not hold on to the memory of a very large array.
+          if (s.elements.capacity() * sizeof(value_type) > (1 << 20)) { std::vector<value_type>().swap(s.elements); }
+          s.busy = false;
+        }
+      } release{scratch, out};
+      scratch.busy = true;
+      for (auto v : arr) {
+        SIMDJSON_TRY(v.get<value_type>(scratch.elements.emplace_back()));
+        release.parsed++;
+      }
+      out.reserve(release.parsed);
+      release.complete = true;
+      for (auto &e : scratch.elements) { out.emplace_back(std::move(e)); }
+      return SUCCESS;
     }
-    concepts::emplace_one(out, std::move(temp));
+  }
+  if constexpr (details::deserialize_in_place<T>) {
+    for (auto v : arr) {
+      auto &slot = concepts::emplace_one(out);
+      // An error or an exception (a user tag_invoke may throw) must not leave
+      // a partially deserialized element behind.
+      details::pop_back_guard<T> guard{out};
+      SIMDJSON_TRY(v.get<value_type>(slot));
+      guard.armed = false;
+    }
+  } else {
+    for (auto v : arr) {
+      // Deserialize into a temporary first: an error or an exception (a user
+      // tag_invoke may throw) must not leave a default-constructed element behind.
+      value_type temp;
+      if (auto const err = v.get<value_type>(temp); err) {
+        return err;
+      }
+      concepts::emplace_one(out, std::move(temp));
+    }
   }
   return SUCCESS;
 }
@@ -172578,9 +176444,17 @@ simdjson_inline simdjson_result<array> array::started(value_iterator &iter) noex
   return array(iter);
 }
 
-simdjson_inline simdjson_result<array_iterator> array::begin() noexcept {
+simdjson_inline simdjson_result<array_iterator> array::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
-  if (!iter.is_at_iterator_start()) { return OUT_OF_ORDER_ITERATION; }
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
+  return array_iterator(iter, this);
+#endif
+  return array_iterator(iter);
+}
+simdjson_inline simdjson_result<array_iterator> array::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The array is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return array_iterator(iter);
 }
@@ -172607,6 +176481,9 @@ simdjson_inline simdjson_result<std::string_view> array::raw_json() noexcept {
 SIMDJSON_PUSH_DISABLE_WARNINGS
 SIMDJSON_DISABLE_STRICT_OVERFLOW_WARNING
 simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t count{0};
   // Important: we do not consume any of the values.
   for(simdjson_unused auto v : *this) { count++; }
@@ -172620,6 +176497,9 @@ simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
 SIMDJSON_POP_DISABLE_WARNINGS
 
 simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   bool is_not_empty;
   auto error = iter.reset_array().get(is_not_empty);
   if(error) { return error; }
@@ -172627,8 +176507,17 @@ simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
 }
 
 inline simdjson_result<bool> array::reset() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   return iter.reset_array();
 }
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline void array::set_locked(bool _locked) noexcept {
+  locked = _locked;
+}
+#endif
 
 inline simdjson_result<value> array::at_pointer(std::string_view json_pointer) noexcept {
   if (json_pointer[0] != '/') { return INVALID_JSON_POINTER; }
@@ -172713,6 +176602,9 @@ inline error_code array::for_each_at_path_with_wildcard(std::string_view json_pa
 }
 
 simdjson_inline simdjson_result<value> array::at(size_t index) noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t i = 0;
   for (auto value : *this) {
     if (i == index) { return value; }
@@ -172742,9 +176634,13 @@ simdjson_inline simdjson_result<westmere::ondemand::array>::simdjson_result(
 {
 }
 
-simdjson_inline simdjson_result<westmere::ondemand::array_iterator> simdjson_result<westmere::ondemand::array>::begin() noexcept {
+simdjson_inline simdjson_result<westmere::ondemand::array_iterator> simdjson_result<westmere::ondemand::array>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<westmere::ondemand::array_iterator> simdjson_result<westmere::ondemand::array>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<westmere::ondemand::array_iterator> simdjson_result<westmere::ondemand::array>::end() noexcept {
   if (error()) { return error(); }
@@ -172807,6 +176703,59 @@ namespace ondemand {
 simdjson_inline array_iterator::array_iterator(const value_iterator &_iter) noexcept
   : iter{_iter}
 {}
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline array_iterator::array_iterator(const value_iterator &_iter, array* _parent) noexcept
+  : parent{_parent}, iter{_iter}
+{
+  if (parent) parent->set_locked(true);
+}
+
+simdjson_inline array_iterator::~array_iterator() noexcept
+{
+  if (parent) parent->set_locked(false);
+}
+
+simdjson_inline array_iterator::array_iterator(array_iterator&& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{other.parent},
+    iter{std::move(other.iter)}
+{
+  other.parent = nullptr;
+}
+
+simdjson_inline array_iterator& array_iterator::operator=(array_iterator&& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = other.parent;
+    iter = std::move(other.iter);
+
+    other.parent = nullptr;
+  }
+  return *this;
+}
+
+simdjson_inline array_iterator::array_iterator(const array_iterator& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{nullptr},
+    iter{other.iter}
+{}
+
+simdjson_inline array_iterator& array_iterator::operator=(const array_iterator& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = nullptr;
+    iter = other.iter;
+  }
+  return *this;
+}
+#endif
 
 simdjson_inline simdjson_result<value> array_iterator::operator*() noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
@@ -175156,6 +179105,9 @@ inline size_t document_stream::size_in_bytes() const noexcept {
 }
 
 inline size_t document_stream::truncated_bytes() const noexcept {
+  // Stage 1 returns EMPTY on zero-length input before it writes the index
+  // sentinels read below, so they would still hold a previous stream's values.
+  if (len == 0) { return 0; }
   if(error == CAPACITY) { return len - batch_start; }
   return parser->implementation->structural_indexes[parser->implementation->n_structural_indexes] - parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
@@ -175447,11 +179399,19 @@ simdjson_inline size_t document_stream::iterator::current_index() const noexcept
 }
 
 simdjson_inline std::string_view document_stream::iterator::source() const noexcept {
-  auto depth = stream->doc.iter.depth();
+  // On error (e.g., CAPACITY), there is no document to walk: return the rest of
+  // the input, as the DOM document_stream does.
+  if (stream->error) {
+    return std::string_view(reinterpret_cast<const char*>(stream->buf) + current_index(), stream->len - current_index());
+  }
+  // Always walk from the root of the document, whatever the current position
+  // of the document iterator: the user may have already consumed part of the
+  // document, so the iterator's current depth must not be used here.
+  depth_t depth = 1;
   auto cur_struct_index = stream->doc.iter._root - stream->parser->implementation->structural_indexes.get();
 
-  // If at root, process the first token to determine if scalar value
-  if (stream->doc.iter.at_root()) {
+  // Process the first token to determine if scalar value
+  {
     switch (stream->buf[stream->batch_start + stream->parser->implementation->structural_indexes[cur_struct_index]]) {
       case '{': case '[':   // Depth=1 already at start of document
         break;
@@ -175465,6 +179425,32 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
           // normally the length would be next_index - current_index() - 1, except for the last document
           size_t svlen = next_index - current_index();
           const char *start = reinterpret_cast<const char*>(stream->buf) + current_index();
+          // When the scalar is followed by a truncated document, the structural
+          // indexes of that document were dropped and next_index is the end of
+          // the input, so we bound the scalar by scanning the token itself.
+          size_t token_len = 0;
+          if (*start == '"') {
+            token_len = 1;
+            while (token_len < svlen) {
+              char c = start[token_len++];
+              if (c == '\\') {
+                token_len++;
+              } else if (c == '"') {
+                break;
+              }
+            }
+          } else {
+            while (token_len < svlen) {
+              char c = start[token_len];
+              if (std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == '{' || c == '[' || c == '\0' || static_cast<uint8_t>(c) == 0x1E) {
+                break;
+              }
+              token_len++;
+            }
+          }
+          if (token_len > 0 && token_len < svlen) {
+            svlen = token_len;
+          }
           // Trim trailing whitespace, NUL, and RS (0x1E). In RFC 7464
           // json_sequence mode the scanner classifies RS as a scalar
           // character, so an RS-prefixed scalar document (number / true /
@@ -175860,7 +179846,8 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
 #endif // SIMDJSON_CHECK_EOF
       break;
     case '"':
-      if(*peek() == ':') {
+      // At the end, peek() would read the sentinel, which points into the padding.
+      if(!at_end() && *peek() == ':') {
         // We are at a key!!!
         // This might happen if you just started an object and you skip it immediately.
         // Performance note: it would be nice to get rid of this check as it is somewhat
@@ -175903,7 +179890,7 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
     }
   }
 
-  return report_error(TAPE_ERROR, "not enough close braces");
+  return report_error(INCOMPLETE_ARRAY_OR_OBJECT, "not enough close braces");
 }
 
 SIMDJSON_POP_DISABLE_WARNINGS
@@ -176824,10 +180811,17 @@ simdjson_inline object::object(const value_iterator &_iter) noexcept
 {
 }
 
-simdjson_inline simdjson_result<object_iterator> object::begin() noexcept {
+simdjson_inline simdjson_result<object_iterator> object::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
   if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
   return object_iterator(iter, this);
+#endif
+  return object_iterator(iter);
+}
+simdjson_inline simdjson_result<object_iterator> object::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The object is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return object_iterator(iter);
 }
@@ -177040,9 +181034,13 @@ simdjson_inline simdjson_result<westmere::ondemand::object>::simdjson_result(wes
 simdjson_inline simdjson_result<westmere::ondemand::object>::simdjson_result(error_code error) noexcept
     : implementation_simdjson_result_base<westmere::ondemand::object>(error) {}
 
-simdjson_inline simdjson_result<westmere::ondemand::object_iterator> simdjson_result<westmere::ondemand::object>::begin() noexcept {
+simdjson_inline simdjson_result<westmere::ondemand::object_iterator> simdjson_result<westmere::ondemand::object>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<westmere::ondemand::object_iterator> simdjson_result<westmere::ondemand::object>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<westmere::ondemand::object_iterator> simdjson_result<westmere::ondemand::object>::end() noexcept {
   if (error()) { return error(); }
@@ -184431,8 +188429,19 @@ public:
    * Begin array iteration.
    *
    * Part of the std::iterable interface.
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this array while it is
+   * alive, so that reentrant access (at(), count_elements(), reset(), ...) is
+   * reported as OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<array_iterator> begin() & noexcept;
+  /**
+   * Begin iteration over a temporary array, e.g., `v.get_array().begin()`.
+   *
+   * The iterator does not depend on the array instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<array_iterator> begin() && noexcept;
   /**
    * Sentinel representing the end of the array.
    *
@@ -184631,6 +188640,10 @@ protected:
    * iter.is_alive() == false indicates iteration is complete.
    */
   value_iterator iter{};
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  bool locked{false};
+  simdjson_inline void set_locked(bool _locked) noexcept;
+#endif
 
   friend class value;
   friend class document;
@@ -184652,7 +188665,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<lsx::ondemand::array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<lsx::ondemand::array_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<lsx::ondemand::array_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<lsx::ondemand::array_iterator> end() noexcept;
   inline simdjson_result<size_t> count_elements() & noexcept;
   inline simdjson_result<bool> is_empty() & noexcept;
@@ -184732,6 +188746,15 @@ public:
   /** Create a new, invalid array iterator. */
   simdjson_inline array_iterator() noexcept = default;
 
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  simdjson_inline ~array_iterator() noexcept;
+
+  simdjson_inline array_iterator(array_iterator&&) noexcept;
+  simdjson_inline array_iterator& operator=(array_iterator&&) noexcept;
+  simdjson_inline array_iterator(const array_iterator&) noexcept;
+  simdjson_inline array_iterator& operator=(const array_iterator&) noexcept;
+#endif
+
   //
   // Iterator interface
   //
@@ -184774,6 +188797,9 @@ public:
 private:
 #if SIMDJSON_DEVELOPMENT_CHECKS
    bool has_been_referenced{false};
+   array* parent{nullptr};
+
+   simdjson_inline array_iterator(const value_iterator &_iter, array* _parent) noexcept;
 #endif
   value_iterator iter{};
 
@@ -186336,7 +190362,6 @@ public:
    *
    * IMPORTANT: this value is only meaningful under the conditions below.
    *
-   *   - the format is whitespace_delimited or newline_delimited;
    *   - you iterated all the way to the end of the stream;
    *   - no document reported an error. Iteration stops at the first failed
    *     document, which can leave the bookkeeping from a mid-stream batch.
@@ -186344,6 +190369,9 @@ public:
    * If you need to know about a truncated tail outside those conditions, track
    * it yourself from the last successful document (see iterator::current_index()
    * and iterator::source()).
+   *
+   * An empty input (zero bytes) or an input made only of white space contains
+   * no document: truncated_bytes() returns zero.
    */
   inline size_t truncated_bytes() const noexcept;
 
@@ -186403,7 +190431,10 @@ public:
      *
      * The returned string_view instance is simply a map to the (unparsed)
      * source string: it may thus include white-space characters and all manner
-     * of padding.
+     * of padding. It spans the whole current document, whether or not you
+     * have already accessed (part of) the document. Thus
+     * current_index() + source().size() is the offset just past the end of the
+     * current document, which is useful when reading a stream in chunks.
      *
      * This function (source()) is experimental and the usage
      * may change in future versions of simdjson: we find the API somewhat
@@ -187789,7 +191820,7 @@ match_window_candidate(const char* p, std::uint8_t ki,
 // --- describe() string helpers (constexpr; no std::to_string, which is not) ---
 
 // Append the decimal form of v to s.
-constexpr void append_uint(std::string& s, std::size_t v) {
+SIMDJSON_CONSTEXPR_STRING void append_uint(std::string& s, std::size_t v) {
     if (v == 0) { s.push_back('0'); return; }
     char buf[20];
     std::size_t n = 0;
@@ -187799,7 +191830,7 @@ constexpr void append_uint(std::string& s, std::size_t v) {
 
 // Append a byte as its decimal value, plus the printable character in quotes
 // when it is in the printable ASCII range (e.g. "110 ('n')").
-constexpr void append_byte(std::string& s, unsigned b) {
+SIMDJSON_CONSTEXPR_STRING void append_byte(std::string& s, unsigned b) {
     append_uint(s, b);
     if (b >= 0x20 && b < 0x7f) {
         s += " ('";
@@ -187960,14 +191991,15 @@ struct key_selector {
      * match_raw() does step by step.
      *
      * Everything it reports is derived from the compile-time tables, so describe()
-     * is itself usable in a constant expression:
+     * is itself usable in a constant expression when the standard library supports
+     * constexpr std::string (__cpp_lib_constexpr_string):
      *
      *   static_assert(!key_selector<"name", "city">::describe().empty());
      *
      * It allocates a std::string and is meant for documentation, debugging and
      * tests, not for any hot path.
      */
-    static constexpr std::string describe() {
+    static SIMDJSON_CONSTEXPR_STRING std::string describe() {
         std::string s;
         s += "key_selector: ";
         key_selector_detail::append_uint(s, N);
@@ -188265,8 +192297,19 @@ public:
    * Using the iterator directly is also possible but error-prone and discouraged. In particular,
    * you must dereference the iterator exactly once per iteration (before calling '++').
    * Doing otherwise is unsafe and may lead to errors. You are responsible for ensuring
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this object while it is
+   * alive, so that reentrant access (find_field(), reset(), ...) is reported as
+   * OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<object_iterator> begin() & noexcept;
+  /**
+   * Get an iterator to the start of a temporary object, e.g., `v.get_object().begin()`.
+   *
+   * The iterator does not depend on the object instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<object_iterator> end() noexcept;
   /**
    * Look up a field by name on an object (order-sensitive). By order-sensitive, we mean that
@@ -188689,7 +192732,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<lsx::ondemand::object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<lsx::ondemand::object_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<lsx::ondemand::object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<lsx::ondemand::object_iterator> end() noexcept;
   simdjson_inline simdjson_result<lsx::ondemand::value> find_field(std::string_view key) & noexcept;
   simdjson_inline simdjson_result<lsx::ondemand::value> find_field(std::string_view key) && noexcept;
@@ -189286,7 +193330,13 @@ template <concepts::constructible_from_string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::string_view>) {
   std::string_view str;
   SIMDJSON_TRY(val.get_string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::string): building a temporary and
+    // move-assigning it is markedly slower.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 
@@ -189297,11 +193347,41 @@ template <concepts::constructible_from_u8string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::u8string_view>) {
   std::u8string_view str;
   SIMDJSON_TRY(val.get_u8string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::u8string), as for std::string above.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 #endif // SIMDJSON_SUPPORTS_CHAR8_T
 
+
+namespace details {
+// Whether to deserialize the elements of the container T directly into a new
+// element (emplace_one(out) and then get) rather than into a temporary that is
+// then moved into the container. A temporary of a trivially copyable type lives
+// in registers and is cheap to move, and value-initializing a small element in
+// place costs more than it saves (GCC zeroes it with rep stos). But moving a
+// large element, or a string (whose deserialization then needs a temporary
+// string and a move assignment of its own), is expensive.
+template <typename T>
+concept deserialize_in_place =
+    concepts::returns_reference<T> && requires(T &c) { c.pop_back(); } &&
+    !std::is_trivially_copyable_v<typename T::value_type> &&
+    (sizeof(typename T::value_type) > 32 || concepts::constructible_from_string_view<typename T::value_type>);
+
+// Removes the last element of the container on destruction while armed.
+template <typename T>
+struct pop_back_guard {
+  T &container;
+  bool armed{true};
+  ~pop_back_guard() {
+    if (armed) { container.pop_back(); }
+  }
+};
+} // namespace details
 
 /**
  * STL containers have several constructors including one that takes a single
@@ -189326,14 +193406,66 @@ error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(false) {
     SIMDJSON_TRY(val.get_array().get(arr));
   }
 
-  for (auto v : arr) {
-    // Deserialize into a temporary first: an error or an exception (a user
-    // tag_invoke may throw) must not leave a default-constructed element behind.
-    value_type temp;
-    if (auto const err = v.get<value_type>(temp); err) {
-      return err;
+  if constexpr (std::is_same_v<T, std::vector<value_type>> && !std::is_same_v<value_type, bool>) {
+    // Collect the elements in a per-thread scratch vector that keeps its
+    // capacity from call to call, then move them into out after reserving the
+    // exact size: out is allocated once instead of being regrown. A nested
+    // array of the same type finds the scratch busy and takes the paths below.
+    struct scratch_space {
+      std::vector<value_type> elements{};
+      bool busy{false};
+    };
+    static thread_local scratch_space scratch;
+    if (!scratch.busy && out.empty()) {
+      struct release_scratch {
+        scratch_space &s;
+        T &out;
+        size_t parsed{0};
+        bool complete{false};
+        // On an error or an exception, out gets the elements parsed so far (as
+        // with the loops below), without allocating. Kept out of the hot path.
+        simdjson_never_inline void keep_parsed() noexcept {
+          s.elements.resize(parsed);
+          out.swap(s.elements);
+        }
+        ~release_scratch() {
+          if (simdjson_unlikely(!complete)) { keep_parsed(); }
+          s.elements.clear();
+          // Do not hold on to the memory of a very large array.
+          if (s.elements.capacity() * sizeof(value_type) > (1 << 20)) { std::vector<value_type>().swap(s.elements); }
+          s.busy = false;
+        }
+      } release{scratch, out};
+      scratch.busy = true;
+      for (auto v : arr) {
+        SIMDJSON_TRY(v.get<value_type>(scratch.elements.emplace_back()));
+        release.parsed++;
+      }
+      out.reserve(release.parsed);
+      release.complete = true;
+      for (auto &e : scratch.elements) { out.emplace_back(std::move(e)); }
+      return SUCCESS;
     }
-    concepts::emplace_one(out, std::move(temp));
+  }
+  if constexpr (details::deserialize_in_place<T>) {
+    for (auto v : arr) {
+      auto &slot = concepts::emplace_one(out);
+      // An error or an exception (a user tag_invoke may throw) must not leave
+      // a partially deserialized element behind.
+      details::pop_back_guard<T> guard{out};
+      SIMDJSON_TRY(v.get<value_type>(slot));
+      guard.armed = false;
+    }
+  } else {
+    for (auto v : arr) {
+      // Deserialize into a temporary first: an error or an exception (a user
+      // tag_invoke may throw) must not leave a default-constructed element behind.
+      value_type temp;
+      if (auto const err = v.get<value_type>(temp); err) {
+        return err;
+      }
+      concepts::emplace_one(out, std::move(temp));
+    }
   }
   return SUCCESS;
 }
@@ -190405,9 +194537,17 @@ simdjson_inline simdjson_result<array> array::started(value_iterator &iter) noex
   return array(iter);
 }
 
-simdjson_inline simdjson_result<array_iterator> array::begin() noexcept {
+simdjson_inline simdjson_result<array_iterator> array::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
-  if (!iter.is_at_iterator_start()) { return OUT_OF_ORDER_ITERATION; }
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
+  return array_iterator(iter, this);
+#endif
+  return array_iterator(iter);
+}
+simdjson_inline simdjson_result<array_iterator> array::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The array is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return array_iterator(iter);
 }
@@ -190434,6 +194574,9 @@ simdjson_inline simdjson_result<std::string_view> array::raw_json() noexcept {
 SIMDJSON_PUSH_DISABLE_WARNINGS
 SIMDJSON_DISABLE_STRICT_OVERFLOW_WARNING
 simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t count{0};
   // Important: we do not consume any of the values.
   for(simdjson_unused auto v : *this) { count++; }
@@ -190447,6 +194590,9 @@ simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
 SIMDJSON_POP_DISABLE_WARNINGS
 
 simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   bool is_not_empty;
   auto error = iter.reset_array().get(is_not_empty);
   if(error) { return error; }
@@ -190454,8 +194600,17 @@ simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
 }
 
 inline simdjson_result<bool> array::reset() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   return iter.reset_array();
 }
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline void array::set_locked(bool _locked) noexcept {
+  locked = _locked;
+}
+#endif
 
 inline simdjson_result<value> array::at_pointer(std::string_view json_pointer) noexcept {
   if (json_pointer[0] != '/') { return INVALID_JSON_POINTER; }
@@ -190540,6 +194695,9 @@ inline error_code array::for_each_at_path_with_wildcard(std::string_view json_pa
 }
 
 simdjson_inline simdjson_result<value> array::at(size_t index) noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t i = 0;
   for (auto value : *this) {
     if (i == index) { return value; }
@@ -190569,9 +194727,13 @@ simdjson_inline simdjson_result<lsx::ondemand::array>::simdjson_result(
 {
 }
 
-simdjson_inline simdjson_result<lsx::ondemand::array_iterator> simdjson_result<lsx::ondemand::array>::begin() noexcept {
+simdjson_inline simdjson_result<lsx::ondemand::array_iterator> simdjson_result<lsx::ondemand::array>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<lsx::ondemand::array_iterator> simdjson_result<lsx::ondemand::array>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<lsx::ondemand::array_iterator> simdjson_result<lsx::ondemand::array>::end() noexcept {
   if (error()) { return error(); }
@@ -190634,6 +194796,59 @@ namespace ondemand {
 simdjson_inline array_iterator::array_iterator(const value_iterator &_iter) noexcept
   : iter{_iter}
 {}
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline array_iterator::array_iterator(const value_iterator &_iter, array* _parent) noexcept
+  : parent{_parent}, iter{_iter}
+{
+  if (parent) parent->set_locked(true);
+}
+
+simdjson_inline array_iterator::~array_iterator() noexcept
+{
+  if (parent) parent->set_locked(false);
+}
+
+simdjson_inline array_iterator::array_iterator(array_iterator&& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{other.parent},
+    iter{std::move(other.iter)}
+{
+  other.parent = nullptr;
+}
+
+simdjson_inline array_iterator& array_iterator::operator=(array_iterator&& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = other.parent;
+    iter = std::move(other.iter);
+
+    other.parent = nullptr;
+  }
+  return *this;
+}
+
+simdjson_inline array_iterator::array_iterator(const array_iterator& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{nullptr},
+    iter{other.iter}
+{}
+
+simdjson_inline array_iterator& array_iterator::operator=(const array_iterator& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = nullptr;
+    iter = other.iter;
+  }
+  return *this;
+}
+#endif
 
 simdjson_inline simdjson_result<value> array_iterator::operator*() noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
@@ -192983,6 +197198,9 @@ inline size_t document_stream::size_in_bytes() const noexcept {
 }
 
 inline size_t document_stream::truncated_bytes() const noexcept {
+  // Stage 1 returns EMPTY on zero-length input before it writes the index
+  // sentinels read below, so they would still hold a previous stream's values.
+  if (len == 0) { return 0; }
   if(error == CAPACITY) { return len - batch_start; }
   return parser->implementation->structural_indexes[parser->implementation->n_structural_indexes] - parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
@@ -193274,11 +197492,19 @@ simdjson_inline size_t document_stream::iterator::current_index() const noexcept
 }
 
 simdjson_inline std::string_view document_stream::iterator::source() const noexcept {
-  auto depth = stream->doc.iter.depth();
+  // On error (e.g., CAPACITY), there is no document to walk: return the rest of
+  // the input, as the DOM document_stream does.
+  if (stream->error) {
+    return std::string_view(reinterpret_cast<const char*>(stream->buf) + current_index(), stream->len - current_index());
+  }
+  // Always walk from the root of the document, whatever the current position
+  // of the document iterator: the user may have already consumed part of the
+  // document, so the iterator's current depth must not be used here.
+  depth_t depth = 1;
   auto cur_struct_index = stream->doc.iter._root - stream->parser->implementation->structural_indexes.get();
 
-  // If at root, process the first token to determine if scalar value
-  if (stream->doc.iter.at_root()) {
+  // Process the first token to determine if scalar value
+  {
     switch (stream->buf[stream->batch_start + stream->parser->implementation->structural_indexes[cur_struct_index]]) {
       case '{': case '[':   // Depth=1 already at start of document
         break;
@@ -193292,6 +197518,32 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
           // normally the length would be next_index - current_index() - 1, except for the last document
           size_t svlen = next_index - current_index();
           const char *start = reinterpret_cast<const char*>(stream->buf) + current_index();
+          // When the scalar is followed by a truncated document, the structural
+          // indexes of that document were dropped and next_index is the end of
+          // the input, so we bound the scalar by scanning the token itself.
+          size_t token_len = 0;
+          if (*start == '"') {
+            token_len = 1;
+            while (token_len < svlen) {
+              char c = start[token_len++];
+              if (c == '\\') {
+                token_len++;
+              } else if (c == '"') {
+                break;
+              }
+            }
+          } else {
+            while (token_len < svlen) {
+              char c = start[token_len];
+              if (std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == '{' || c == '[' || c == '\0' || static_cast<uint8_t>(c) == 0x1E) {
+                break;
+              }
+              token_len++;
+            }
+          }
+          if (token_len > 0 && token_len < svlen) {
+            svlen = token_len;
+          }
           // Trim trailing whitespace, NUL, and RS (0x1E). In RFC 7464
           // json_sequence mode the scanner classifies RS as a scalar
           // character, so an RS-prefixed scalar document (number / true /
@@ -193687,7 +197939,8 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
 #endif // SIMDJSON_CHECK_EOF
       break;
     case '"':
-      if(*peek() == ':') {
+      // At the end, peek() would read the sentinel, which points into the padding.
+      if(!at_end() && *peek() == ':') {
         // We are at a key!!!
         // This might happen if you just started an object and you skip it immediately.
         // Performance note: it would be nice to get rid of this check as it is somewhat
@@ -193730,7 +197983,7 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
     }
   }
 
-  return report_error(TAPE_ERROR, "not enough close braces");
+  return report_error(INCOMPLETE_ARRAY_OR_OBJECT, "not enough close braces");
 }
 
 SIMDJSON_POP_DISABLE_WARNINGS
@@ -194651,10 +198904,17 @@ simdjson_inline object::object(const value_iterator &_iter) noexcept
 {
 }
 
-simdjson_inline simdjson_result<object_iterator> object::begin() noexcept {
+simdjson_inline simdjson_result<object_iterator> object::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
   if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
   return object_iterator(iter, this);
+#endif
+  return object_iterator(iter);
+}
+simdjson_inline simdjson_result<object_iterator> object::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The object is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return object_iterator(iter);
 }
@@ -194867,9 +199127,13 @@ simdjson_inline simdjson_result<lsx::ondemand::object>::simdjson_result(lsx::ond
 simdjson_inline simdjson_result<lsx::ondemand::object>::simdjson_result(error_code error) noexcept
     : implementation_simdjson_result_base<lsx::ondemand::object>(error) {}
 
-simdjson_inline simdjson_result<lsx::ondemand::object_iterator> simdjson_result<lsx::ondemand::object>::begin() noexcept {
+simdjson_inline simdjson_result<lsx::ondemand::object_iterator> simdjson_result<lsx::ondemand::object>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<lsx::ondemand::object_iterator> simdjson_result<lsx::ondemand::object>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<lsx::ondemand::object_iterator> simdjson_result<lsx::ondemand::object>::end() noexcept {
   if (error()) { return error(); }
@@ -202281,8 +206545,19 @@ public:
    * Begin array iteration.
    *
    * Part of the std::iterable interface.
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this array while it is
+   * alive, so that reentrant access (at(), count_elements(), reset(), ...) is
+   * reported as OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<array_iterator> begin() & noexcept;
+  /**
+   * Begin iteration over a temporary array, e.g., `v.get_array().begin()`.
+   *
+   * The iterator does not depend on the array instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<array_iterator> begin() && noexcept;
   /**
    * Sentinel representing the end of the array.
    *
@@ -202481,6 +206756,10 @@ protected:
    * iter.is_alive() == false indicates iteration is complete.
    */
   value_iterator iter{};
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  bool locked{false};
+  simdjson_inline void set_locked(bool _locked) noexcept;
+#endif
 
   friend class value;
   friend class document;
@@ -202502,7 +206781,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<lasx::ondemand::array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<lasx::ondemand::array_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<lasx::ondemand::array_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<lasx::ondemand::array_iterator> end() noexcept;
   inline simdjson_result<size_t> count_elements() & noexcept;
   inline simdjson_result<bool> is_empty() & noexcept;
@@ -202582,6 +206862,15 @@ public:
   /** Create a new, invalid array iterator. */
   simdjson_inline array_iterator() noexcept = default;
 
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  simdjson_inline ~array_iterator() noexcept;
+
+  simdjson_inline array_iterator(array_iterator&&) noexcept;
+  simdjson_inline array_iterator& operator=(array_iterator&&) noexcept;
+  simdjson_inline array_iterator(const array_iterator&) noexcept;
+  simdjson_inline array_iterator& operator=(const array_iterator&) noexcept;
+#endif
+
   //
   // Iterator interface
   //
@@ -202624,6 +206913,9 @@ public:
 private:
 #if SIMDJSON_DEVELOPMENT_CHECKS
    bool has_been_referenced{false};
+   array* parent{nullptr};
+
+   simdjson_inline array_iterator(const value_iterator &_iter, array* _parent) noexcept;
 #endif
   value_iterator iter{};
 
@@ -204186,7 +208478,6 @@ public:
    *
    * IMPORTANT: this value is only meaningful under the conditions below.
    *
-   *   - the format is whitespace_delimited or newline_delimited;
    *   - you iterated all the way to the end of the stream;
    *   - no document reported an error. Iteration stops at the first failed
    *     document, which can leave the bookkeeping from a mid-stream batch.
@@ -204194,6 +208485,9 @@ public:
    * If you need to know about a truncated tail outside those conditions, track
    * it yourself from the last successful document (see iterator::current_index()
    * and iterator::source()).
+   *
+   * An empty input (zero bytes) or an input made only of white space contains
+   * no document: truncated_bytes() returns zero.
    */
   inline size_t truncated_bytes() const noexcept;
 
@@ -204253,7 +208547,10 @@ public:
      *
      * The returned string_view instance is simply a map to the (unparsed)
      * source string: it may thus include white-space characters and all manner
-     * of padding.
+     * of padding. It spans the whole current document, whether or not you
+     * have already accessed (part of) the document. Thus
+     * current_index() + source().size() is the offset just past the end of the
+     * current document, which is useful when reading a stream in chunks.
      *
      * This function (source()) is experimental and the usage
      * may change in future versions of simdjson: we find the API somewhat
@@ -205639,7 +209936,7 @@ match_window_candidate(const char* p, std::uint8_t ki,
 // --- describe() string helpers (constexpr; no std::to_string, which is not) ---
 
 // Append the decimal form of v to s.
-constexpr void append_uint(std::string& s, std::size_t v) {
+SIMDJSON_CONSTEXPR_STRING void append_uint(std::string& s, std::size_t v) {
     if (v == 0) { s.push_back('0'); return; }
     char buf[20];
     std::size_t n = 0;
@@ -205649,7 +209946,7 @@ constexpr void append_uint(std::string& s, std::size_t v) {
 
 // Append a byte as its decimal value, plus the printable character in quotes
 // when it is in the printable ASCII range (e.g. "110 ('n')").
-constexpr void append_byte(std::string& s, unsigned b) {
+SIMDJSON_CONSTEXPR_STRING void append_byte(std::string& s, unsigned b) {
     append_uint(s, b);
     if (b >= 0x20 && b < 0x7f) {
         s += " ('";
@@ -205810,14 +210107,15 @@ struct key_selector {
      * match_raw() does step by step.
      *
      * Everything it reports is derived from the compile-time tables, so describe()
-     * is itself usable in a constant expression:
+     * is itself usable in a constant expression when the standard library supports
+     * constexpr std::string (__cpp_lib_constexpr_string):
      *
      *   static_assert(!key_selector<"name", "city">::describe().empty());
      *
      * It allocates a std::string and is meant for documentation, debugging and
      * tests, not for any hot path.
      */
-    static constexpr std::string describe() {
+    static SIMDJSON_CONSTEXPR_STRING std::string describe() {
         std::string s;
         s += "key_selector: ";
         key_selector_detail::append_uint(s, N);
@@ -206115,8 +210413,19 @@ public:
    * Using the iterator directly is also possible but error-prone and discouraged. In particular,
    * you must dereference the iterator exactly once per iteration (before calling '++').
    * Doing otherwise is unsafe and may lead to errors. You are responsible for ensuring
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this object while it is
+   * alive, so that reentrant access (find_field(), reset(), ...) is reported as
+   * OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<object_iterator> begin() & noexcept;
+  /**
+   * Get an iterator to the start of a temporary object, e.g., `v.get_object().begin()`.
+   *
+   * The iterator does not depend on the object instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<object_iterator> end() noexcept;
   /**
    * Look up a field by name on an object (order-sensitive). By order-sensitive, we mean that
@@ -206539,7 +210848,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<lasx::ondemand::object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<lasx::ondemand::object_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<lasx::ondemand::object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<lasx::ondemand::object_iterator> end() noexcept;
   simdjson_inline simdjson_result<lasx::ondemand::value> find_field(std::string_view key) & noexcept;
   simdjson_inline simdjson_result<lasx::ondemand::value> find_field(std::string_view key) && noexcept;
@@ -207136,7 +211446,13 @@ template <concepts::constructible_from_string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::string_view>) {
   std::string_view str;
   SIMDJSON_TRY(val.get_string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::string): building a temporary and
+    // move-assigning it is markedly slower.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 
@@ -207147,11 +211463,41 @@ template <concepts::constructible_from_u8string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::u8string_view>) {
   std::u8string_view str;
   SIMDJSON_TRY(val.get_u8string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::u8string), as for std::string above.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 #endif // SIMDJSON_SUPPORTS_CHAR8_T
 
+
+namespace details {
+// Whether to deserialize the elements of the container T directly into a new
+// element (emplace_one(out) and then get) rather than into a temporary that is
+// then moved into the container. A temporary of a trivially copyable type lives
+// in registers and is cheap to move, and value-initializing a small element in
+// place costs more than it saves (GCC zeroes it with rep stos). But moving a
+// large element, or a string (whose deserialization then needs a temporary
+// string and a move assignment of its own), is expensive.
+template <typename T>
+concept deserialize_in_place =
+    concepts::returns_reference<T> && requires(T &c) { c.pop_back(); } &&
+    !std::is_trivially_copyable_v<typename T::value_type> &&
+    (sizeof(typename T::value_type) > 32 || concepts::constructible_from_string_view<typename T::value_type>);
+
+// Removes the last element of the container on destruction while armed.
+template <typename T>
+struct pop_back_guard {
+  T &container;
+  bool armed{true};
+  ~pop_back_guard() {
+    if (armed) { container.pop_back(); }
+  }
+};
+} // namespace details
 
 /**
  * STL containers have several constructors including one that takes a single
@@ -207176,14 +211522,66 @@ error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(false) {
     SIMDJSON_TRY(val.get_array().get(arr));
   }
 
-  for (auto v : arr) {
-    // Deserialize into a temporary first: an error or an exception (a user
-    // tag_invoke may throw) must not leave a default-constructed element behind.
-    value_type temp;
-    if (auto const err = v.get<value_type>(temp); err) {
-      return err;
+  if constexpr (std::is_same_v<T, std::vector<value_type>> && !std::is_same_v<value_type, bool>) {
+    // Collect the elements in a per-thread scratch vector that keeps its
+    // capacity from call to call, then move them into out after reserving the
+    // exact size: out is allocated once instead of being regrown. A nested
+    // array of the same type finds the scratch busy and takes the paths below.
+    struct scratch_space {
+      std::vector<value_type> elements{};
+      bool busy{false};
+    };
+    static thread_local scratch_space scratch;
+    if (!scratch.busy && out.empty()) {
+      struct release_scratch {
+        scratch_space &s;
+        T &out;
+        size_t parsed{0};
+        bool complete{false};
+        // On an error or an exception, out gets the elements parsed so far (as
+        // with the loops below), without allocating. Kept out of the hot path.
+        simdjson_never_inline void keep_parsed() noexcept {
+          s.elements.resize(parsed);
+          out.swap(s.elements);
+        }
+        ~release_scratch() {
+          if (simdjson_unlikely(!complete)) { keep_parsed(); }
+          s.elements.clear();
+          // Do not hold on to the memory of a very large array.
+          if (s.elements.capacity() * sizeof(value_type) > (1 << 20)) { std::vector<value_type>().swap(s.elements); }
+          s.busy = false;
+        }
+      } release{scratch, out};
+      scratch.busy = true;
+      for (auto v : arr) {
+        SIMDJSON_TRY(v.get<value_type>(scratch.elements.emplace_back()));
+        release.parsed++;
+      }
+      out.reserve(release.parsed);
+      release.complete = true;
+      for (auto &e : scratch.elements) { out.emplace_back(std::move(e)); }
+      return SUCCESS;
     }
-    concepts::emplace_one(out, std::move(temp));
+  }
+  if constexpr (details::deserialize_in_place<T>) {
+    for (auto v : arr) {
+      auto &slot = concepts::emplace_one(out);
+      // An error or an exception (a user tag_invoke may throw) must not leave
+      // a partially deserialized element behind.
+      details::pop_back_guard<T> guard{out};
+      SIMDJSON_TRY(v.get<value_type>(slot));
+      guard.armed = false;
+    }
+  } else {
+    for (auto v : arr) {
+      // Deserialize into a temporary first: an error or an exception (a user
+      // tag_invoke may throw) must not leave a default-constructed element behind.
+      value_type temp;
+      if (auto const err = v.get<value_type>(temp); err) {
+        return err;
+      }
+      concepts::emplace_one(out, std::move(temp));
+    }
   }
   return SUCCESS;
 }
@@ -208255,9 +212653,17 @@ simdjson_inline simdjson_result<array> array::started(value_iterator &iter) noex
   return array(iter);
 }
 
-simdjson_inline simdjson_result<array_iterator> array::begin() noexcept {
+simdjson_inline simdjson_result<array_iterator> array::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
-  if (!iter.is_at_iterator_start()) { return OUT_OF_ORDER_ITERATION; }
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
+  return array_iterator(iter, this);
+#endif
+  return array_iterator(iter);
+}
+simdjson_inline simdjson_result<array_iterator> array::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The array is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return array_iterator(iter);
 }
@@ -208284,6 +212690,9 @@ simdjson_inline simdjson_result<std::string_view> array::raw_json() noexcept {
 SIMDJSON_PUSH_DISABLE_WARNINGS
 SIMDJSON_DISABLE_STRICT_OVERFLOW_WARNING
 simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t count{0};
   // Important: we do not consume any of the values.
   for(simdjson_unused auto v : *this) { count++; }
@@ -208297,6 +212706,9 @@ simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
 SIMDJSON_POP_DISABLE_WARNINGS
 
 simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   bool is_not_empty;
   auto error = iter.reset_array().get(is_not_empty);
   if(error) { return error; }
@@ -208304,8 +212716,17 @@ simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
 }
 
 inline simdjson_result<bool> array::reset() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   return iter.reset_array();
 }
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline void array::set_locked(bool _locked) noexcept {
+  locked = _locked;
+}
+#endif
 
 inline simdjson_result<value> array::at_pointer(std::string_view json_pointer) noexcept {
   if (json_pointer[0] != '/') { return INVALID_JSON_POINTER; }
@@ -208390,6 +212811,9 @@ inline error_code array::for_each_at_path_with_wildcard(std::string_view json_pa
 }
 
 simdjson_inline simdjson_result<value> array::at(size_t index) noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t i = 0;
   for (auto value : *this) {
     if (i == index) { return value; }
@@ -208419,9 +212843,13 @@ simdjson_inline simdjson_result<lasx::ondemand::array>::simdjson_result(
 {
 }
 
-simdjson_inline simdjson_result<lasx::ondemand::array_iterator> simdjson_result<lasx::ondemand::array>::begin() noexcept {
+simdjson_inline simdjson_result<lasx::ondemand::array_iterator> simdjson_result<lasx::ondemand::array>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<lasx::ondemand::array_iterator> simdjson_result<lasx::ondemand::array>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<lasx::ondemand::array_iterator> simdjson_result<lasx::ondemand::array>::end() noexcept {
   if (error()) { return error(); }
@@ -208484,6 +212912,59 @@ namespace ondemand {
 simdjson_inline array_iterator::array_iterator(const value_iterator &_iter) noexcept
   : iter{_iter}
 {}
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline array_iterator::array_iterator(const value_iterator &_iter, array* _parent) noexcept
+  : parent{_parent}, iter{_iter}
+{
+  if (parent) parent->set_locked(true);
+}
+
+simdjson_inline array_iterator::~array_iterator() noexcept
+{
+  if (parent) parent->set_locked(false);
+}
+
+simdjson_inline array_iterator::array_iterator(array_iterator&& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{other.parent},
+    iter{std::move(other.iter)}
+{
+  other.parent = nullptr;
+}
+
+simdjson_inline array_iterator& array_iterator::operator=(array_iterator&& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = other.parent;
+    iter = std::move(other.iter);
+
+    other.parent = nullptr;
+  }
+  return *this;
+}
+
+simdjson_inline array_iterator::array_iterator(const array_iterator& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{nullptr},
+    iter{other.iter}
+{}
+
+simdjson_inline array_iterator& array_iterator::operator=(const array_iterator& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = nullptr;
+    iter = other.iter;
+  }
+  return *this;
+}
+#endif
 
 simdjson_inline simdjson_result<value> array_iterator::operator*() noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
@@ -210833,6 +215314,9 @@ inline size_t document_stream::size_in_bytes() const noexcept {
 }
 
 inline size_t document_stream::truncated_bytes() const noexcept {
+  // Stage 1 returns EMPTY on zero-length input before it writes the index
+  // sentinels read below, so they would still hold a previous stream's values.
+  if (len == 0) { return 0; }
   if(error == CAPACITY) { return len - batch_start; }
   return parser->implementation->structural_indexes[parser->implementation->n_structural_indexes] - parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
@@ -211124,11 +215608,19 @@ simdjson_inline size_t document_stream::iterator::current_index() const noexcept
 }
 
 simdjson_inline std::string_view document_stream::iterator::source() const noexcept {
-  auto depth = stream->doc.iter.depth();
+  // On error (e.g., CAPACITY), there is no document to walk: return the rest of
+  // the input, as the DOM document_stream does.
+  if (stream->error) {
+    return std::string_view(reinterpret_cast<const char*>(stream->buf) + current_index(), stream->len - current_index());
+  }
+  // Always walk from the root of the document, whatever the current position
+  // of the document iterator: the user may have already consumed part of the
+  // document, so the iterator's current depth must not be used here.
+  depth_t depth = 1;
   auto cur_struct_index = stream->doc.iter._root - stream->parser->implementation->structural_indexes.get();
 
-  // If at root, process the first token to determine if scalar value
-  if (stream->doc.iter.at_root()) {
+  // Process the first token to determine if scalar value
+  {
     switch (stream->buf[stream->batch_start + stream->parser->implementation->structural_indexes[cur_struct_index]]) {
       case '{': case '[':   // Depth=1 already at start of document
         break;
@@ -211142,6 +215634,32 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
           // normally the length would be next_index - current_index() - 1, except for the last document
           size_t svlen = next_index - current_index();
           const char *start = reinterpret_cast<const char*>(stream->buf) + current_index();
+          // When the scalar is followed by a truncated document, the structural
+          // indexes of that document were dropped and next_index is the end of
+          // the input, so we bound the scalar by scanning the token itself.
+          size_t token_len = 0;
+          if (*start == '"') {
+            token_len = 1;
+            while (token_len < svlen) {
+              char c = start[token_len++];
+              if (c == '\\') {
+                token_len++;
+              } else if (c == '"') {
+                break;
+              }
+            }
+          } else {
+            while (token_len < svlen) {
+              char c = start[token_len];
+              if (std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == '{' || c == '[' || c == '\0' || static_cast<uint8_t>(c) == 0x1E) {
+                break;
+              }
+              token_len++;
+            }
+          }
+          if (token_len > 0 && token_len < svlen) {
+            svlen = token_len;
+          }
           // Trim trailing whitespace, NUL, and RS (0x1E). In RFC 7464
           // json_sequence mode the scanner classifies RS as a scalar
           // character, so an RS-prefixed scalar document (number / true /
@@ -211537,7 +216055,8 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
 #endif // SIMDJSON_CHECK_EOF
       break;
     case '"':
-      if(*peek() == ':') {
+      // At the end, peek() would read the sentinel, which points into the padding.
+      if(!at_end() && *peek() == ':') {
         // We are at a key!!!
         // This might happen if you just started an object and you skip it immediately.
         // Performance note: it would be nice to get rid of this check as it is somewhat
@@ -211580,7 +216099,7 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
     }
   }
 
-  return report_error(TAPE_ERROR, "not enough close braces");
+  return report_error(INCOMPLETE_ARRAY_OR_OBJECT, "not enough close braces");
 }
 
 SIMDJSON_POP_DISABLE_WARNINGS
@@ -212501,10 +217020,17 @@ simdjson_inline object::object(const value_iterator &_iter) noexcept
 {
 }
 
-simdjson_inline simdjson_result<object_iterator> object::begin() noexcept {
+simdjson_inline simdjson_result<object_iterator> object::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
   if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
   return object_iterator(iter, this);
+#endif
+  return object_iterator(iter);
+}
+simdjson_inline simdjson_result<object_iterator> object::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The object is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return object_iterator(iter);
 }
@@ -212717,9 +217243,13 @@ simdjson_inline simdjson_result<lasx::ondemand::object>::simdjson_result(lasx::o
 simdjson_inline simdjson_result<lasx::ondemand::object>::simdjson_result(error_code error) noexcept
     : implementation_simdjson_result_base<lasx::ondemand::object>(error) {}
 
-simdjson_inline simdjson_result<lasx::ondemand::object_iterator> simdjson_result<lasx::ondemand::object>::begin() noexcept {
+simdjson_inline simdjson_result<lasx::ondemand::object_iterator> simdjson_result<lasx::ondemand::object>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<lasx::ondemand::object_iterator> simdjson_result<lasx::ondemand::object>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<lasx::ondemand::object_iterator> simdjson_result<lasx::ondemand::object>::end() noexcept {
   if (error()) { return error(); }
@@ -220134,8 +224664,19 @@ public:
    * Begin array iteration.
    *
    * Part of the std::iterable interface.
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this array while it is
+   * alive, so that reentrant access (at(), count_elements(), reset(), ...) is
+   * reported as OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<array_iterator> begin() & noexcept;
+  /**
+   * Begin iteration over a temporary array, e.g., `v.get_array().begin()`.
+   *
+   * The iterator does not depend on the array instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<array_iterator> begin() && noexcept;
   /**
    * Sentinel representing the end of the array.
    *
@@ -220334,6 +224875,10 @@ protected:
    * iter.is_alive() == false indicates iteration is complete.
    */
   value_iterator iter{};
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  bool locked{false};
+  simdjson_inline void set_locked(bool _locked) noexcept;
+#endif
 
   friend class value;
   friend class document;
@@ -220355,7 +224900,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<rvv_vls::ondemand::array_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<rvv_vls::ondemand::array_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<rvv_vls::ondemand::array_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<rvv_vls::ondemand::array_iterator> end() noexcept;
   inline simdjson_result<size_t> count_elements() & noexcept;
   inline simdjson_result<bool> is_empty() & noexcept;
@@ -220435,6 +224981,15 @@ public:
   /** Create a new, invalid array iterator. */
   simdjson_inline array_iterator() noexcept = default;
 
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  simdjson_inline ~array_iterator() noexcept;
+
+  simdjson_inline array_iterator(array_iterator&&) noexcept;
+  simdjson_inline array_iterator& operator=(array_iterator&&) noexcept;
+  simdjson_inline array_iterator(const array_iterator&) noexcept;
+  simdjson_inline array_iterator& operator=(const array_iterator&) noexcept;
+#endif
+
   //
   // Iterator interface
   //
@@ -220477,6 +225032,9 @@ public:
 private:
 #if SIMDJSON_DEVELOPMENT_CHECKS
    bool has_been_referenced{false};
+   array* parent{nullptr};
+
+   simdjson_inline array_iterator(const value_iterator &_iter, array* _parent) noexcept;
 #endif
   value_iterator iter{};
 
@@ -222039,7 +226597,6 @@ public:
    *
    * IMPORTANT: this value is only meaningful under the conditions below.
    *
-   *   - the format is whitespace_delimited or newline_delimited;
    *   - you iterated all the way to the end of the stream;
    *   - no document reported an error. Iteration stops at the first failed
    *     document, which can leave the bookkeeping from a mid-stream batch.
@@ -222047,6 +226604,9 @@ public:
    * If you need to know about a truncated tail outside those conditions, track
    * it yourself from the last successful document (see iterator::current_index()
    * and iterator::source()).
+   *
+   * An empty input (zero bytes) or an input made only of white space contains
+   * no document: truncated_bytes() returns zero.
    */
   inline size_t truncated_bytes() const noexcept;
 
@@ -222106,7 +226666,10 @@ public:
      *
      * The returned string_view instance is simply a map to the (unparsed)
      * source string: it may thus include white-space characters and all manner
-     * of padding.
+     * of padding. It spans the whole current document, whether or not you
+     * have already accessed (part of) the document. Thus
+     * current_index() + source().size() is the offset just past the end of the
+     * current document, which is useful when reading a stream in chunks.
      *
      * This function (source()) is experimental and the usage
      * may change in future versions of simdjson: we find the API somewhat
@@ -223492,7 +228055,7 @@ match_window_candidate(const char* p, std::uint8_t ki,
 // --- describe() string helpers (constexpr; no std::to_string, which is not) ---
 
 // Append the decimal form of v to s.
-constexpr void append_uint(std::string& s, std::size_t v) {
+SIMDJSON_CONSTEXPR_STRING void append_uint(std::string& s, std::size_t v) {
     if (v == 0) { s.push_back('0'); return; }
     char buf[20];
     std::size_t n = 0;
@@ -223502,7 +228065,7 @@ constexpr void append_uint(std::string& s, std::size_t v) {
 
 // Append a byte as its decimal value, plus the printable character in quotes
 // when it is in the printable ASCII range (e.g. "110 ('n')").
-constexpr void append_byte(std::string& s, unsigned b) {
+SIMDJSON_CONSTEXPR_STRING void append_byte(std::string& s, unsigned b) {
     append_uint(s, b);
     if (b >= 0x20 && b < 0x7f) {
         s += " ('";
@@ -223663,14 +228226,15 @@ struct key_selector {
      * match_raw() does step by step.
      *
      * Everything it reports is derived from the compile-time tables, so describe()
-     * is itself usable in a constant expression:
+     * is itself usable in a constant expression when the standard library supports
+     * constexpr std::string (__cpp_lib_constexpr_string):
      *
      *   static_assert(!key_selector<"name", "city">::describe().empty());
      *
      * It allocates a std::string and is meant for documentation, debugging and
      * tests, not for any hot path.
      */
-    static constexpr std::string describe() {
+    static SIMDJSON_CONSTEXPR_STRING std::string describe() {
         std::string s;
         s += "key_selector: ";
         key_selector_detail::append_uint(s, N);
@@ -223968,8 +228532,19 @@ public:
    * Using the iterator directly is also possible but error-prone and discouraged. In particular,
    * you must dereference the iterator exactly once per iteration (before calling '++').
    * Doing otherwise is unsafe and may lead to errors. You are responsible for ensuring
+   *
+   * With SIMDJSON_DEVELOPMENT_CHECKS, the iterator locks this object while it is
+   * alive, so that reentrant access (find_field(), reset(), ...) is reported as
+   * OUT_OF_ORDER_ITERATION.
    */
-  simdjson_inline simdjson_result<object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<object_iterator> begin() & noexcept;
+  /**
+   * Get an iterator to the start of a temporary object, e.g., `v.get_object().begin()`.
+   *
+   * The iterator does not depend on the object instance and may outlive it, so
+   * it does not lock it.
+   */
+  simdjson_inline simdjson_result<object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<object_iterator> end() noexcept;
   /**
    * Look up a field by name on an object (order-sensitive). By order-sensitive, we mean that
@@ -224392,7 +228967,8 @@ public:
   simdjson_inline simdjson_result(error_code error) noexcept; ///< @private
   simdjson_inline simdjson_result() noexcept = default;
 
-  simdjson_inline simdjson_result<rvv_vls::ondemand::object_iterator> begin() noexcept;
+  simdjson_inline simdjson_result<rvv_vls::ondemand::object_iterator> begin() & noexcept;
+  simdjson_inline simdjson_result<rvv_vls::ondemand::object_iterator> begin() && noexcept;
   simdjson_inline simdjson_result<rvv_vls::ondemand::object_iterator> end() noexcept;
   simdjson_inline simdjson_result<rvv_vls::ondemand::value> find_field(std::string_view key) & noexcept;
   simdjson_inline simdjson_result<rvv_vls::ondemand::value> find_field(std::string_view key) && noexcept;
@@ -224989,7 +229565,13 @@ template <concepts::constructible_from_string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::string_view>) {
   std::string_view str;
   SIMDJSON_TRY(val.get_string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::string): building a temporary and
+    // move-assigning it is markedly slower.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 
@@ -225000,11 +229582,41 @@ template <concepts::constructible_from_u8string_view T, typename ValT>
 error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(std::is_nothrow_constructible_v<T, std::u8string_view>) {
   std::u8string_view str;
   SIMDJSON_TRY(val.get_u8string().get(str));
-  out = T{str};
+  if constexpr (requires { out.assign(str.data(), str.size()); }) {
+    // Copy straight into out (e.g., std::u8string), as for std::string above.
+    out.assign(str.data(), str.size());
+  } else {
+    out = T{str};
+  }
   return SUCCESS;
 }
 #endif // SIMDJSON_SUPPORTS_CHAR8_T
 
+
+namespace details {
+// Whether to deserialize the elements of the container T directly into a new
+// element (emplace_one(out) and then get) rather than into a temporary that is
+// then moved into the container. A temporary of a trivially copyable type lives
+// in registers and is cheap to move, and value-initializing a small element in
+// place costs more than it saves (GCC zeroes it with rep stos). But moving a
+// large element, or a string (whose deserialization then needs a temporary
+// string and a move assignment of its own), is expensive.
+template <typename T>
+concept deserialize_in_place =
+    concepts::returns_reference<T> && requires(T &c) { c.pop_back(); } &&
+    !std::is_trivially_copyable_v<typename T::value_type> &&
+    (sizeof(typename T::value_type) > 32 || concepts::constructible_from_string_view<typename T::value_type>);
+
+// Removes the last element of the container on destruction while armed.
+template <typename T>
+struct pop_back_guard {
+  T &container;
+  bool armed{true};
+  ~pop_back_guard() {
+    if (armed) { container.pop_back(); }
+  }
+};
+} // namespace details
 
 /**
  * STL containers have several constructors including one that takes a single
@@ -225029,14 +229641,66 @@ error_code tag_invoke(deserialize_tag, ValT &val, T &out) noexcept(false) {
     SIMDJSON_TRY(val.get_array().get(arr));
   }
 
-  for (auto v : arr) {
-    // Deserialize into a temporary first: an error or an exception (a user
-    // tag_invoke may throw) must not leave a default-constructed element behind.
-    value_type temp;
-    if (auto const err = v.get<value_type>(temp); err) {
-      return err;
+  if constexpr (std::is_same_v<T, std::vector<value_type>> && !std::is_same_v<value_type, bool>) {
+    // Collect the elements in a per-thread scratch vector that keeps its
+    // capacity from call to call, then move them into out after reserving the
+    // exact size: out is allocated once instead of being regrown. A nested
+    // array of the same type finds the scratch busy and takes the paths below.
+    struct scratch_space {
+      std::vector<value_type> elements{};
+      bool busy{false};
+    };
+    static thread_local scratch_space scratch;
+    if (!scratch.busy && out.empty()) {
+      struct release_scratch {
+        scratch_space &s;
+        T &out;
+        size_t parsed{0};
+        bool complete{false};
+        // On an error or an exception, out gets the elements parsed so far (as
+        // with the loops below), without allocating. Kept out of the hot path.
+        simdjson_never_inline void keep_parsed() noexcept {
+          s.elements.resize(parsed);
+          out.swap(s.elements);
+        }
+        ~release_scratch() {
+          if (simdjson_unlikely(!complete)) { keep_parsed(); }
+          s.elements.clear();
+          // Do not hold on to the memory of a very large array.
+          if (s.elements.capacity() * sizeof(value_type) > (1 << 20)) { std::vector<value_type>().swap(s.elements); }
+          s.busy = false;
+        }
+      } release{scratch, out};
+      scratch.busy = true;
+      for (auto v : arr) {
+        SIMDJSON_TRY(v.get<value_type>(scratch.elements.emplace_back()));
+        release.parsed++;
+      }
+      out.reserve(release.parsed);
+      release.complete = true;
+      for (auto &e : scratch.elements) { out.emplace_back(std::move(e)); }
+      return SUCCESS;
     }
-    concepts::emplace_one(out, std::move(temp));
+  }
+  if constexpr (details::deserialize_in_place<T>) {
+    for (auto v : arr) {
+      auto &slot = concepts::emplace_one(out);
+      // An error or an exception (a user tag_invoke may throw) must not leave
+      // a partially deserialized element behind.
+      details::pop_back_guard<T> guard{out};
+      SIMDJSON_TRY(v.get<value_type>(slot));
+      guard.armed = false;
+    }
+  } else {
+    for (auto v : arr) {
+      // Deserialize into a temporary first: an error or an exception (a user
+      // tag_invoke may throw) must not leave a default-constructed element behind.
+      value_type temp;
+      if (auto const err = v.get<value_type>(temp); err) {
+        return err;
+      }
+      concepts::emplace_one(out, std::move(temp));
+    }
   }
   return SUCCESS;
 }
@@ -226108,9 +230772,17 @@ simdjson_inline simdjson_result<array> array::started(value_iterator &iter) noex
   return array(iter);
 }
 
-simdjson_inline simdjson_result<array_iterator> array::begin() noexcept {
+simdjson_inline simdjson_result<array_iterator> array::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
-  if (!iter.is_at_iterator_start()) { return OUT_OF_ORDER_ITERATION; }
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
+  return array_iterator(iter, this);
+#endif
+  return array_iterator(iter);
+}
+simdjson_inline simdjson_result<array_iterator> array::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The array is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return array_iterator(iter);
 }
@@ -226137,6 +230809,9 @@ simdjson_inline simdjson_result<std::string_view> array::raw_json() noexcept {
 SIMDJSON_PUSH_DISABLE_WARNINGS
 SIMDJSON_DISABLE_STRICT_OVERFLOW_WARNING
 simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t count{0};
   // Important: we do not consume any of the values.
   for(simdjson_unused auto v : *this) { count++; }
@@ -226150,6 +230825,9 @@ simdjson_inline simdjson_result<size_t> array::count_elements() & noexcept {
 SIMDJSON_POP_DISABLE_WARNINGS
 
 simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   bool is_not_empty;
   auto error = iter.reset_array().get(is_not_empty);
   if(error) { return error; }
@@ -226157,8 +230835,17 @@ simdjson_inline simdjson_result<bool> array::is_empty() & noexcept {
 }
 
 inline simdjson_result<bool> array::reset() & noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   return iter.reset_array();
 }
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline void array::set_locked(bool _locked) noexcept {
+  locked = _locked;
+}
+#endif
 
 inline simdjson_result<value> array::at_pointer(std::string_view json_pointer) noexcept {
   if (json_pointer[0] != '/') { return INVALID_JSON_POINTER; }
@@ -226243,6 +230930,9 @@ inline error_code array::for_each_at_path_with_wildcard(std::string_view json_pa
 }
 
 simdjson_inline simdjson_result<value> array::at(size_t index) noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  if (locked) return OUT_OF_ORDER_ITERATION;
+#endif
   size_t i = 0;
   for (auto value : *this) {
     if (i == index) { return value; }
@@ -226272,9 +230962,13 @@ simdjson_inline simdjson_result<rvv_vls::ondemand::array>::simdjson_result(
 {
 }
 
-simdjson_inline simdjson_result<rvv_vls::ondemand::array_iterator> simdjson_result<rvv_vls::ondemand::array>::begin() noexcept {
+simdjson_inline simdjson_result<rvv_vls::ondemand::array_iterator> simdjson_result<rvv_vls::ondemand::array>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<rvv_vls::ondemand::array_iterator> simdjson_result<rvv_vls::ondemand::array>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<rvv_vls::ondemand::array_iterator> simdjson_result<rvv_vls::ondemand::array>::end() noexcept {
   if (error()) { return error(); }
@@ -226337,6 +231031,59 @@ namespace ondemand {
 simdjson_inline array_iterator::array_iterator(const value_iterator &_iter) noexcept
   : iter{_iter}
 {}
+
+#if SIMDJSON_DEVELOPMENT_CHECKS
+simdjson_inline array_iterator::array_iterator(const value_iterator &_iter, array* _parent) noexcept
+  : parent{_parent}, iter{_iter}
+{
+  if (parent) parent->set_locked(true);
+}
+
+simdjson_inline array_iterator::~array_iterator() noexcept
+{
+  if (parent) parent->set_locked(false);
+}
+
+simdjson_inline array_iterator::array_iterator(array_iterator&& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{other.parent},
+    iter{std::move(other.iter)}
+{
+  other.parent = nullptr;
+}
+
+simdjson_inline array_iterator& array_iterator::operator=(array_iterator&& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = other.parent;
+    iter = std::move(other.iter);
+
+    other.parent = nullptr;
+  }
+  return *this;
+}
+
+simdjson_inline array_iterator::array_iterator(const array_iterator& other) noexcept
+  : has_been_referenced{other.has_been_referenced},
+    parent{nullptr},
+    iter{other.iter}
+{}
+
+simdjson_inline array_iterator& array_iterator::operator=(const array_iterator& other) noexcept {
+  if (this != &other)
+  {
+    if (parent)
+      parent->set_locked(false);
+    has_been_referenced = other.has_been_referenced;
+    parent = nullptr;
+    iter = other.iter;
+  }
+  return *this;
+}
+#endif
 
 simdjson_inline simdjson_result<value> array_iterator::operator*() noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
@@ -228686,6 +233433,9 @@ inline size_t document_stream::size_in_bytes() const noexcept {
 }
 
 inline size_t document_stream::truncated_bytes() const noexcept {
+  // Stage 1 returns EMPTY on zero-length input before it writes the index
+  // sentinels read below, so they would still hold a previous stream's values.
+  if (len == 0) { return 0; }
   if(error == CAPACITY) { return len - batch_start; }
   return parser->implementation->structural_indexes[parser->implementation->n_structural_indexes] - parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
@@ -228977,11 +233727,19 @@ simdjson_inline size_t document_stream::iterator::current_index() const noexcept
 }
 
 simdjson_inline std::string_view document_stream::iterator::source() const noexcept {
-  auto depth = stream->doc.iter.depth();
+  // On error (e.g., CAPACITY), there is no document to walk: return the rest of
+  // the input, as the DOM document_stream does.
+  if (stream->error) {
+    return std::string_view(reinterpret_cast<const char*>(stream->buf) + current_index(), stream->len - current_index());
+  }
+  // Always walk from the root of the document, whatever the current position
+  // of the document iterator: the user may have already consumed part of the
+  // document, so the iterator's current depth must not be used here.
+  depth_t depth = 1;
   auto cur_struct_index = stream->doc.iter._root - stream->parser->implementation->structural_indexes.get();
 
-  // If at root, process the first token to determine if scalar value
-  if (stream->doc.iter.at_root()) {
+  // Process the first token to determine if scalar value
+  {
     switch (stream->buf[stream->batch_start + stream->parser->implementation->structural_indexes[cur_struct_index]]) {
       case '{': case '[':   // Depth=1 already at start of document
         break;
@@ -228995,6 +233753,32 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
           // normally the length would be next_index - current_index() - 1, except for the last document
           size_t svlen = next_index - current_index();
           const char *start = reinterpret_cast<const char*>(stream->buf) + current_index();
+          // When the scalar is followed by a truncated document, the structural
+          // indexes of that document were dropped and next_index is the end of
+          // the input, so we bound the scalar by scanning the token itself.
+          size_t token_len = 0;
+          if (*start == '"') {
+            token_len = 1;
+            while (token_len < svlen) {
+              char c = start[token_len++];
+              if (c == '\\') {
+                token_len++;
+              } else if (c == '"') {
+                break;
+              }
+            }
+          } else {
+            while (token_len < svlen) {
+              char c = start[token_len];
+              if (std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == '{' || c == '[' || c == '\0' || static_cast<uint8_t>(c) == 0x1E) {
+                break;
+              }
+              token_len++;
+            }
+          }
+          if (token_len > 0 && token_len < svlen) {
+            svlen = token_len;
+          }
           // Trim trailing whitespace, NUL, and RS (0x1E). In RFC 7464
           // json_sequence mode the scanner classifies RS as a scalar
           // character, so an RS-prefixed scalar document (number / true /
@@ -229390,7 +234174,8 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
 #endif // SIMDJSON_CHECK_EOF
       break;
     case '"':
-      if(*peek() == ':') {
+      // At the end, peek() would read the sentinel, which points into the padding.
+      if(!at_end() && *peek() == ':') {
         // We are at a key!!!
         // This might happen if you just started an object and you skip it immediately.
         // Performance note: it would be nice to get rid of this check as it is somewhat
@@ -229433,7 +234218,7 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::skip_child(depth_
     }
   }
 
-  return report_error(TAPE_ERROR, "not enough close braces");
+  return report_error(INCOMPLETE_ARRAY_OR_OBJECT, "not enough close braces");
 }
 
 SIMDJSON_POP_DISABLE_WARNINGS
@@ -230354,10 +235139,17 @@ simdjson_inline object::object(const value_iterator &_iter) noexcept
 {
 }
 
-simdjson_inline simdjson_result<object_iterator> object::begin() noexcept {
+simdjson_inline simdjson_result<object_iterator> object::begin() & noexcept {
 #if SIMDJSON_DEVELOPMENT_CHECKS
   if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
   return object_iterator(iter, this);
+#endif
+  return object_iterator(iter);
+}
+simdjson_inline simdjson_result<object_iterator> object::begin() && noexcept {
+#if SIMDJSON_DEVELOPMENT_CHECKS
+  // The object is a temporary that the iterator may outlive: do not lock it.
+  if (!iter.is_at_iterator_start() || locked) { return OUT_OF_ORDER_ITERATION; }
 #endif
   return object_iterator(iter);
 }
@@ -230570,9 +235362,13 @@ simdjson_inline simdjson_result<rvv_vls::ondemand::object>::simdjson_result(rvv_
 simdjson_inline simdjson_result<rvv_vls::ondemand::object>::simdjson_result(error_code error) noexcept
     : implementation_simdjson_result_base<rvv_vls::ondemand::object>(error) {}
 
-simdjson_inline simdjson_result<rvv_vls::ondemand::object_iterator> simdjson_result<rvv_vls::ondemand::object>::begin() noexcept {
+simdjson_inline simdjson_result<rvv_vls::ondemand::object_iterator> simdjson_result<rvv_vls::ondemand::object>::begin() & noexcept {
   if (error()) { return error(); }
   return first.begin();
+}
+simdjson_inline simdjson_result<rvv_vls::ondemand::object_iterator> simdjson_result<rvv_vls::ondemand::object>::begin() && noexcept {
+  if (error()) { return error(); }
+  return std::move(first).begin();
 }
 simdjson_inline simdjson_result<rvv_vls::ondemand::object_iterator> simdjson_result<rvv_vls::ondemand::object>::end() noexcept {
   if (error()) { return error(); }

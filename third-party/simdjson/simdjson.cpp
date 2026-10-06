@@ -1,4 +1,4 @@
-/* auto-generated on 2026-09-28 12:06:03 -0400. version 5.0.1 Do not edit! */
+/* auto-generated on 2026-10-04 09:02:57 -0400. version 5.0.2 Do not edit! */
 /* including simdjson.cpp:  */
 /* begin file simdjson.cpp */
 #define SIMDJSON_SRC_SIMDJSON_CPP
@@ -223,6 +223,18 @@
 #define SIMDJSON_CONSTEVAL 0
 #endif // defined(__cpp_consteval) && __cpp_consteval >= 201811L && defined(__cpp_lib_constexpr_string) && __cpp_lib_constexpr_string >= 201907L
 #endif // !defined(SIMDJSON_CONSTEVAL)
+
+// SIMDJSON_CONSTEXPR_STRING is 'constexpr' when the standard library supports
+// constexpr std::string (e.g., libstdc++ 12 or better), and empty otherwise. It
+// lets functions that build a std::string be constant expressions when possible
+// while still compiling against older standard libraries.
+#if !defined(SIMDJSON_CONSTEXPR_STRING)
+#if defined(__cpp_lib_constexpr_string) && __cpp_lib_constexpr_string >= 201907L
+#define SIMDJSON_CONSTEXPR_STRING constexpr
+#else
+#define SIMDJSON_CONSTEXPR_STRING
+#endif // defined(__cpp_lib_constexpr_string) && __cpp_lib_constexpr_string >= 201907L
+#endif // !defined(SIMDJSON_CONSTEXPR_STRING)
 #endif // SIMDJSON_COMPILER_CHECK_H
 /* end file simdjson/compiler_check.h */
 /* including simdjson/portability.h: #include "simdjson/portability.h" */
@@ -16210,7 +16222,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -19477,6 +19494,8 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
   // RS as a scalar, making the digit a scalar continuation, not a start.
   // We must: (1) remove RS from structural_indexes, and (2) for scalars, add the
   // actual value start position.
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_rs_pos = 0;
   uint32_t rs_count = 0;
@@ -19551,8 +19570,11 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) {
     // Only RS markers here: the last one opens a record continuing past the
@@ -19639,6 +19661,8 @@ simdjson_inline uint32_t filter_comma_delimited(
 
   // Track depth to identify root-level commas (depth 0)
   int depth = 0;
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_root_comma_pos = 0;
   uint32_t root_comma_count = 0;
@@ -19672,8 +19696,11 @@ simdjson_inline uint32_t filter_comma_delimited(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) { return 0; }
 
@@ -20204,9 +20231,9 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = find_next_document_index_json_sequence(parser, len, true, next_batch_start, scan_len);
-    // NOTE: the filter above compacted structural_indexes in place, so the
-    // value copied here is a stale pre-compaction index; this is why
-    // truncated_bytes() is documented as meaningless in json_sequence mode.
+    // The filter compacted structural_indexes in place and restored the EOF
+    // sentinel past the compacted end, so the copy below is either the start
+    // of a truncated document or len, as in streaming_final.
     parser.structural_indexes[parser.n_structural_indexes + 1] = parser.structural_indexes[parser.n_structural_indexes];
     parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len);
     if (simdjson_unlikely(parser.n_structural_indexes == 0u)) { return EMPTY; }
@@ -20233,8 +20260,6 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     parser.structural_indexes[parser.n_structural_indexes] = next_batch_start;
   } else if (partial == stage1_mode::comma_delimited_final) {
     // Comma-delimited: final batch, last document extends to EOF
-    // (like json_sequence, the filter compacts in place, so truncated_bytes()
-    // is documented as meaningless for this format)
     if(have_unclosed_string) { parser.n_structural_indexes--; }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = filter_comma_delimited(parser, len, true, next_batch_start);
@@ -21548,10 +21573,13 @@ simdjson_warn_unused simdjson_inline error_code tape_builder_impl<UNPADDED>::vis
   // practice unless you are in the strange scenario where you have many JSON
   // documents made of single atoms.
   //
-  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
+  // In a stream, the input goes on with other documents: copy up to the next
+  // structural only, not to the end of the batch.
+  const size_t len = (std::min)(iter.remaining_len(), size_t(*iter.next_structural) - size_t(*(iter.next_structural - 1)));
+  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[len + SIMDJSON_PADDING]);
   if (copy.get() == nullptr) { return MEMALLOC; }
-  std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memcpy(copy.get(), value, len);
+  std::memset(copy.get() + len, ' ', SIMDJSON_PADDING);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -23907,7 +23935,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -27021,6 +27054,8 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
   // RS as a scalar, making the digit a scalar continuation, not a start.
   // We must: (1) remove RS from structural_indexes, and (2) for scalars, add the
   // actual value start position.
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_rs_pos = 0;
   uint32_t rs_count = 0;
@@ -27095,8 +27130,11 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) {
     // Only RS markers here: the last one opens a record continuing past the
@@ -27183,6 +27221,8 @@ simdjson_inline uint32_t filter_comma_delimited(
 
   // Track depth to identify root-level commas (depth 0)
   int depth = 0;
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_root_comma_pos = 0;
   uint32_t root_comma_count = 0;
@@ -27216,8 +27256,11 @@ simdjson_inline uint32_t filter_comma_delimited(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) { return 0; }
 
@@ -27748,9 +27791,9 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = find_next_document_index_json_sequence(parser, len, true, next_batch_start, scan_len);
-    // NOTE: the filter above compacted structural_indexes in place, so the
-    // value copied here is a stale pre-compaction index; this is why
-    // truncated_bytes() is documented as meaningless in json_sequence mode.
+    // The filter compacted structural_indexes in place and restored the EOF
+    // sentinel past the compacted end, so the copy below is either the start
+    // of a truncated document or len, as in streaming_final.
     parser.structural_indexes[parser.n_structural_indexes + 1] = parser.structural_indexes[parser.n_structural_indexes];
     parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len);
     if (simdjson_unlikely(parser.n_structural_indexes == 0u)) { return EMPTY; }
@@ -27777,8 +27820,6 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     parser.structural_indexes[parser.n_structural_indexes] = next_batch_start;
   } else if (partial == stage1_mode::comma_delimited_final) {
     // Comma-delimited: final batch, last document extends to EOF
-    // (like json_sequence, the filter compacts in place, so truncated_bytes()
-    // is documented as meaningless for this format)
     if(have_unclosed_string) { parser.n_structural_indexes--; }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = filter_comma_delimited(parser, len, true, next_batch_start);
@@ -29092,10 +29133,13 @@ simdjson_warn_unused simdjson_inline error_code tape_builder_impl<UNPADDED>::vis
   // practice unless you are in the strange scenario where you have many JSON
   // documents made of single atoms.
   //
-  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
+  // In a stream, the input goes on with other documents: copy up to the next
+  // structural only, not to the end of the batch.
+  const size_t len = (std::min)(iter.remaining_len(), size_t(*iter.next_structural) - size_t(*(iter.next_structural - 1)));
+  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[len + SIMDJSON_PADDING]);
   if (copy.get() == nullptr) { return MEMALLOC; }
-  std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memcpy(copy.get(), value, len);
+  std::memset(copy.get() + len, ' ', SIMDJSON_PADDING);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -31427,7 +31471,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -34540,6 +34589,8 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
   // RS as a scalar, making the digit a scalar continuation, not a start.
   // We must: (1) remove RS from structural_indexes, and (2) for scalars, add the
   // actual value start position.
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_rs_pos = 0;
   uint32_t rs_count = 0;
@@ -34614,8 +34665,11 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) {
     // Only RS markers here: the last one opens a record continuing past the
@@ -34702,6 +34756,8 @@ simdjson_inline uint32_t filter_comma_delimited(
 
   // Track depth to identify root-level commas (depth 0)
   int depth = 0;
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_root_comma_pos = 0;
   uint32_t root_comma_count = 0;
@@ -34735,8 +34791,11 @@ simdjson_inline uint32_t filter_comma_delimited(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) { return 0; }
 
@@ -35267,9 +35326,9 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = find_next_document_index_json_sequence(parser, len, true, next_batch_start, scan_len);
-    // NOTE: the filter above compacted structural_indexes in place, so the
-    // value copied here is a stale pre-compaction index; this is why
-    // truncated_bytes() is documented as meaningless in json_sequence mode.
+    // The filter compacted structural_indexes in place and restored the EOF
+    // sentinel past the compacted end, so the copy below is either the start
+    // of a truncated document or len, as in streaming_final.
     parser.structural_indexes[parser.n_structural_indexes + 1] = parser.structural_indexes[parser.n_structural_indexes];
     parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len);
     if (simdjson_unlikely(parser.n_structural_indexes == 0u)) { return EMPTY; }
@@ -35296,8 +35355,6 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     parser.structural_indexes[parser.n_structural_indexes] = next_batch_start;
   } else if (partial == stage1_mode::comma_delimited_final) {
     // Comma-delimited: final batch, last document extends to EOF
-    // (like json_sequence, the filter compacts in place, so truncated_bytes()
-    // is documented as meaningless for this format)
     if(have_unclosed_string) { parser.n_structural_indexes--; }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = filter_comma_delimited(parser, len, true, next_batch_start);
@@ -36611,10 +36668,13 @@ simdjson_warn_unused simdjson_inline error_code tape_builder_impl<UNPADDED>::vis
   // practice unless you are in the strange scenario where you have many JSON
   // documents made of single atoms.
   //
-  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
+  // In a stream, the input goes on with other documents: copy up to the next
+  // structural only, not to the end of the batch.
+  const size_t len = (std::min)(iter.remaining_len(), size_t(*iter.next_structural) - size_t(*(iter.next_structural - 1)));
+  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[len + SIMDJSON_PADDING]);
   if (copy.get() == nullptr) { return MEMALLOC; }
-  std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memcpy(copy.get(), value, len);
+  std::memset(copy.get() + len, ' ', SIMDJSON_PADDING);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -39104,7 +39164,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -42330,6 +42395,8 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
   // RS as a scalar, making the digit a scalar continuation, not a start.
   // We must: (1) remove RS from structural_indexes, and (2) for scalars, add the
   // actual value start position.
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_rs_pos = 0;
   uint32_t rs_count = 0;
@@ -42404,8 +42471,11 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) {
     // Only RS markers here: the last one opens a record continuing past the
@@ -42492,6 +42562,8 @@ simdjson_inline uint32_t filter_comma_delimited(
 
   // Track depth to identify root-level commas (depth 0)
   int depth = 0;
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_root_comma_pos = 0;
   uint32_t root_comma_count = 0;
@@ -42525,8 +42597,11 @@ simdjson_inline uint32_t filter_comma_delimited(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) { return 0; }
 
@@ -43057,9 +43132,9 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = find_next_document_index_json_sequence(parser, len, true, next_batch_start, scan_len);
-    // NOTE: the filter above compacted structural_indexes in place, so the
-    // value copied here is a stale pre-compaction index; this is why
-    // truncated_bytes() is documented as meaningless in json_sequence mode.
+    // The filter compacted structural_indexes in place and restored the EOF
+    // sentinel past the compacted end, so the copy below is either the start
+    // of a truncated document or len, as in streaming_final.
     parser.structural_indexes[parser.n_structural_indexes + 1] = parser.structural_indexes[parser.n_structural_indexes];
     parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len);
     if (simdjson_unlikely(parser.n_structural_indexes == 0u)) { return EMPTY; }
@@ -43086,8 +43161,6 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     parser.structural_indexes[parser.n_structural_indexes] = next_batch_start;
   } else if (partial == stage1_mode::comma_delimited_final) {
     // Comma-delimited: final batch, last document extends to EOF
-    // (like json_sequence, the filter compacts in place, so truncated_bytes()
-    // is documented as meaningless for this format)
     if(have_unclosed_string) { parser.n_structural_indexes--; }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = filter_comma_delimited(parser, len, true, next_batch_start);
@@ -44401,10 +44474,13 @@ simdjson_warn_unused simdjson_inline error_code tape_builder_impl<UNPADDED>::vis
   // practice unless you are in the strange scenario where you have many JSON
   // documents made of single atoms.
   //
-  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
+  // In a stream, the input goes on with other documents: copy up to the next
+  // structural only, not to the end of the batch.
+  const size_t len = (std::min)(iter.remaining_len(), size_t(*iter.next_structural) - size_t(*(iter.next_structural - 1)));
+  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[len + SIMDJSON_PADDING]);
   if (copy.get() == nullptr) { return MEMALLOC; }
-  std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memcpy(copy.get(), value, len);
+  std::memset(copy.get() + len, ' ', SIMDJSON_PADDING);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -47131,7 +47207,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -50662,6 +50743,8 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
   // RS as a scalar, making the digit a scalar continuation, not a start.
   // We must: (1) remove RS from structural_indexes, and (2) for scalars, add the
   // actual value start position.
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_rs_pos = 0;
   uint32_t rs_count = 0;
@@ -50736,8 +50819,11 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) {
     // Only RS markers here: the last one opens a record continuing past the
@@ -50824,6 +50910,8 @@ simdjson_inline uint32_t filter_comma_delimited(
 
   // Track depth to identify root-level commas (depth 0)
   int depth = 0;
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_root_comma_pos = 0;
   uint32_t root_comma_count = 0;
@@ -50857,8 +50945,11 @@ simdjson_inline uint32_t filter_comma_delimited(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) { return 0; }
 
@@ -51389,9 +51480,9 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = find_next_document_index_json_sequence(parser, len, true, next_batch_start, scan_len);
-    // NOTE: the filter above compacted structural_indexes in place, so the
-    // value copied here is a stale pre-compaction index; this is why
-    // truncated_bytes() is documented as meaningless in json_sequence mode.
+    // The filter compacted structural_indexes in place and restored the EOF
+    // sentinel past the compacted end, so the copy below is either the start
+    // of a truncated document or len, as in streaming_final.
     parser.structural_indexes[parser.n_structural_indexes + 1] = parser.structural_indexes[parser.n_structural_indexes];
     parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len);
     if (simdjson_unlikely(parser.n_structural_indexes == 0u)) { return EMPTY; }
@@ -51418,8 +51509,6 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     parser.structural_indexes[parser.n_structural_indexes] = next_batch_start;
   } else if (partial == stage1_mode::comma_delimited_final) {
     // Comma-delimited: final batch, last document extends to EOF
-    // (like json_sequence, the filter compacts in place, so truncated_bytes()
-    // is documented as meaningless for this format)
     if(have_unclosed_string) { parser.n_structural_indexes--; }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = filter_comma_delimited(parser, len, true, next_batch_start);
@@ -52733,10 +52822,13 @@ simdjson_warn_unused simdjson_inline error_code tape_builder_impl<UNPADDED>::vis
   // practice unless you are in the strange scenario where you have many JSON
   // documents made of single atoms.
   //
-  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
+  // In a stream, the input goes on with other documents: copy up to the next
+  // structural only, not to the end of the batch.
+  const size_t len = (std::min)(iter.remaining_len(), size_t(*iter.next_structural) - size_t(*(iter.next_structural - 1)));
+  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[len + SIMDJSON_PADDING]);
   if (copy.get() == nullptr) { return MEMALLOC; }
-  std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memcpy(copy.get(), value, len);
+  std::memset(copy.get() + len, ' ', SIMDJSON_PADDING);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -55010,7 +55102,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -58057,6 +58154,8 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
   // RS as a scalar, making the digit a scalar continuation, not a start.
   // We must: (1) remove RS from structural_indexes, and (2) for scalars, add the
   // actual value start position.
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_rs_pos = 0;
   uint32_t rs_count = 0;
@@ -58131,8 +58230,11 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) {
     // Only RS markers here: the last one opens a record continuing past the
@@ -58219,6 +58321,8 @@ simdjson_inline uint32_t filter_comma_delimited(
 
   // Track depth to identify root-level commas (depth 0)
   int depth = 0;
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_root_comma_pos = 0;
   uint32_t root_comma_count = 0;
@@ -58252,8 +58356,11 @@ simdjson_inline uint32_t filter_comma_delimited(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) { return 0; }
 
@@ -58784,9 +58891,9 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = find_next_document_index_json_sequence(parser, len, true, next_batch_start, scan_len);
-    // NOTE: the filter above compacted structural_indexes in place, so the
-    // value copied here is a stale pre-compaction index; this is why
-    // truncated_bytes() is documented as meaningless in json_sequence mode.
+    // The filter compacted structural_indexes in place and restored the EOF
+    // sentinel past the compacted end, so the copy below is either the start
+    // of a truncated document or len, as in streaming_final.
     parser.structural_indexes[parser.n_structural_indexes + 1] = parser.structural_indexes[parser.n_structural_indexes];
     parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len);
     if (simdjson_unlikely(parser.n_structural_indexes == 0u)) { return EMPTY; }
@@ -58813,8 +58920,6 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     parser.structural_indexes[parser.n_structural_indexes] = next_batch_start;
   } else if (partial == stage1_mode::comma_delimited_final) {
     // Comma-delimited: final batch, last document extends to EOF
-    // (like json_sequence, the filter compacts in place, so truncated_bytes()
-    // is documented as meaningless for this format)
     if(have_unclosed_string) { parser.n_structural_indexes--; }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = filter_comma_delimited(parser, len, true, next_batch_start);
@@ -60128,10 +60233,13 @@ simdjson_warn_unused simdjson_inline error_code tape_builder_impl<UNPADDED>::vis
   // practice unless you are in the strange scenario where you have many JSON
   // documents made of single atoms.
   //
-  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
+  // In a stream, the input goes on with other documents: copy up to the next
+  // structural only, not to the end of the batch.
+  const size_t len = (std::min)(iter.remaining_len(), size_t(*iter.next_structural) - size_t(*(iter.next_structural - 1)));
+  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[len + SIMDJSON_PADDING]);
   if (copy.get() == nullptr) { return MEMALLOC; }
-  std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memcpy(copy.get(), value, len);
+  std::memset(copy.get() + len, ' ', SIMDJSON_PADDING);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -62342,7 +62450,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -65356,6 +65469,8 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
   // RS as a scalar, making the digit a scalar continuation, not a start.
   // We must: (1) remove RS from structural_indexes, and (2) for scalars, add the
   // actual value start position.
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_rs_pos = 0;
   uint32_t rs_count = 0;
@@ -65430,8 +65545,11 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) {
     // Only RS markers here: the last one opens a record continuing past the
@@ -65518,6 +65636,8 @@ simdjson_inline uint32_t filter_comma_delimited(
 
   // Track depth to identify root-level commas (depth 0)
   int depth = 0;
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_root_comma_pos = 0;
   uint32_t root_comma_count = 0;
@@ -65551,8 +65671,11 @@ simdjson_inline uint32_t filter_comma_delimited(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) { return 0; }
 
@@ -66083,9 +66206,9 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = find_next_document_index_json_sequence(parser, len, true, next_batch_start, scan_len);
-    // NOTE: the filter above compacted structural_indexes in place, so the
-    // value copied here is a stale pre-compaction index; this is why
-    // truncated_bytes() is documented as meaningless in json_sequence mode.
+    // The filter compacted structural_indexes in place and restored the EOF
+    // sentinel past the compacted end, so the copy below is either the start
+    // of a truncated document or len, as in streaming_final.
     parser.structural_indexes[parser.n_structural_indexes + 1] = parser.structural_indexes[parser.n_structural_indexes];
     parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len);
     if (simdjson_unlikely(parser.n_structural_indexes == 0u)) { return EMPTY; }
@@ -66112,8 +66235,6 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     parser.structural_indexes[parser.n_structural_indexes] = next_batch_start;
   } else if (partial == stage1_mode::comma_delimited_final) {
     // Comma-delimited: final batch, last document extends to EOF
-    // (like json_sequence, the filter compacts in place, so truncated_bytes()
-    // is documented as meaningless for this format)
     if(have_unclosed_string) { parser.n_structural_indexes--; }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = filter_comma_delimited(parser, len, true, next_batch_start);
@@ -67427,10 +67548,13 @@ simdjson_warn_unused simdjson_inline error_code tape_builder_impl<UNPADDED>::vis
   // practice unless you are in the strange scenario where you have many JSON
   // documents made of single atoms.
   //
-  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
+  // In a stream, the input goes on with other documents: copy up to the next
+  // structural only, not to the end of the batch.
+  const size_t len = (std::min)(iter.remaining_len(), size_t(*iter.next_structural) - size_t(*(iter.next_structural - 1)));
+  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[len + SIMDJSON_PADDING]);
   if (copy.get() == nullptr) { return MEMALLOC; }
-  std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memcpy(copy.get(), value, len);
+  std::memset(copy.get() + len, ' ', SIMDJSON_PADDING);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -69661,7 +69785,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -73072,6 +73201,8 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
   // RS as a scalar, making the digit a scalar continuation, not a start.
   // We must: (1) remove RS from structural_indexes, and (2) for scalars, add the
   // actual value start position.
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_rs_pos = 0;
   uint32_t rs_count = 0;
@@ -73146,8 +73277,11 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) {
     // Only RS markers here: the last one opens a record continuing past the
@@ -73234,6 +73368,8 @@ simdjson_inline uint32_t filter_comma_delimited(
 
   // Track depth to identify root-level commas (depth 0)
   int depth = 0;
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_root_comma_pos = 0;
   uint32_t root_comma_count = 0;
@@ -73267,8 +73403,11 @@ simdjson_inline uint32_t filter_comma_delimited(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) { return 0; }
 
@@ -73799,9 +73938,9 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = find_next_document_index_json_sequence(parser, len, true, next_batch_start, scan_len);
-    // NOTE: the filter above compacted structural_indexes in place, so the
-    // value copied here is a stale pre-compaction index; this is why
-    // truncated_bytes() is documented as meaningless in json_sequence mode.
+    // The filter compacted structural_indexes in place and restored the EOF
+    // sentinel past the compacted end, so the copy below is either the start
+    // of a truncated document or len, as in streaming_final.
     parser.structural_indexes[parser.n_structural_indexes + 1] = parser.structural_indexes[parser.n_structural_indexes];
     parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len);
     if (simdjson_unlikely(parser.n_structural_indexes == 0u)) { return EMPTY; }
@@ -73828,8 +73967,6 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     parser.structural_indexes[parser.n_structural_indexes] = next_batch_start;
   } else if (partial == stage1_mode::comma_delimited_final) {
     // Comma-delimited: final batch, last document extends to EOF
-    // (like json_sequence, the filter compacts in place, so truncated_bytes()
-    // is documented as meaningless for this format)
     if(have_unclosed_string) { parser.n_structural_indexes--; }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = filter_comma_delimited(parser, len, true, next_batch_start);
@@ -75143,10 +75280,13 @@ simdjson_warn_unused simdjson_inline error_code tape_builder_impl<UNPADDED>::vis
   // practice unless you are in the strange scenario where you have many JSON
   // documents made of single atoms.
   //
-  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
+  // In a stream, the input goes on with other documents: copy up to the next
+  // structural only, not to the end of the batch.
+  const size_t len = (std::min)(iter.remaining_len(), size_t(*iter.next_structural) - size_t(*(iter.next_structural - 1)));
+  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[len + SIMDJSON_PADDING]);
   if (copy.get() == nullptr) { return MEMALLOC; }
-  std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memcpy(copy.get(), value, len);
+  std::memset(copy.get() + len, ' ', SIMDJSON_PADDING);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -76961,7 +77101,12 @@ SIMDJSON_NO_SANITIZE_UNDEFINED
 simdjson_inline void parse_integer_digits(const uint8_t *&p, uint64_t &i) {
 #ifdef SIMDJSON_SWAR_NUMBER_PARSING
 #if SIMDJSON_SWAR_NUMBER_PARSING
-  const uint8_t *const swar_end = p + 16;
+  // Identifiers, timestamps and counters often have eight digits or more.
+  if (is_made_of_eight_digits_fast(p)) {
+    i = i * 100000000 + parse_eight_digits_unrolled(p);
+    p += 8;
+  }
+  const uint8_t *const swar_end = p + 8;
   while (p < swar_end && is_made_of_four_digits_fast(p)) {
     i = i * 10000 + parse_four_digits_unrolled(p);
     p += 4;
@@ -78707,6 +78852,8 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
   // RS as a scalar, making the digit a scalar continuation, not a start.
   // We must: (1) remove RS from structural_indexes, and (2) for scalars, add the
   // actual value start position.
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_rs_pos = 0;
   uint32_t rs_count = 0;
@@ -78781,8 +78928,11 @@ simdjson_inline uint32_t find_next_document_index_json_sequence(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) {
     // Only RS markers here: the last one opens a record continuing past the
@@ -78869,6 +79019,8 @@ simdjson_inline uint32_t filter_comma_delimited(
 
   // Track depth to identify root-level commas (depth 0)
   int depth = 0;
+  // The EOF sentinel: len, or where a discarded unclosed string starts.
+  const uint32_t sentinel = parser.structural_indexes[parser.n_structural_indexes];
   uint32_t write_idx = 0;
   uint32_t last_root_comma_pos = 0;
   uint32_t root_comma_count = 0;
@@ -78902,8 +79054,11 @@ simdjson_inline uint32_t filter_comma_delimited(
     }
   }
 
-  // Update structural index count
+  // Update structural index count. Compaction left a stale index in the slot
+  // past the end: restore the EOF sentinel that stage 1 had planted there, which
+  // document_stream::truncated_bytes() reads after a final batch.
   parser.n_structural_indexes = write_idx;
+  parser.structural_indexes[write_idx] = sentinel;
 
   if (parser.n_structural_indexes == 0) { return 0; }
 
@@ -80160,10 +80315,13 @@ simdjson_warn_unused simdjson_inline error_code tape_builder_impl<UNPADDED>::vis
   // practice unless you are in the strange scenario where you have many JSON
   // documents made of single atoms.
   //
-  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
+  // In a stream, the input goes on with other documents: copy up to the next
+  // structural only, not to the end of the batch.
+  const size_t len = (std::min)(iter.remaining_len(), size_t(*iter.next_structural) - size_t(*(iter.next_structural - 1)));
+  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[len + SIMDJSON_PADDING]);
   if (copy.get() == nullptr) { return MEMALLOC; }
-  std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memcpy(copy.get(), value, len);
+  std::memset(copy.get() + len, ' ', SIMDJSON_PADDING);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -80640,9 +80798,9 @@ simdjson_warn_unused simdjson_inline error_code scan() {
     }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = find_next_document_index_json_sequence(parser, len, true, next_batch_start, scan_len);
-    // NOTE: the filter above compacted structural_indexes in place, so the
-    // value copied here is a stale pre-compaction index; this is why
-    // truncated_bytes() is documented as meaningless in json_sequence mode.
+    // The filter compacted structural_indexes in place and restored the EOF
+    // sentinel past the compacted end, so the copy below is either the start
+    // of a truncated document or len, as in streaming_final.
     parser.structural_indexes[parser.n_structural_indexes + 1] = parser.structural_indexes[parser.n_structural_indexes];
     parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len);
     if (simdjson_unlikely(parser.n_structural_indexes == 0)) { return EMPTY; }
@@ -80669,8 +80827,6 @@ simdjson_warn_unused simdjson_inline error_code scan() {
     parser.structural_indexes[parser.n_structural_indexes] = next_batch_start;
   } else if (partial == stage1_mode::comma_delimited_final) {
     // Comma-delimited: final batch, last document extends to EOF
-    // (like json_sequence, the filter compacts in place, so truncated_bytes()
-    // is documented as meaningless for this format)
     if(unclosed_string) { parser.n_structural_indexes--; }
     uint32_t next_batch_start = uint32_t(len);
     parser.n_structural_indexes = filter_comma_delimited(parser, len, true, next_batch_start);
