@@ -8,8 +8,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - version: 14
-            os: ubuntu-24.04
+          - version: 16
+            os: ubuntu-26.04
     runs-on: ${{ matrix.os }}
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE.
