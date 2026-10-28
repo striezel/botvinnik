@@ -1,7 +1,7 @@
 /*
  -------------------------------------------------------------------------------
     This file is part of the botvinnik test suite.
-    Copyright (C) 2016, 2020, 2025  Dirk Stolle
+    Copyright (C) 2016, 2020, 2025, 2026  Dirk Stolle
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -76,6 +76,29 @@ int main()
     */
   };
 
+  // Contains the same values as testData, but with "special" characters
+  // encoded as base64. This is required, because httpbin may actually return
+  // encoded data in such cases.
+  const std::vector<std::string> testDataEncoded = {
+    "", // empty string
+    "This is a test.", // string without any "special" characters
+    // The string "Line one\nLine two\r\nLine three\t\vTest", but encoded.
+    "data:application/octet-stream;base64,TGluZSBvbmUKTGluZSB0d28NCkxpbmUgdGhyZWUJC1Rlc3Q=",
+    // 200 bytes with value 5
+    "data:application/octet-stream;base64,BQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU=",
+    // test the first 128 possible characters / bytes, except the NUL byte
+    "data:application/octet-stream;base64,AQIDBAUGBwgJCgsMDQ4P",
+    "data:application/octet-stream;base64,EBESExQVFhcYGRobHB0eHw==",
+    std::string("\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f")
+      .append("\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\x3e\x3f")
+      .append("\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f")
+      .append("\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59\x5a\x5b\x5c\x5d\x5e\x5f"),
+    "\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f",
+    "data:application/octet-stream;base64,cHFyc3R1dnd4eXp7fH1+fw=="
+  };
+
+  int idx = 0;
+
   // iterate over test data
   for (const auto & elem : testData)
   {
@@ -146,14 +169,15 @@ int main()
       std::cerr << "Response:" << std::endl << response << std::endl << std::endl;
       return 1;
     }
-    // check against original value
-    if (data->get<std::string>() != elem)
+    // check against original value and encoded value
+    if ((data->get<std::string>() != elem) && (data->get<std::string>() != testDataEncoded[idx]))
     {
-      std::cerr << "Error: Value of data is not \""<< elem << "\", but \""
+      std::cerr << "Error: Value of data is not \"" << elem << "\", but \""
                 << data->get<std::string>() << "\" instead!" << std::endl;
       std::cerr << "Response:" << std::endl << response << std::endl << std::endl;
       return 1;
     }
+    ++idx;
   }
 
   std::cout << "Curly's PUT data seems to be OK." << std::endl;
