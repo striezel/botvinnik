@@ -46,20 +46,20 @@ jobs:
         shell: bash
         run: |
           cd $GITHUB_WORKSPACE
-          curl -L --output Mocktrix-v0.1.0-win-x64-self-contained.tar.bz2 https://github.com/striezel/Mocktrix/releases/download/v0.1.0/Mocktrix-v0.1.0-win-x64-self-contained.tar.bz2
-          CHECKSUM=$(sha256sum Mocktrix-v0.1.0-win-x64-self-contained.tar.bz2)
+          curl -L --output Mocktrix-v0.2.0-win-x64-self-contained.tar.bz2 https://github.com/striezel/Mocktrix/releases/download/v0.2.0/Mocktrix-v0.2.0-win-x64-self-contained.tar.bz2
+          CHECKSUM=$(sha256sum Mocktrix-v0.2.0-win-x64-self-contained.tar.bz2)
           echo "Checksum calculation: $CHECKSUM"
           CHECKSUM_BITS=$(echo $CHECKSUM | cut -c1-64)
-          if [ "$CHECKSUM_BITS" != "c106fa62739460cbd063e612999a77965911a425400c0c9cfac1e0721bc02b7d" ]
+          if [ "$CHECKSUM_BITS" != "a600b5219382196a4883691c5d790637d43902395266bacd779c0020b6668599" ]
           then
             echo "Checksum of downloaded homeserver is wrong."
             exit 1
           fi
-          tar xf Mocktrix-v0.1.0-win-x64-self-contained.tar.bz2
+          tar xf Mocktrix-v0.2.0-win-x64-self-contained.tar.bz2
       - name: Start Mocktrix homeserver for tests
         shell: bash
         run: |
-          cd "$GITHUB_WORKSPACE/Mocktrix-v0.1.0-win-x64-self-contained"
+          cd "$GITHUB_WORKSPACE/Mocktrix-v0.2.0-win-x64-self-contained"
           ./Mocktrix &
           while ! netstat -tna | grep LISTEN | grep --silent 5000
           do

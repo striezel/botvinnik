@@ -35,19 +35,19 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           sudo apt-get install -y wget tar bzip2
-          wget https://github.com/striezel/Mocktrix/releases/download/v0.1.0/Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2
-          CHECKSUM=$(sha256sum Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2)
+          wget https://github.com/striezel/Mocktrix/releases/download/v0.2.0/Mocktrix-v0.2.0-linux-x64-self-contained.tar.bz2
+          CHECKSUM=$(sha256sum Mocktrix-v0.2.0-linux-x64-self-contained.tar.bz2)
           echo "Checksum calculation: $CHECKSUM"
           CHECKSUM_BITS=$(echo $CHECKSUM | cut -c1-64)
-          if [ "$CHECKSUM_BITS" != "f95a0928d0f8d7b22f3729021d1de12e06812e6ff48b9adcb399be27dcf95833" ]
+          if [ "$CHECKSUM_BITS" != "4885820f78cb2dee461784e72dbea3dad6094f40ac21e016580c917bfc605077" ]
           then
             echo "Checksum of downloaded homeserver is wrong."
             exit 1
           fi
-          tar xf Mocktrix-v0.1.0-linux-x64-self-contained.tar.bz2
+          tar xf Mocktrix-v0.2.0-linux-x64-self-contained.tar.bz2
       - name: Start Mocktrix homeserver for tests
         run: |
-          cd "$GITHUB_WORKSPACE/Mocktrix-v0.1.0-linux-x64-self-contained"
+          cd "$GITHUB_WORKSPACE/Mocktrix-v0.2.0-linux-x64-self-contained"
           ./Mocktrix &
           while ! netstat -tna | grep LISTEN | grep --silent 5000
           do
