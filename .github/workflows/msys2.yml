@@ -66,10 +66,20 @@ jobs:
               echo Waiting for Kestrel server to start ...
               sleep 5
           done
+#      - name: Start local httpbin instance for tests
+#        run: |
+#          pacman -S --noconfirm mingw-w64-ucrt-x86_64-hypercorn mingw-w64-ucrt-x86_64-httpbin
+#          hypercorn --bind=127.0.0.1:8080 httpbin:app &
+#          while ! netstat -tna | grep LISTEN | grep --silent 8080
+#          do
+#              echo Waiting for httpbin server to start ...
+#              sleep 5
+#          done
       - name: Tests
         run: |
           export MSYSTEM=UCRT64
           cd "$GITHUB_WORKSPACE"/build
+          # export USE_LOCAL_HTTPBIN=1
           ctest -V
       - name: Build statically linked executable
         run: |
